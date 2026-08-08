@@ -202,10 +202,14 @@ function activeStudySessions() {
   });
 }
 
-function rankedActiveSessions() {
-  return activeStudySessions()
+function visibleActiveSessions() {
+  const sessions = activeStudySessions();
+  if (sessions.length <= MAX_LAKE_FISH) return sessions;
+
+  return sessions
     .map((session) => ({ session, score: profileSimilarity(session.profile) }))
     .sort((a, b) => b.score - a.score || new Date(b.session.started_at) - new Date(a.session.started_at))
+    .slice(0, MAX_LAKE_FISH)
     .map(({ session }) => session);
 }
 
@@ -230,13 +234,15 @@ function postRelevance(post) {
   return profileSimilarity(post.profile) + topicScore + recency;
 }
 
-function rankedLakePosts() {
-  const recentCutoff = Date.now() - 30 * 24 * 60 * 60 * 1000;
-  const candidates = state.posts.filter((post) => new Date(post.created_at).getTime() >= recentCutoff);
-  const others = candidates.filter((post) => post.user_id !== state.user?.id);
-  const pool = others.length ? others : candidates;
-  return pool
-    .map((post) => ({ post, score: postRelevance(post) }))
+function visibleLakePosts() {
+  const posts = [...state.posts];
+  if (posts.length <= MAX_LAKE_POSTS) return posts;
+
+  return posts
+    .map((post) => ({
+      post,
+      score: postRelevance(post) - (post.user_id === state.user?.id ? 1000 : 0),
+    }))
     .sort((a, b) => b.score - a.score || new Date(b.post.created_at) - new Date(a.post.created_at))
     .slice(0, MAX_LAKE_POSTS)
     .map(({ post }) => post);
@@ -954,7 +960,7 @@ function renderLake() {
   const layer = $("#fishLayer");
   layer.replaceChildren();
   const activeSessions = activeStudySessions();
-  const visibleSessions = rankedActiveSessions().slice(0, MAX_LAKE_FISH);
+  const visibleSessions = visibleActiveSessions();
   $("#activeUserCount").textContent = String(activeSessions.length);
   $("#lakeEmpty").hidden = visibleSessions.length > 0;
 
@@ -1033,7 +1039,7 @@ function renderBottles() {
   const layer = $("#bottleLayer");
   layer.replaceChildren();
   const phoneLayout = window.matchMedia("(max-width: 760px)").matches;
-  rankedLakePosts().forEach((post, index) => {
+  visibleLakePosts().forEach((post, index) => {
     const seed = Math.abs(hashNumber(post.id));
     const button = document.createElement("button");
     button.type = "button";
