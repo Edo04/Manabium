@@ -220,6 +220,20 @@ function setAuthMode(mode) {
   $("#signupTab").setAttribute("aria-selected", String(!isLogin));
 }
 
+function togglePasswordVisibility(button) {
+  const input = document.getElementById(button.dataset.passwordToggle);
+  if (!input) return;
+
+  const shouldShow = input.type === "password";
+  input.type = shouldShow ? "text" : "password";
+  button.setAttribute("aria-pressed", String(shouldShow));
+  button.setAttribute("aria-label", shouldShow ? "パスワードを隠す" : "パスワードを表示");
+
+  const icon = $("i", button);
+  icon?.classList.toggle("ph-eye", !shouldShow);
+  icon?.classList.toggle("ph-eye-slash", shouldShow);
+}
+
 function showOnly(viewName) {
   $("#authView").hidden = viewName !== "auth";
   $("#onboardingView").hidden = viewName !== "onboarding";
@@ -250,6 +264,9 @@ function showPage(pageName, updateHash = true) {
 function bindStaticEvents() {
   $("#loginTab").addEventListener("click", () => setAuthMode("login"));
   $("#signupTab").addEventListener("click", () => setAuthMode("signup"));
+  $$('[data-password-toggle]').forEach((button) => {
+    button.addEventListener("click", () => togglePasswordVisibility(button));
+  });
   $("#loginForm").addEventListener("submit", login);
   $("#signupForm").addEventListener("submit", signup);
   $("#profileForm").addEventListener("submit", saveInitialProfile);

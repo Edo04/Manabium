@@ -2793,6 +2793,454 @@ textarea:focus {
   }
 }
 
+/* ============================================================
+   Login — direction 1: quiet aquarium glass
+   ============================================================ */
+
+.auth-shell {
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  min-height: 100dvh;
+  overflow: hidden;
+  grid-template-columns: minmax(0, 58%) minmax(430px, 42%);
+  background: #badadd url("./assets/aquarium-background.png") center / cover no-repeat;
+}
+
+.auth-shell::before {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  content: "";
+  background: rgba(231, 244, 243, 0.2);
+}
+
+.welcome-panel {
+  position: relative;
+  display: flex;
+  min-height: 100dvh;
+  padding: clamp(42px, 5vw, 76px) clamp(42px, 6vw, 92px);
+  overflow: hidden;
+  flex-direction: column;
+  color: #294d56;
+  background: transparent;
+}
+
+.welcome-panel::before {
+  display: none;
+}
+
+.welcome-panel .brand-large {
+  position: relative;
+  z-index: 3;
+  width: max-content;
+  gap: 15px;
+  color: #31555e;
+  font-size: 1.42rem;
+  letter-spacing: 0.13em;
+}
+
+.welcome-panel .brand-large .brand-mark {
+  width: 58px;
+  height: 58px;
+  background: rgba(250, 247, 244, 0.74);
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  border-radius: 19px;
+  box-shadow: 0 14px 34px rgba(43, 77, 83, 0.13);
+}
+
+.welcome-copy {
+  position: relative;
+  z-index: 3;
+  max-width: 720px;
+  padding: 0;
+  margin: clamp(100px, 14vh, 150px) 0 0;
+}
+
+.welcome-copy .eyebrow {
+  display: none;
+}
+
+.welcome-copy h1 {
+  max-width: 720px;
+  margin-bottom: 28px;
+  color: #2b5059;
+  font-family: "Shippori Mincho B1", "Hiragino Mincho ProN", "Yu Mincho", serif;
+  font-size: clamp(3.35rem, 5.2vw, 5.25rem);
+  font-weight: 500;
+  line-height: 1.25;
+  letter-spacing: 0.05em;
+  text-wrap: balance;
+  text-shadow: 0 2px 22px rgba(245, 250, 247, 0.78);
+}
+
+.welcome-copy > p:last-child {
+  max-width: 560px;
+  color: #4c6c74;
+  font-size: clamp(0.96rem, 1.25vw, 1.12rem);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-shadow: 0 1px 16px rgba(250, 252, 249, 0.86);
+}
+
+.welcome-points {
+  display: none;
+}
+
+.mini-lake {
+  position: absolute;
+  z-index: 2;
+  top: 57%;
+  right: auto;
+  bottom: auto;
+  left: 11%;
+  display: block;
+  width: 72%;
+  height: 31%;
+  opacity: 0.9;
+  pointer-events: none;
+  background: transparent;
+  border: 0;
+  backdrop-filter: none;
+}
+
+.mini-lake .water-line {
+  display: none;
+}
+
+.mini-lake .mini-fish {
+  position: absolute;
+  display: block;
+  width: clamp(70px, 7vw, 104px);
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 12px 18px rgba(35, 75, 82, 0.16));
+  animation: auth-fish-drift 7.5s ease-in-out infinite alternate;
+}
+
+.mini-lake .fish-a {
+  top: 2%;
+  right: 7%;
+  filter: hue-rotate(145deg) saturate(0.54) brightness(0.92) drop-shadow(0 12px 18px rgba(35, 75, 82, 0.16));
+}
+
+.mini-lake .fish-b {
+  top: 50%;
+  right: 38%;
+  width: clamp(64px, 6.2vw, 92px);
+  filter: hue-rotate(340deg) saturate(0.72) brightness(1.05) drop-shadow(0 12px 18px rgba(35, 75, 82, 0.16));
+  animation-delay: -2.4s;
+}
+
+.mini-lake .fish-c {
+  top: 12%;
+  right: 65%;
+  width: clamp(58px, 5.5vw, 82px);
+  filter: hue-rotate(55deg) saturate(0.48) brightness(1.06) drop-shadow(0 12px 18px rgba(35, 75, 82, 0.16));
+  animation-delay: -4.8s;
+}
+
+.mini-lake .mini-bubble {
+  border-color: rgba(255, 255, 255, 0.7);
+  box-shadow: 0 2px 10px rgba(255, 255, 255, 0.28);
+}
+
+@keyframes auth-fish-drift {
+  from { transform: translate3d(-8px, 4px, 0) rotate(-1deg); }
+  to { transform: translate3d(18px, -10px, 0) rotate(1deg); }
+}
+
+.auth-panel {
+  position: relative;
+  z-index: 4;
+  display: grid;
+  min-height: 100dvh;
+  padding: clamp(54px, 7vh, 82px) clamp(42px, 5vw, 76px);
+  place-items: center;
+  background: rgba(239, 247, 245, 0.66);
+  border-left: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 108px 0 0 108px / 148px 0 0 148px;
+  box-shadow: -20px 0 60px rgba(51, 86, 92, 0.08);
+  backdrop-filter: blur(18px) saturate(0.82);
+}
+
+.auth-card {
+  width: min(100%, 470px);
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+.auth-card h2 {
+  margin-bottom: 10px;
+  color: #345760;
+  font-size: clamp(2.45rem, 3.6vw, 3.35rem);
+  font-weight: 500;
+  letter-spacing: 0.07em;
+}
+
+.auth-card > .subtle {
+  margin-bottom: 0;
+  color: #687f84;
+  font-size: 0.88rem;
+}
+
+.auth-card .segmented {
+  padding: 5px;
+  margin: 34px 0 28px;
+  background: rgba(219, 232, 230, 0.76);
+  border: 1px solid rgba(255, 255, 255, 0.56);
+  border-radius: 999px;
+}
+
+.auth-card .segment {
+  min-height: 45px;
+  border-radius: 999px;
+  color: #6c858a;
+  font-size: 0.88rem;
+}
+
+.auth-card .segment.active {
+  color: #3d626a;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 6px 18px rgba(48, 81, 87, 0.09);
+}
+
+.auth-card .auth-form {
+  gap: 19px;
+}
+
+.auth-card label {
+  gap: 9px;
+  color: #48666d;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+.auth-input-wrap {
+  position: relative;
+  display: block;
+  color: #789095;
+}
+
+.auth-input-wrap > i {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  left: 20px;
+  font-size: 1.16rem;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.auth-input-wrap input {
+  min-height: 62px;
+  padding: 16px 54px 16px 52px;
+  color: #385b63;
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(80, 120, 126, 0.13);
+  border-radius: 17px;
+  box-shadow: 0 8px 24px rgba(54, 88, 94, 0.06);
+}
+
+.auth-input-wrap input:focus {
+  background: rgba(255, 255, 255, 0.94);
+  border-color: rgba(79, 123, 130, 0.5);
+  box-shadow: 0 0 0 4px rgba(100, 151, 156, 0.12), 0 10px 28px rgba(54, 88, 94, 0.07);
+}
+
+.password-toggle {
+  position: absolute;
+  z-index: 3;
+  top: 50%;
+  right: 11px;
+  display: grid;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  cursor: pointer;
+  place-items: center;
+  color: #748c91;
+  background: transparent;
+  border: 0;
+  border-radius: 50%;
+  font-size: 1.1rem;
+  transform: translateY(-50%);
+}
+
+.password-toggle:hover {
+  color: #446970;
+  background: rgba(225, 237, 235, 0.7);
+}
+
+.auth-card .button-wide {
+  min-height: 58px;
+  margin-top: 4px;
+  color: #fffdfb;
+  background: #c9827d;
+  border-color: #c9827d;
+  border-radius: 17px;
+  box-shadow: 0 14px 28px rgba(154, 90, 86, 0.2);
+  font-size: 0.94rem;
+}
+
+.auth-card .button-wide:hover {
+  background: #b87370;
+  border-color: #b87370;
+  transform: translateY(-1px);
+}
+
+.auth-card .auth-note {
+  margin: 24px 0 0;
+  color: #70868a;
+  font-size: 0.7rem;
+  line-height: 1.8;
+  text-align: center;
+}
+
+.auth-card .check-row {
+  grid-template-columns: 19px 1fr;
+  align-items: start;
+  gap: 10px;
+  color: #607a7f;
+  font-size: 0.74rem;
+  line-height: 1.65;
+}
+
+.auth-card .check-row input {
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  margin-top: 2px;
+  accent-color: #6f999a;
+}
+
+@media (max-width: 1080px) {
+  .auth-shell {
+    grid-template-columns: minmax(0, 52%) minmax(430px, 48%);
+  }
+
+  .welcome-panel {
+    padding-right: 42px;
+  }
+
+  .welcome-copy h1 {
+    font-size: clamp(3rem, 5.4vw, 4.4rem);
+  }
+
+  .auth-panel {
+    padding-right: 42px;
+    padding-left: 54px;
+    border-radius: 82px 0 0 82px / 120px 0 0 120px;
+  }
+}
+
+@media (max-width: 760px) {
+  body {
+    padding-bottom: 0;
+  }
+
+  .auth-shell {
+    display: block;
+    min-height: 100dvh;
+    overflow: visible;
+    background-position: 42% center;
+  }
+
+  .welcome-panel {
+    display: flex;
+    min-height: 340px;
+    padding: 24px 22px 48px;
+    background: transparent;
+  }
+
+  .welcome-panel .brand-large {
+    gap: 10px;
+    font-size: 1.08rem;
+  }
+
+  .welcome-panel .brand-large .brand-mark {
+    width: 46px;
+    height: 46px;
+    border-radius: 15px;
+  }
+
+  .welcome-copy {
+    margin: 55px 0 0;
+  }
+
+  .welcome-copy h1 {
+    max-width: 460px;
+    margin-bottom: 17px;
+    font-size: clamp(2.45rem, 11vw, 3.8rem);
+    line-height: 1.22;
+  }
+
+  .welcome-copy > p:last-child {
+    display: block;
+    max-width: 390px;
+    font-size: 0.84rem;
+  }
+
+  .mini-lake {
+    display: none;
+  }
+
+  .auth-panel {
+    min-height: calc(100dvh - 300px);
+    padding: 38px 22px max(42px, env(safe-area-inset-bottom));
+    background: rgba(242, 248, 246, 0.88);
+    border-top: 1px solid rgba(255, 255, 255, 0.76);
+    border-left: 0;
+    border-radius: 44px 44px 0 0;
+    box-shadow: 0 -18px 42px rgba(49, 83, 88, 0.08);
+    backdrop-filter: blur(18px);
+  }
+
+  .auth-card {
+    width: min(100%, 500px);
+  }
+
+  .auth-card h2 {
+    font-size: clamp(2.2rem, 10vw, 3rem);
+  }
+
+  .mobile-brand {
+    display: none;
+  }
+}
+
+@media (max-width: 430px) {
+  .welcome-panel {
+    min-height: 308px;
+  }
+
+  .welcome-copy {
+    margin-top: 40px;
+  }
+
+  .welcome-copy h1 {
+    font-size: clamp(2.25rem, 11vw, 3rem);
+  }
+
+  .welcome-copy > p:last-child {
+    font-size: 0.78rem;
+    letter-spacing: 0.04em;
+  }
+
+  .auth-panel {
+    padding: 32px 18px 38px;
+  }
+
+  .auth-input-wrap input {
+    min-height: 58px;
+  }
+}
+
 /* 2026-08 home-first experience and calmer aquarium motion */
 .desktop-nav {
   margin-top: 34px;

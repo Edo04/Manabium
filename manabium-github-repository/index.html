@@ -38,9 +38,7 @@
         <div class="welcome-copy">
           <p class="eyebrow">STEM GIRLS COMMUNITY</p>
           <h1 id="welcomeTitle">学びの時間を、<br />ひとりにしない。</h1>
-          <p>
-            同じ理工系の仲間の気配を感じながら勉強し、授業・研究・就活の体験を匿名で分かち合える、小さな湖です。
-          </p>
+          <p>同じ理工系の仲間がいる、小さな学びの水槽。</p>
         </div>
         <div class="mini-lake" aria-hidden="true">
           <img class="mini-fish fish-a" src="./assets/fish-watercolor.png" alt="" />
@@ -89,27 +87,42 @@
           <form id="loginForm" class="auth-form" novalidate>
             <label>
               <span>メールアドレス</span>
-              <input
-                id="loginEmail"
-                name="email"
-                type="email"
-                autocomplete="email"
-                inputmode="email"
-                placeholder="you@example.com"
-                required
-              />
+              <span class="auth-input-wrap">
+                <i class="ph ph-envelope-simple" aria-hidden="true"></i>
+                <input
+                  id="loginEmail"
+                  name="email"
+                  type="email"
+                  autocomplete="email"
+                  inputmode="email"
+                  placeholder="you@example.com"
+                  required
+                />
+              </span>
             </label>
             <label>
               <span>パスワード</span>
-              <input
-                id="loginPassword"
-                name="password"
-                type="password"
-                autocomplete="current-password"
-                minlength="8"
-                placeholder="8文字以上"
-                required
-              />
+              <span class="auth-input-wrap">
+                <i class="ph ph-lock-key" aria-hidden="true"></i>
+                <input
+                  id="loginPassword"
+                  name="password"
+                  type="password"
+                  autocomplete="current-password"
+                  minlength="8"
+                  placeholder="8文字以上"
+                  required
+                />
+                <button
+                  class="password-toggle"
+                  type="button"
+                  data-password-toggle="loginPassword"
+                  aria-label="パスワードを表示"
+                  aria-pressed="false"
+                >
+                  <i class="ph ph-eye" aria-hidden="true"></i>
+                </button>
+              </span>
             </label>
             <button class="button button-primary button-wide" type="submit">
               <span class="button-label">ログインする</span>
@@ -120,39 +133,66 @@
           <form id="signupForm" class="auth-form" hidden novalidate>
             <label>
               <span>メールアドレス</span>
-              <input
-                id="signupEmail"
-                name="email"
-                type="email"
-                autocomplete="email"
-                inputmode="email"
-                placeholder="you@example.com"
-                required
-              />
+              <span class="auth-input-wrap">
+                <i class="ph ph-envelope-simple" aria-hidden="true"></i>
+                <input
+                  id="signupEmail"
+                  name="email"
+                  type="email"
+                  autocomplete="email"
+                  inputmode="email"
+                  placeholder="you@example.com"
+                  required
+                />
+              </span>
             </label>
             <label>
               <span>パスワード</span>
-              <input
-                id="signupPassword"
-                name="password"
-                type="password"
-                autocomplete="new-password"
-                minlength="8"
-                placeholder="8文字以上"
-                required
-              />
+              <span class="auth-input-wrap">
+                <i class="ph ph-lock-key" aria-hidden="true"></i>
+                <input
+                  id="signupPassword"
+                  name="password"
+                  type="password"
+                  autocomplete="new-password"
+                  minlength="8"
+                  placeholder="8文字以上"
+                  required
+                />
+                <button
+                  class="password-toggle"
+                  type="button"
+                  data-password-toggle="signupPassword"
+                  aria-label="パスワードを表示"
+                  aria-pressed="false"
+                >
+                  <i class="ph ph-eye" aria-hidden="true"></i>
+                </button>
+              </span>
             </label>
             <label>
               <span>パスワード（確認）</span>
-              <input
-                id="signupPasswordConfirm"
-                name="passwordConfirm"
-                type="password"
-                autocomplete="new-password"
-                minlength="8"
-                placeholder="同じパスワードを入力"
-                required
-              />
+              <span class="auth-input-wrap">
+                <i class="ph ph-lock-key" aria-hidden="true"></i>
+                <input
+                  id="signupPasswordConfirm"
+                  name="passwordConfirm"
+                  type="password"
+                  autocomplete="new-password"
+                  minlength="8"
+                  placeholder="同じパスワードを入力"
+                  required
+                />
+                <button
+                  class="password-toggle"
+                  type="button"
+                  data-password-toggle="signupPasswordConfirm"
+                  aria-label="パスワードを表示"
+                  aria-pressed="false"
+                >
+                  <i class="ph ph-eye" aria-hidden="true"></i>
+                </button>
+              </span>
             </label>
             <label class="check-row">
               <input id="communityAgreement" type="checkbox" required />
