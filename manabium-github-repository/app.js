@@ -400,9 +400,6 @@ function bindStaticEvents() {
   $("#replyList").addEventListener("click", handleReplyListClick);
   $("#replyList").addEventListener("submit", saveEditedReply);
   $("#replyList").addEventListener("submit", submitNestedReply);
-  $("#analyzePostButton").addEventListener("click", () => runAiHelper("analyze"));
-  $("#rewritePostButton").addEventListener("click", () => runAiHelper("rewrite"));
-
   $("#editProfileButton").addEventListener("click", openProfileEditor);
   $("#logoutButton").addEventListener("click", logout);
 
@@ -1191,8 +1188,6 @@ async function handlePostListClick(event) {
 }
 
 function openComposer() {
-  $("#aiResult").hidden = true;
-  $("#aiResult").textContent = "";
   openDialog("composerDialog");
   window.setTimeout(() => $("#postTitle").focus(), 50);
 }
@@ -1791,68 +1786,6 @@ async function toggleLike(postId) {
     await loadPosts();
   } catch (error) {
     showToast(readableError(error), "error");
-  }
-}
-
-async function runAiHelper(mode) {
-  const title = $("#postTitle").value.trim();
-  const body = $("#postBody").value.trim();
-  if (!body) {
-    showToast("先に本文を入力してください。", "error");
-    $("#postBody").focus();
-    return;
-  }
-
-  const button = mode === "analyze" ? $("#analyzePostButton") : $("#rewritePostButton");
-  const originalText = button.textContent;
-  button.textContent = "確認中…";
-  button.disabled = true;
-  $("#aiResult").hidden = false;
-  $("#aiResult").textContent = "AIが文章を確認しています…";
-
-  try {
-    if (IS_PREVIEW_MODE) {
-      $("#aiResult").textContent = mode === "analyze"
-        ? "文章の雰囲気: やわらかく相談しやすい表現です。\n\nプレビューではAI APIを呼ばず、表示だけ確認できます。"
-        : "プレビューでは本文を変更せず、AIサポート結果の表示だけ確認できます。";
-      return;
-    }
-    const { data: sessionData } = await supabase.auth.getSession();
-    const accessToken = sessionData.session?.access_token;
-    if (!accessToken) throw new Error("ログインの有効期限が切れました。もう一度ログインしてください。");
-
-    const response = await fetch("/api/ai", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${accessToken}`,
-      },
-      body: JSON.stringify({
-        mode,
-        title,
-        body,
-        category: $("#postCategory").value,
-        postType: $("#postType").value,
-      }),
-    });
-    const result = await response.json().catch(() => ({}));
-    if (!response.ok) throw new Error(result.message || "AI機能を利用できませんでした。");
-
-    if (mode === "analyze") {
-      const sentiment = result.sentiment;
-      $("#aiResult").textContent = `文章の雰囲気: ${sentiment.labelJa}\n確信度: ${Math.round(sentiment.confidence * 100)}%\n\nこれは投稿の良し悪しを判定するものではありません。意図と違う印象なら、少し言葉を足してみましょう。`;
-    } else {
-      const suggestion = result.suggestion;
-      if (suggestion.title) $("#postTitle").value = suggestion.title.slice(0, 80);
-      if (suggestion.body) $("#postBody").value = suggestion.body.slice(0, 2000);
-      $("#postCharacterCount").textContent = String($("#postBody").value.length);
-      $("#aiResult").textContent = `${suggestion.summary || "読みやすい文章に整えました。"}\n内容を確認し、自分の意図と違う箇所は投稿前に直してください。`;
-    }
-  } catch (error) {
-    $("#aiResult").textContent = `AIサポートを使えませんでした。${readableError(error)}`;
-  } finally {
-    button.textContent = originalText;
-    button.disabled = false;
   }
 }
 
