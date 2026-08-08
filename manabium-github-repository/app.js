@@ -41,7 +41,7 @@ const AQUARIUM_STATUS = {
 
 const AQUARIUM_REACTIONS = {
   hello: "こんにちは",
-  starting: "水槽に来ました",
+  starting: "湖に来ました",
   good_work: "またね",
   taking_break: "少し離れます",
   together: "よろしくね",
@@ -412,7 +412,7 @@ function readableError(error) {
   if (lower.includes("target is observing only")) return "「見るだけ」の魚には個別リアクションを送れません。";
   if (lower.includes("target is not receiving reactions")) return "相手はリアクション受信をオフにしています。";
   if (lower.includes("reaction is muted")) return "ミュート設定により送信できません。";
-  if (lower.includes("target is not active") || lower.includes("not active in the aquarium")) return "相手が水槽を離れたため送信できませんでした。";
+  if (lower.includes("target is not active") || lower.includes("not active in the aquarium")) return "相手が湖を離れたため送信できませんでした。";
   if (lower.includes("duplicate key") || error?.code === "23505") return "同じ操作が重複しました。画面を更新してください。";
   if (lower.includes("failed to fetch") || lower.includes("network")) return "通信できませんでした。接続を確認して、もう一度お試しください。";
   if (error?.code === "42501") return "この操作を行う権限がありません。ログイン状態を確認してください。";
@@ -458,6 +458,7 @@ function showOnly(viewName) {
 function routeFromLocation() {
   const hash = decodeURIComponent(location.hash.slice(1));
   if (hash.startsWith("post=")) return { page: "board", postId: hash.slice(5) };
+  if (hash === "lake") return { page: "aquarium", postId: null };
   if (hash === "board" || hash === "mypage" || hash === "aquarium") return { page: hash, postId: null };
   return { page: "aquarium", postId: null };
 }
@@ -491,7 +492,7 @@ async function enterAquariumPage() {
     await ensureAquariumPresence();
   } catch (error) {
     console.error("Aquarium entry failed", error);
-    showToast(`水槽への接続を確認できませんでした: ${readableError(error)}`, "error");
+    showToast(`湖への接続を確認できませんでした: ${readableError(error)}`, "error");
   }
 }
 
@@ -520,7 +521,7 @@ function showPage(pageName, updateHash = true) {
   });
   if (updateHash) {
     const nextUrl = new URL(location.href);
-    nextUrl.hash = nextPage;
+    nextUrl.hash = nextPage === "aquarium" ? "lake" : nextPage;
     history.replaceState(null, "", nextUrl);
   }
   if (previousPage === "aquarium" && nextPage !== "aquarium") {
@@ -560,7 +561,7 @@ function bindStaticEvents() {
   $("#refreshLakeButton").addEventListener("click", async () => {
     if (!IS_PREVIEW_MODE) await loadAquariumData();
     else renderAquarium();
-    showToast("水槽を更新しました。", "success");
+    showToast("湖を更新しました。", "success");
   });
   $("#closeFishDrawer").addEventListener("click", () => {
     $("#fishDrawer").hidden = true;
@@ -1239,7 +1240,7 @@ async function handleReactionPreferenceToggle(event) {
 
 async function sendAquariumReaction(messageCode, targetUserId = null) {
   if (!AQUARIUM_REACTIONS[messageCode] || !state.aquariumPresenceJoined) {
-    showToast("水槽への接続が完了すると定型リアクションを送れます。", "info");
+    showToast("湖への接続が完了すると定型リアクションを送れます。", "info");
     return;
   }
   const target = targetUserId ? activeAquariumPresence().find((item) => item.user_id === targetUserId) : null;
@@ -1248,7 +1249,7 @@ async function sendAquariumReaction(messageCode, targetUserId = null) {
     return;
   }
   if (targetUserId && !target) {
-    showToast("相手は水槽を離れたようです。", "info");
+    showToast("相手は湖を離れたようです。", "info");
     return;
   }
   if (target?.status === "observe") {
@@ -1293,7 +1294,7 @@ async function sendAquariumReaction(messageCode, targetUserId = null) {
     if (targetUserId) state.lastAquariumReactionTargetAt.set(targetUserId, state.lastAquariumReactionAt);
     state.aquariumReactions = [reaction, ...state.aquariumReactions.filter((item) => item.id !== reaction.id)];
     renderAquarium();
-    showToast("水槽に合図を送りました。", "success");
+    showToast("湖に合図を送りました。", "success");
   } catch (error) {
     showToast(readableError(error), "error");
   }
@@ -1505,11 +1506,11 @@ function renderLake() {
   $("#lakeEmpty").hidden = visiblePresence.length > 0;
   const emptyCopy = $("#lakeEmpty p");
   if (emptyCopy) {
-    emptyCopy.innerHTML = "<strong>いまは静かな水槽です</strong><span>あなたの魚がここで仲間を待っています。</span>";
+    emptyCopy.innerHTML = "<strong>いまは静かな湖です</strong><span>あなたの魚がここで仲間を待っています。</span>";
   }
 
   visiblePresence.forEach((presenceItem, index) => {
-    const profile = presenceItem.profile ?? { nickname: "水槽の仲間", fish_type: "aqua", grade: "—", major: "—", interests: [] };
+    const profile = presenceItem.profile ?? { nickname: "湖の仲間", fish_type: "aqua", grade: "—", major: "—", interests: [] };
     const fish = FISH[profile.fish_type] ?? FISH.aqua;
     const seed = Math.abs(hashNumber(presenceItem.user_id));
     const phoneLayout = window.matchMedia("(max-width: 760px)").matches;
@@ -1576,8 +1577,8 @@ function renderAquariumControls() {
   const connection = $("#presenceConnectionStatus");
   if (!state.aquariumAvailable) connection.innerHTML = "<span></span>追加SQLの実行を待っています";
   else if (state.aquariumIdle) connection.innerHTML = "<span></span>離席中です。操作すると戻ります";
-  else if (state.aquariumPresenceJoined) connection.innerHTML = "<span></span>水槽につながっています";
-  else connection.innerHTML = "<span></span>水槽につないでいます…";
+  else if (state.aquariumPresenceJoined) connection.innerHTML = "<span></span>湖につながっています";
+  else connection.innerHTML = "<span></span>湖につないでいます…";
 }
 
 function renderAquariumBroadcasts() {
@@ -1596,7 +1597,7 @@ function renderAquariumBroadcasts() {
       const message = document.createElement("p");
       message.className = "aquarium-broadcast-bubble";
       message.style.setProperty("--bubble-index", String(index));
-      message.innerHTML = `<strong>${escapeHTML(reaction.profile?.nickname ?? "水槽の仲間")}</strong><span>${escapeHTML(AQUARIUM_REACTIONS[reaction.message_code] ?? "")}</span>`;
+      message.innerHTML = `<strong>${escapeHTML(reaction.profile?.nickname ?? "湖の仲間")}</strong><span>${escapeHTML(AQUARIUM_REACTIONS[reaction.message_code] ?? "")}</span>`;
       layer.append(message);
     });
 }
@@ -1712,7 +1713,7 @@ async function openReplyBottle(reply) {
 }
 
 function openFishDrawer(presence) {
-  const profile = presence.profile ?? { nickname: "水槽の仲間", grade: "—", major: "—", fish_type: "aqua", interests: [] };
+  const profile = presence.profile ?? { nickname: "湖の仲間", grade: "—", major: "—", fish_type: "aqua", interests: [] };
   const fish = FISH[profile.fish_type] ?? FISH.aqua;
   const isMe = presence.user_id === state.user?.id;
   const status = AQUARIUM_STATUS[presence.status] ?? AQUARIUM_STATUS.social;
@@ -1732,7 +1733,7 @@ function openFishDrawer(presence) {
   $("#drawerBio").hidden = !profile.bio;
   matchBadge.hidden = isMe || profileSimilarity(profile) < 22;
   $("#drawerStatus").innerHTML = `<span class="status-orb ${status.className}"></span>${status.label}`;
-  $("#drawerElapsed").textContent = `水槽に来て ${formatShortDuration(Date.now() - new Date(presence.joined_at).getTime())}`;
+  $("#drawerElapsed").textContent = `湖に来て ${formatShortDuration(Date.now() - new Date(presence.joined_at).getTime())}`;
 
   const reactionSection = $("#drawerReactionSection");
   const hint = $("#drawerReactionHint");
@@ -2140,7 +2141,7 @@ function renderReplies(postId) {
             <label for="nested-reply-${escapeHTML(reply.id)}">${escapeHTML(author)}さんに返信</label>
             <textarea id="nested-reply-${escapeHTML(reply.id)}" data-nested-reply-body="${escapeHTML(reply.id)}" rows="3" maxlength="1000" placeholder="返信内容を入力" required></textarea>
             <div class="nested-reply-actions">
-              <p><i class="ph ph-drop" aria-hidden="true"></i> 内容はここで全員が確認でき、返信ボトルは${escapeHTML(author)}さんの水槽だけに届きます。</p>
+              <p><i class="ph ph-drop" aria-hidden="true"></i> 内容はここで全員が確認でき、返信ボトルは${escapeHTML(author)}さんの湖だけに届きます。</p>
               <div>
                 <button type="button" class="reply-action-button cancel" data-reply-action="cancel-reply" data-reply-id="${escapeHTML(reply.id)}">キャンセル</button>
                 <button type="submit" class="reply-action-button save"><span class="button-label">返信を届ける</span><span class="spinner" aria-hidden="true"></span></button>
