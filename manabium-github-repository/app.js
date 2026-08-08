@@ -908,16 +908,18 @@ function renderLake() {
     button.classList.toggle("is-similar", !isMe && similarity >= 22);
     button.setAttribute("aria-label", `${profile.nickname}さんの学習情報を見る`);
     button.style.setProperty("--top", `${20 + (seed % 50)}%`);
-    button.style.setProperty("--static-left", `${phoneLayout ? 8 + ((seed + index * 21) % 50) : 12 + ((seed + index * 21) % 58)}%`);
-    button.style.setProperty("--route-x-one", `${phoneLayout ? 18 + (seed % 18) : 24 + (seed % 34)}px`);
-    button.style.setProperty("--route-y-one", `${-18 + (seed % 31)}px`);
-    button.style.setProperty("--route-x-two", `${phoneLayout ? 34 + (seed % 21) : 52 + (seed % 48)}px`);
-    button.style.setProperty("--route-y-two", `${-24 + ((seed * 3) % 49)}px`);
-    button.style.setProperty("--route-x-three", `${phoneLayout ? 52 + (seed % 24) : 78 + (seed % 62)}px`);
-    button.style.setProperty("--route-y-three", `${-18 + ((seed * 7) % 39)}px`);
+    button.style.setProperty("--static-left", `${phoneLayout ? 7 + ((seed + index * 21) % 43) : 9 + ((seed + index * 21) % 52)}%`);
+    button.style.setProperty("--route-x-one", `${phoneLayout ? 26 + (seed % 20) : 42 + (seed % 42)}px`);
+    button.style.setProperty("--route-y-one", `${-38 + (seed % 73)}px`);
+    button.style.setProperty("--route-x-two", `${phoneLayout ? 56 + (seed % 31) : 82 + (seed % 72)}px`);
+    button.style.setProperty("--route-y-two", `${-56 + ((seed * 3) % 109)}px`);
+    button.style.setProperty("--route-x-three", `${phoneLayout ? 82 + (seed % 35) : 124 + (seed % 94)}px`);
+    button.style.setProperty("--route-y-three", `${-42 + ((seed * 7) % 103)}px`);
+    button.style.setProperty("--return-y-one", `${-32 + ((seed * 5) % 65)}px`);
+    button.style.setProperty("--return-y-two", `${-48 + ((seed * 11) % 97)}px`);
     button.style.setProperty("--delay", `${-(seed % 13)}s`);
-    button.style.setProperty("--duration", `${20 + (seed % 13)}s`);
-    button.style.setProperty("--body-duration", `${3.2 + ((seed % 7) * 0.18)}s`);
+    button.style.setProperty("--duration", `${16 + (seed % 10)}s`);
+    button.style.setProperty("--body-duration", `${2.7 + ((seed % 7) * 0.16)}s`);
     button.style.setProperty("--fish-filter", fish.filter);
     button.innerHTML = `<span class="fish-motion"><img class="fish-asset" src="${FISH_ASSET_URL}" alt="" /></span><span class="fish-label">${escapeHTML(profile.nickname)}${isMe ? "（あなた）" : ""}</span>`;
     button.addEventListener("click", () => {
@@ -966,6 +968,7 @@ function renderHome() {
 function renderBottles() {
   const layer = $("#bottleLayer");
   layer.replaceChildren();
+  const phoneLayout = window.matchMedia("(max-width: 760px)").matches;
   rankedLakePosts().forEach((post, index) => {
     const seed = Math.abs(hashNumber(post.id));
     const button = document.createElement("button");
@@ -973,10 +976,18 @@ function renderBottles() {
     button.className = "floating-bottle";
     button.classList.toggle("is-similar", profileSimilarity(post.profile) >= 22 || postRelevance(post) >= 34);
     button.setAttribute("aria-label", `投稿「${post.title}」を読む`);
-    button.style.left = `${10 + ((seed + index * 19) % 78)}%`;
+    button.style.left = `${phoneLayout ? 8 + ((seed + index * 19) % 64) : 8 + ((seed + index * 19) % 76)}%`;
     button.style.top = `${17 + ((seed + index * 11) % 60)}%`;
     button.style.setProperty("--rotation", `${-14 + (seed % 29)}deg`);
-    button.style.setProperty("--delay", `${-(seed % 5)}s`);
+    button.style.setProperty("--delay", `${-(seed % 7)}s`);
+    button.style.setProperty("--bottle-duration", `${6.2 + ((seed % 8) * 0.48)}s`);
+    button.style.setProperty("--bottle-x-one", `${8 + (seed % 14)}px`);
+    button.style.setProperty("--bottle-x-two", `${-12 + ((seed * 3) % 18)}px`);
+    button.style.setProperty("--bottle-x-three", `${-7 - (seed % 12)}px`);
+    button.style.setProperty("--bottle-y-one", `${-10 - (seed % 10)}px`);
+    button.style.setProperty("--bottle-y-two", `${-20 - (seed % 14)}px`);
+    button.style.setProperty("--bottle-y-three", `${-8 - (seed % 13)}px`);
+    button.style.setProperty("--bottle-sway", `${6 + (seed % 7)}deg`);
     button.addEventListener("click", () => {
       createLakeRipple(button);
       openPost(post.id);
@@ -997,10 +1008,18 @@ function renderBottles() {
     button.type = "button";
     button.className = "floating-bottle reply-bottle";
     button.setAttribute("aria-label", `「${post?.title ?? "あなたの投稿"}」への返信を読む`);
-    button.style.left = `${18 + ((seed + index * 27) % 65)}%`;
+    button.style.left = `${phoneLayout ? 10 + ((seed + index * 27) % 60) : 14 + ((seed + index * 27) % 66)}%`;
     button.style.top = `${22 + ((seed + index * 13) % 52)}%`;
     button.style.setProperty("--rotation", `${-10 + (seed % 21)}deg`);
-    button.style.setProperty("--delay", `${-(seed % 5)}s`);
+    button.style.setProperty("--delay", `${-(seed % 7)}s`);
+    button.style.setProperty("--bottle-duration", `${6.6 + ((seed % 7) * 0.5)}s`);
+    button.style.setProperty("--bottle-x-one", `${9 + (seed % 13)}px`);
+    button.style.setProperty("--bottle-x-two", `${-10 + ((seed * 5) % 17)}px`);
+    button.style.setProperty("--bottle-x-three", `${-8 - (seed % 11)}px`);
+    button.style.setProperty("--bottle-y-one", `${-12 - (seed % 9)}px`);
+    button.style.setProperty("--bottle-y-two", `${-22 - (seed % 13)}px`);
+    button.style.setProperty("--bottle-y-three", `${-9 - (seed % 12)}px`);
+    button.style.setProperty("--bottle-sway", `${7 + (seed % 7)}deg`);
     button.addEventListener("click", () => {
       createLakeRipple(button);
       openReplyBottle(reply);

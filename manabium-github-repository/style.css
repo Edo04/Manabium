@@ -5378,9 +5378,25 @@ textarea {
 }
 
 .floating-bottle {
-  animation: bottle-drift 6.4s ease-in-out infinite;
+  animation: bottle-drift var(--bottle-duration, 7.6s) ease-in-out infinite;
   animation-delay: var(--delay);
   will-change: transform;
+}
+
+.floating-bottle::before {
+  position: absolute;
+  right: 9%;
+  bottom: 5%;
+  left: 9%;
+  height: 9px;
+  content: "";
+  border: 1px solid rgba(244, 255, 252, 0.66);
+  border-radius: 50%;
+  opacity: 0;
+  transform: scale(0.55);
+  animation: bottle-water-ring 3.2s ease-out infinite;
+  animation-delay: var(--delay);
+  pointer-events: none;
 }
 
 .lake-tap-ripple {
@@ -5441,11 +5457,11 @@ textarea {
 
 @keyframes fish-roam {
   0%, 5% { transform: translate3d(0, 0, 0); }
-  19% { transform: translate3d(var(--route-x-one), var(--route-y-one), 0); }
-  39% { transform: translate3d(var(--route-x-two), var(--route-y-two), 0); }
-  47%, 53% { transform: translate3d(var(--route-x-three), var(--route-y-three), 0); }
-  69% { transform: translate3d(var(--route-x-two), var(--route-y-two), 0); }
-  87% { transform: translate3d(var(--route-x-one), var(--route-y-one), 0); }
+  18% { transform: translate3d(var(--route-x-one), var(--route-y-one), 0) rotate(-2deg); }
+  37% { transform: translate3d(var(--route-x-two), var(--route-y-two), 0) rotate(2.4deg); }
+  47%, 53% { transform: translate3d(var(--route-x-three), var(--route-y-three), 0) rotate(-1.4deg); }
+  69% { transform: translate3d(var(--route-x-two), var(--return-y-two), 0) rotate(2deg); }
+  86% { transform: translate3d(var(--route-x-one), var(--return-y-one), 0) rotate(-2.2deg); }
   97%, 100% { transform: translate3d(0, 0, 0); }
 }
 
@@ -5458,14 +5474,22 @@ textarea {
 }
 
 @keyframes fish-body-float {
-  0% { transform: translate3d(0, -2px, 0) rotate(-1.2deg); }
-  100% { transform: translate3d(0, 4px, 0) rotate(1.4deg); }
+  0% { transform: translate3d(0, -4px, 0) rotate(-2deg); }
+  100% { transform: translate3d(0, 6px, 0) rotate(2.2deg); }
 }
 
 @keyframes bottle-drift {
-  0%, 100% { transform: translate3d(0, 1px, 0) rotate(var(--rotation)); }
-  32% { transform: translate3d(4px, -9px, 0) rotate(calc(var(--rotation) + 4deg)); }
-  66% { transform: translate3d(-3px, -5px, 0) rotate(calc(var(--rotation) - 3deg)); }
+  0%, 100% { transform: translate3d(0, 2px, 0) rotate(var(--rotation)); }
+  22% { transform: translate3d(var(--bottle-x-one), var(--bottle-y-one), 0) rotate(calc(var(--rotation) + var(--bottle-sway))); }
+  48% { transform: translate3d(var(--bottle-x-two), var(--bottle-y-two), 0) rotate(calc(var(--rotation) - var(--bottle-sway))); }
+  73% { transform: translate3d(var(--bottle-x-three), var(--bottle-y-three), 0) rotate(calc(var(--rotation) + 4deg)); }
+  88% { transform: translate3d(4px, -6px, 0) rotate(calc(var(--rotation) - 3deg)); }
+}
+
+@keyframes bottle-water-ring {
+  0%, 38% { opacity: 0; transform: scale(0.48); }
+  46% { opacity: 0.62; }
+  78%, 100% { opacity: 0; transform: scale(1.65); }
 }
 
 @keyframes lake-ripple {
