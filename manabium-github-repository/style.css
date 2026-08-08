@@ -16,9 +16,11 @@
   --radius-lg: 22px;
   --radius-md: 15px;
   --content: 1180px;
+  --font-display: "Kaisei Decol", "Hiragino Mincho ProN", "Yu Mincho", serif;
+  --font-body: "Zen Kaku Gothic New", "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo,
+    sans-serif;
   color-scheme: light;
-  font-family:
-    Inter, "Hiragino Sans", "Yu Gothic UI", "Yu Gothic", Meiryo, system-ui, sans-serif;
+  font-family: var(--font-body);
 }
 
 * {
@@ -142,7 +144,7 @@ h3 {
   background: linear-gradient(145deg, var(--lake), var(--lake-dark));
   border-radius: 13px 13px 17px 13px;
   box-shadow: 0 7px 15px rgba(40, 127, 130, 0.2);
-  font-family: Georgia, serif;
+  font-family: var(--font-display);
 }
 
 .brand-large {
@@ -194,7 +196,7 @@ h3 {
 
 .welcome-copy h1 {
   margin-bottom: 22px;
-  font-family: Georgia, "Yu Mincho", serif;
+  font-family: var(--font-display);
   font-size: clamp(3rem, 5.3vw, 6rem);
   font-weight: 500;
   line-height: 1.08;
@@ -511,7 +513,7 @@ textarea:focus {
 
 .onboarding-card h1 {
   margin: 12px 0 8px;
-  font-family: Georgia, "Yu Mincho", serif;
+  font-family: var(--font-display);
   font-size: clamp(2rem, 5vw, 3.2rem);
   font-weight: 500;
 }
@@ -670,7 +672,7 @@ textarea:focus {
 
 .page-intro h1 {
   margin-bottom: 8px;
-  font-family: Georgia, "Yu Mincho", serif;
+  font-family: var(--font-display);
   font-size: clamp(2.25rem, 5vw, 4.3rem);
   font-weight: 500;
 }
@@ -1624,19 +1626,19 @@ textarea:focus {
   --radius-lg: 20px;
   --radius-md: 14px;
   --content: 1180px;
-  font-family: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", "Yu Gothic", sans-serif;
+  font-family: var(--font-body);
 }
 
 body {
   color: var(--ink);
   background: #f5f3ee;
-  font-family: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", "Yu Gothic", sans-serif;
+  font-family: var(--font-body);
 }
 
 h1,
 h2,
 h3 {
-  font-family: "Shippori Mincho B1", "Hiragino Mincho ProN", "Yu Mincho", serif;
+  font-family: var(--font-display);
   font-weight: 600;
   letter-spacing: 0.015em;
 }
@@ -1654,7 +1656,7 @@ h3 {
 
 .brand {
   color: #33535b;
-  font-family: "Shippori Mincho B1", "Hiragino Mincho ProN", serif;
+  font-family: var(--font-display);
   font-weight: 600;
   letter-spacing: 0.08em;
 }
@@ -2685,7 +2687,7 @@ textarea:focus {
   }
 
   .controller-copy h2 {
-    font-family: "Zen Maru Gothic", sans-serif;
+    font-family: var(--font-body);
     font-size: 0.95rem;
   }
 
@@ -2807,7 +2809,7 @@ textarea:focus {
   max-width: 720px;
   margin-bottom: 28px;
   color: #2b5059;
-  font-family: "Shippori Mincho B1", "Hiragino Mincho ProN", "Yu Mincho", serif;
+  font-family: var(--font-display);
   font-size: clamp(3.35rem, 5.2vw, 5.25rem);
   font-weight: 500;
   line-height: 1.25;
@@ -3225,7 +3227,7 @@ textarea:focus {
 .home-welcome h1 {
   margin-bottom: 12px;
   color: #2d5059;
-  font-family: "Shippori Mincho B1", "Hiragino Mincho ProN", "Yu Mincho", serif;
+  font-family: var(--font-display);
   font-size: clamp(2.25rem, 4.1vw, 4.25rem);
   font-weight: 500;
   line-height: 1.2;
@@ -3323,7 +3325,7 @@ textarea:focus {
 .home-progress-card h2 {
   margin-bottom: 8px;
   color: #31545c;
-  font-family: "Shippori Mincho B1", "Hiragino Mincho ProN", "Yu Mincho", serif;
+  font-family: var(--font-display);
   font-weight: 600;
 }
 
@@ -3672,7 +3674,7 @@ button,
 input,
 select,
 textarea {
-  font-family: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", "Yu Gothic", sans-serif;
+  font-family: var(--font-body);
 }
 
 .fish-label {
@@ -3762,7 +3764,7 @@ textarea {
 .aquarium-study-copy strong {
   overflow: hidden;
   color: #355861;
-  font-family: "Shippori Mincho B1", "Hiragino Mincho ProN", serif;
+  font-family: var(--font-display);
   font-size: 1.05rem;
   font-weight: 600;
   text-overflow: ellipsis;
@@ -3806,7 +3808,7 @@ textarea {
 }
 
 .drawer-name {
-  font-family: "Shippori Mincho B1", "Hiragino Mincho ProN", serif;
+  font-family: var(--font-display);
   font-size: 1.35rem;
   font-weight: 600;
 }
@@ -4344,7 +4346,7 @@ textarea {
 
   .home-study-controller .controller-copy h2 {
     align-self: end;
-    font-family: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", sans-serif;
+    font-family: var(--font-body);
     font-size: 0.98rem;
   }
 
