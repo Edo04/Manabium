@@ -480,6 +480,7 @@ async function signup(event) {
 
 async function routeSession(session) {
   const routeVersion = ++state.routeVersion;
+  const enteringSignedInApp = Boolean(session) && !state.session;
   state.session = session;
   state.user = session?.user ?? null;
 
@@ -514,7 +515,7 @@ async function routeSession(session) {
 
     showOnly("app");
     renderProfileIdentity();
-    showPage(location.hash.slice(1) || "home", false);
+    showPage(enteringSignedInApp ? "home" : location.hash.slice(1) || "home", enteringSignedInApp);
     await loadAll();
     subscribeToRealtime();
   } catch (error) {
