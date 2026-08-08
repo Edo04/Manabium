@@ -5541,3 +5541,390 @@ textarea {
     font-size: 0.59rem;
   }
 }
+
+/* Bottle message usability improvements */
+.bottle-guide {
+  position: absolute;
+  z-index: 13;
+  bottom: 24px;
+  left: 26px;
+  display: grid;
+  width: min(360px, calc(100% - 52px));
+  min-height: 72px;
+  padding: 10px 12px;
+  align-items: center;
+  grid-template-columns: 42px minmax(0, 1fr) 28px;
+  gap: 10px;
+  cursor: pointer;
+  color: #355b63;
+  background: rgba(255, 253, 248, 0.86);
+  border: 1px solid rgba(255, 255, 255, 0.76);
+  border-radius: 19px;
+  box-shadow: 0 13px 32px rgba(35, 67, 73, 0.15);
+  text-align: left;
+  backdrop-filter: blur(16px);
+  transition: width 180ms ease, min-height 180ms ease, background 180ms ease;
+}
+
+.bottle-guide:hover {
+  background: rgba(255, 253, 248, 0.96);
+}
+
+.bottle-guide img {
+  width: 36px;
+  height: 50px;
+  object-fit: contain;
+}
+
+.bottle-guide span {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.bottle-guide strong {
+  font-size: 0.78rem;
+}
+
+.bottle-guide small {
+  color: #6a8186;
+  font-size: 0.66rem;
+  line-height: 1.55;
+}
+
+.bottle-guide-icon {
+  color: #74898d;
+  font-size: 1rem;
+}
+
+.bottle-guide.is-compact {
+  width: 236px;
+  min-height: 56px;
+  grid-template-columns: 32px minmax(0, 1fr) 24px;
+}
+
+.bottle-guide.is-compact img {
+  width: 27px;
+  height: 38px;
+}
+
+.bottle-guide.is-compact small {
+  display: none;
+}
+
+.board-tools {
+  display: flex;
+  margin-bottom: 13px;
+  align-items: center;
+  gap: 12px;
+}
+
+.post-search {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  flex: 1 1 440px;
+  align-items: center;
+}
+
+.post-search > i {
+  position: absolute;
+  z-index: 1;
+  left: 16px;
+  color: #668087;
+  font-size: 1.05rem;
+  pointer-events: none;
+}
+
+.post-search input {
+  width: 100%;
+  min-height: 50px;
+  padding: 12px 48px 12px 45px;
+  color: #345760;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(57, 91, 98, 0.13);
+  border-radius: 17px;
+  box-shadow: 0 8px 24px rgba(43, 71, 77, 0.05);
+}
+
+.post-search input:focus {
+  border-color: rgba(61, 108, 114, 0.45);
+  outline: 3px solid rgba(126, 177, 177, 0.15);
+}
+
+.post-search > button {
+  position: absolute;
+  z-index: 2;
+  right: 8px;
+  display: grid;
+  width: 35px;
+  height: 35px;
+  padding: 0;
+  cursor: pointer;
+  place-items: center;
+  color: #6b8287;
+  background: #edf3f1;
+  border: 0;
+  border-radius: 11px;
+}
+
+.post-ownership-filters {
+  display: flex;
+  padding: 4px;
+  flex: 0 0 auto;
+  gap: 3px;
+  background: #e9ece9;
+  border-radius: 15px;
+}
+
+.ownership-chip {
+  min-height: 42px;
+  padding: 8px 13px;
+  cursor: pointer;
+  color: #6b8186;
+  background: transparent;
+  border: 0;
+  border-radius: 12px;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.ownership-chip.active {
+  color: #355e66;
+  background: #fff;
+  box-shadow: 0 4px 13px rgba(43, 72, 78, 0.08);
+}
+
+.post-results-summary {
+  min-height: 20px;
+  margin: -12px 2px 13px;
+  color: #71868a;
+  font-size: 0.69rem;
+}
+
+.post-card.is-own-post {
+  border-color: rgba(190, 126, 127, 0.28);
+  box-shadow: 0 12px 34px rgba(143, 89, 91, 0.11);
+}
+
+.post-card.is-own-post::before {
+  background: linear-gradient(90deg, #d99a98, #efc7bc);
+}
+
+.post-badge.owner {
+  align-items: center;
+  gap: 4px;
+  color: #885e62;
+  background: #f8e8e4;
+}
+
+.post-open-button {
+  width: 100%;
+  min-width: 0;
+}
+
+.post-field-tag,
+.post-field-tags > .post-field-tag {
+  display: inline-flex;
+  min-height: 25px;
+  padding: 4px 9px;
+  align-items: center;
+  cursor: pointer;
+  color: #52747a;
+  background: #e7f0ee;
+  border: 1px solid rgba(72, 112, 119, 0.08);
+  border-radius: 999px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.post-field-tag:hover,
+.post-field-tag:focus-visible {
+  color: #315d65;
+  background: #dbeae7;
+  border-color: rgba(61, 103, 109, 0.25);
+}
+
+.detail-field-tags .post-field-tag::before {
+  content: "#";
+  margin-right: 2px;
+  opacity: 0.65;
+}
+
+.post-external-link {
+  display: inline;
+  color: #39747b;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+  text-decoration: underline;
+  text-decoration-color: rgba(57, 116, 123, 0.36);
+  text-underline-offset: 3px;
+}
+
+.post-external-link i {
+  margin-left: 3px;
+  font-size: 0.82em;
+}
+
+.field-help-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.field-help-row > span:first-child {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+@media (max-width: 760px) {
+  #boardPage {
+    max-width: 100%;
+    overflow-x: clip;
+  }
+
+  .board-intro,
+  .board-intro > div,
+  .board-tools,
+  .post-search,
+  .post-grid,
+  .post-card,
+  .post-open-button,
+  .post-footer {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .board-intro h1 {
+    max-width: 100%;
+    font-size: clamp(2rem, 10vw, 2.55rem);
+    overflow-wrap: anywhere;
+  }
+
+  .board-intro .button-primary {
+    max-width: 100%;
+    white-space: normal;
+  }
+
+  .board-tools {
+    display: grid;
+    margin-bottom: 11px;
+    grid-template-columns: 1fr;
+    gap: 9px;
+  }
+
+  .post-search {
+    display: flex;
+    flex-basis: auto;
+  }
+
+  .post-search input {
+    min-width: 0;
+    min-height: 48px;
+    border-radius: 15px;
+  }
+
+  .post-ownership-filters {
+    display: grid;
+    width: 100%;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .ownership-chip {
+    min-width: 0;
+    min-height: 40px;
+    padding-inline: 7px;
+    font-size: 0.68rem;
+  }
+
+  .category-filters {
+    width: 100%;
+    max-width: 100%;
+    padding: 3px 0 9px;
+    margin: 0 0 17px;
+  }
+
+  .post-results-summary {
+    margin: -9px 1px 11px;
+  }
+
+  .post-card {
+    padding: 0;
+  }
+
+  .post-card > .post-open-button {
+    padding: 18px 18px 8px;
+  }
+
+  .post-card > .post-field-tags {
+    padding: 0 18px;
+    margin: 0 0 12px;
+  }
+
+  .post-card h2,
+  .post-card p {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  .post-footer {
+    padding: 0 17px 16px;
+  }
+
+  .post-field-tag,
+  .post-field-tags > .post-field-tag {
+    min-height: 30px;
+    padding: 5px 9px;
+    font-size: 0.61rem;
+  }
+
+  .bottle-guide {
+    top: calc(var(--mobile-header-height) + 82px);
+    bottom: auto;
+    left: 12px;
+    width: calc(100% - 24px);
+    min-height: 68px;
+    padding: 8px 10px;
+    grid-template-columns: 38px minmax(0, 1fr) 28px;
+    border-radius: 17px;
+  }
+
+  .bottle-guide img {
+    width: 31px;
+    height: 44px;
+  }
+
+  .bottle-guide.is-compact {
+    width: 210px;
+    min-height: 48px;
+    grid-template-columns: 27px minmax(0, 1fr) 22px;
+  }
+
+  .bottle-guide.is-compact img {
+    width: 23px;
+    height: 32px;
+  }
+
+  .bottle-guide strong {
+    font-size: 0.7rem;
+  }
+
+  .bottle-guide small {
+    font-size: 0.59rem;
+  }
+
+  .detail-body {
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+
+  .field-help-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+}

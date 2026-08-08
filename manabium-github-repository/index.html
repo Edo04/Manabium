@@ -467,6 +467,14 @@
               </div>
               <div id="fishLayer" class="fish-layer"></div>
               <div id="bottleLayer" class="bottle-layer"></div>
+              <button id="bottleGuideToggle" class="bottle-guide" type="button" aria-expanded="true">
+                <img src="./assets/message-bottle.png" alt="" />
+                <span>
+                  <strong>瓶はボトルメッセージ</strong>
+                  <small>タップすると、みんなの相談や体験談を読めます。</small>
+                </span>
+                <i class="ph ph-x bottle-guide-icon" aria-hidden="true"></i>
+              </button>
               <div id="lakeEmpty" class="lake-empty">
                 <span aria-hidden="true">◌</span>
                 <p>いまは静かな湖です。最初の一匹になってみませんか？</p>
@@ -513,6 +521,22 @@
             </button>
           </div>
 
+          <section class="board-tools" aria-label="ボトルを検索・絞り込み">
+            <div class="post-search">
+              <i class="ph ph-magnifying-glass" aria-hidden="true"></i>
+              <label class="sr-only" for="postSearchInput">分野やキーワードで検索</label>
+              <input id="postSearchInput" type="search" maxlength="80" placeholder="分野やキーワードで検索" autocomplete="off" />
+              <button id="clearPostSearchButton" type="button" aria-label="検索をクリア" hidden>
+                <i class="ph ph-x" aria-hidden="true"></i>
+              </button>
+            </div>
+            <div id="postOwnershipFilters" class="post-ownership-filters" role="group" aria-label="投稿者で絞り込む">
+              <button class="ownership-chip active" type="button" data-ownership="all">すべて</button>
+              <button class="ownership-chip" type="button" data-ownership="others">みんな</button>
+              <button class="ownership-chip" type="button" data-ownership="mine">自分</button>
+            </div>
+          </section>
+
           <div id="categoryFilters" class="category-filters" role="group" aria-label="カテゴリーで絞り込む">
             <button class="category-chip active" type="button" data-category="all">すべて</button>
             <button class="category-chip" type="button" data-category="授業">授業</button>
@@ -521,11 +545,12 @@
             <button class="category-chip" type="button" data-category="イベント">イベント</button>
           </div>
 
+          <p id="postResultsSummary" class="post-results-summary" aria-live="polite"></p>
           <div id="postList" class="post-grid" aria-live="polite"></div>
           <div id="postEmpty" class="empty-card" hidden>
             <span aria-hidden="true">✉</span>
-            <h2>まだボトルがありません</h2>
-            <p>このカテゴリーの最初のメッセージを流してみましょう。</p>
+            <h2 id="postEmptyTitle">まだボトルがありません</h2>
+            <p id="postEmptyMessage">このカテゴリーの最初のメッセージを流してみましょう。</p>
           </div>
         </section>
 
@@ -645,7 +670,7 @@
             placeholder="経験したことや、聞いてみたいことを書いてください。"
             required
           ></textarea>
-          <small><span id="postCharacterCount">0</span> / 2000</small>
+          <small class="field-help-row"><span><i class="ph ph-link" aria-hidden="true"></i> 参考URLも貼れます</span><span><span id="postCharacterCount">0</span> / 2000</span></small>
         </label>
 
         <div class="modal-actions">
@@ -667,7 +692,7 @@
         <h2 id="detailTitle"></h2>
         <p id="detailMeta" class="post-meta"></p>
         <div id="detailFieldTags" class="post-field-tags detail-field-tags" hidden></div>
-        <p id="detailBody" class="detail-body"></p>
+        <div id="detailBody" class="detail-body"></div>
         <div class="detail-footer">
           <button id="detailLikeButton" class="like-button" type="button"></button>
           <div id="postOwnerActions" class="post-owner-actions" hidden>
@@ -743,7 +768,7 @@
         <label>
           <span>本文</span>
           <textarea id="editPostBody" rows="7" maxlength="2000" required></textarea>
-          <small><span id="editPostCharacterCount">0</span> / 2000</small>
+          <small class="field-help-row"><span><i class="ph ph-link" aria-hidden="true"></i> 参考URLも貼れます</span><span><span id="editPostCharacterCount">0</span> / 2000</span></small>
         </label>
         <div class="modal-actions">
           <button class="button button-ghost" type="button" data-close-dialog="editPostDialog">キャンセル</button>

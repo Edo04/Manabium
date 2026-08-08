@@ -64,6 +64,8 @@ const state = {
   myPosts: [],
   likedPostIds: new Set(),
   selectedCategory: "all",
+  postSearchQuery: "",
+  postOwnership: "all",
   currentStudy: null,
   selectedPostId: null,
   editingReplyId: null,
@@ -101,6 +103,97 @@ function parseInterests(value) {
 function parseFieldTags(value) {
   const source = Array.isArray(value) ? value : String(value ?? "").split(/[、,，]/);
   return [...new Set(source.map((item) => String(item).trim()).filter(Boolean))].slice(0, 5);
+}
+
+function normalizeSearchText(value) {
+  return String(value ?? "").normalize("NFKC").toLowerCase().replace(/\s+/g, " ").trim();
+}
+
+function searchablePostText(post) {
+  return normalizeSearchText([
+    post.title,
+    post.body,
+    post.category,
+    post.post_type,
+    ...parseFieldTags(post.field_tags),
+    post.profile?.nickname,
+    post.profile?.major,
+    ...(post.profile?.interests ?? []),
+  ].filter(Boolean).join(" "));
+}
+
+function renderTextWithLinks(container, value) {
+  const text = String(value ?? "");
+  const urlPattern = /https?:\/\/[^\s<>"']+/gi;
+  let cursor = 0;
+  container.replaceChildren();
+
+  for (const match of text.matchAll(urlPattern)) {
+    const rawUrl = match[0];
+    const trailing = rawUrl.match(/[.,!?;:、。！？）)\]}]+$/)?.[0] ?? "";
+    const linkText = trailing ? rawUrl.slice(0, -trailing.length) : rawUrl;
+    if (match.index > cursor) container.append(document.createTextNode(text.slice(cursor, match.index)));
+
+    try {
+      const url = new URL(linkText);
+      if (!["http:", "https:"].includes(url.protocol)) throw new Error("unsupported protocol");
+      const link = document.createElement("a");
+      link.className = "post-external-link";
+      link.href = url.href;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.referrerPolicy = "no-referrer";
+      link.setAttribute("aria-label", `${url.hostname}を新しいタブで開く`);
+      const icon = document.createElement("i");
+      icon.className = "ph ph-arrow-square-out";
+      icon.setAttribute("aria-hidden", "true");
+      link.append(document.createTextNode(linkText), icon);
+      container.append(link);
+    } catch {
+      container.append(document.createTextNode(linkText));
+    }
+
+    if (trailing) container.append(document.createTextNode(trailing));
+    cursor = match.index + rawUrl.length;
+  }
+
+  if (cursor < text.length) container.append(document.createTextNode(text.slice(cursor)));
+}
+
+function setBottleGuideCompact(compact) {
+  const guide = $("#bottleGuideToggle");
+  if (!guide) return;
+  guide.classList.toggle("is-compact", compact);
+  guide.setAttribute("aria-expanded", String(!compact));
+  const icon = $(".bottle-guide-icon", guide);
+  icon?.classList.toggle("ph-x", !compact);
+  icon?.classList.toggle("ph-info", compact);
+}
+
+function initializeBottleGuide() {
+  let compact = false;
+  try {
+    compact = localStorage.getItem("manabium:bottle-guide-seen") === "1";
+  } catch {
+    compact = false;
+  }
+  setBottleGuideCompact(compact);
+}
+
+function applyPostSearch(value, resetCategory = false) {
+  state.postSearchQuery = String(value ?? "").trim();
+  const input = $("#postSearchInput");
+  const clearButton = $("#clearPostSearchButton");
+  input.value = state.postSearchQuery;
+  clearButton.hidden = !state.postSearchQuery;
+
+  if (resetCategory) {
+    state.selectedCategory = "all";
+    $$(".category-chip", $("#categoryFilters")).forEach((chip) => {
+      chip.classList.toggle("active", chip.dataset.category === "all");
+    });
+  }
+  renderPosts();
 }
 
 function normalizeProfile(profile) {
@@ -374,6 +467,19 @@ function bindStaticEvents() {
   $("#closeFishDrawer").addEventListener("click", () => {
     $("#fishDrawer").hidden = true;
   });
+  initializeBottleGuide();
+  $("#bottleGuideToggle").addEventListener("click", () => {
+    const guide = $("#bottleGuideToggle");
+    const compact = !guide.classList.contains("is-compact");
+    setBottleGuideCompact(compact);
+    if (compact) {
+      try {
+        localStorage.setItem("manabium:bottle-guide-seen", "1");
+      } catch {
+        // 保存できない環境でも、現在の画面では折りたたみます。
+      }
+    }
+  });
 
   $("#openComposerButton").addEventListener("click", openComposer);
   $("#postForm").addEventListener("submit", submitPost);
@@ -389,7 +495,31 @@ function bindStaticEvents() {
     });
     renderPosts();
   });
+  $("#postSearchInput").addEventListener("input", (event) => {
+    applyPostSearch(event.currentTarget.value);
+  });
+  $("#clearPostSearchButton").addEventListener("click", () => {
+    applyPostSearch("");
+    $("#postSearchInput").focus();
+  });
+  $("#postOwnershipFilters").addEventListener("click", (event) => {
+    const button = event.target.closest("[data-ownership]");
+    if (!button) return;
+    state.postOwnership = button.dataset.ownership;
+    $$(".ownership-chip", $("#postOwnershipFilters")).forEach((chip) => {
+      chip.classList.toggle("active", chip === button);
+    });
+    renderPosts();
+  });
   $("#postList").addEventListener("click", handlePostListClick);
+  $("#detailFieldTags").addEventListener("click", (event) => {
+    const button = event.target.closest("[data-search-tag]");
+    if (!button) return;
+    closeDialog("postDialog");
+    showPage("board");
+    applyPostSearch(button.dataset.searchTag, true);
+    window.setTimeout(() => $("#postSearchInput").focus(), 50);
+  });
   $("#myPostList").addEventListener("click", (event) => {
     const button = event.target.closest("[data-post-id]");
     if (button) openPost(button.dataset.postId);
@@ -533,12 +663,23 @@ function cleanupSignedInState() {
   state.myPosts = [];
   state.currentStudy = null;
   state.selectedPostId = null;
+  state.selectedCategory = "all";
+  state.postSearchQuery = "";
+  state.postOwnership = "all";
   state.editingReplyId = null;
   state.replyingToReplyId = null;
   state.likedPostIds.clear();
   state.onlineUserIds.clear();
   state.presenceReady = false;
   state.threadedRepliesAvailable = true;
+  $("#postSearchInput").value = "";
+  $("#clearPostSearchButton").hidden = true;
+  $$(".category-chip", $("#categoryFilters")).forEach((chip) => {
+    chip.classList.toggle("active", chip.dataset.category === "all");
+  });
+  $$(".ownership-chip", $("#postOwnershipFilters")).forEach((chip) => {
+    chip.classList.toggle("active", chip.dataset.ownership === "all");
+  });
   stopTimer();
   if (state.realtimeChannel) {
     supabase.removeChannel(state.realtimeChannel);
@@ -1141,35 +1282,53 @@ function openFishDrawer(session) {
 }
 
 function renderPosts() {
-  const visiblePosts = state.selectedCategory === "all"
-    ? state.posts
-    : state.posts.filter((post) => post.category === state.selectedCategory);
+  const searchTerms = normalizeSearchText(state.postSearchQuery).split(" ").filter(Boolean);
+  const visiblePosts = state.posts.filter((post) => {
+    if (state.selectedCategory !== "all" && post.category !== state.selectedCategory) return false;
+    const isOwn = post.user_id === state.user?.id;
+    if (state.postOwnership === "mine" && !isOwn) return false;
+    if (state.postOwnership === "others" && isOwn) return false;
+    if (searchTerms.length && !searchTerms.every((term) => searchablePostText(post).includes(term))) return false;
+    return true;
+  });
   const list = $("#postList");
+  const summary = $("#postResultsSummary");
+  const hasFilters = state.selectedCategory !== "all" || state.postOwnership !== "all" || searchTerms.length > 0;
   list.replaceChildren();
   $("#postEmpty").hidden = visiblePosts.length > 0;
+  summary.textContent = hasFilters
+    ? `${visiblePosts.length}件のボトルが見つかりました`
+    : `${visiblePosts.length}件のボトルが流れています`;
+  $("#postEmptyTitle").textContent = state.posts.length ? "条件に合うボトルがありません" : "まだボトルがありません";
+  $("#postEmptyMessage").textContent = state.posts.length
+    ? "検索する言葉や絞り込み条件を変えてみてください。"
+    : "最初のメッセージを湖へ流してみましょう。";
 
   visiblePosts.forEach((post) => {
     const card = document.createElement("article");
     card.className = "post-card";
     card.style.setProperty("--card-wash", CATEGORY_COLORS[post.category] ?? CATEGORY_COLORS.授業);
+    const isOwn = post.user_id === state.user?.id;
+    card.classList.toggle("is-own-post", isOwn);
     const liked = state.likedPostIds.has(post.id);
     const replyCount = state.replies.filter((reply) => reply.post_id === post.id).length;
-    const author = post.profile?.nickname ?? "湖の仲間";
+    const author = isOwn ? "あなた" : post.profile?.nickname ?? "湖の仲間";
     const excerpt = post.body.length > 130 ? `${post.body.slice(0, 130)}…` : post.body;
     const fieldTags = parseFieldTags(post.field_tags);
     const fieldTagsMarkup = fieldTags.length
-      ? `<span class="post-field-tags">${fieldTags.map((tag) => `<span>${escapeHTML(tag)}</span>`).join("")}</span>`
+      ? `<div class="post-field-tags" aria-label="関連分野">${fieldTags.map((tag) => `<button class="post-field-tag" type="button" data-search-tag="${escapeHTML(tag)}">${escapeHTML(tag)}</button>`).join("")}</div>`
       : "";
     card.innerHTML = `
       <button class="post-open-button" type="button" data-action="open" data-post-id="${post.id}">
         <span class="post-badges">
           <span class="post-badge">${escapeHTML(post.category)}</span>
           <span class="post-badge type">${escapeHTML(post.post_type)}</span>
+          ${isOwn ? '<span class="post-badge owner"><i class="ph ph-user" aria-hidden="true"></i> 自分のボトル</span>' : ""}
         </span>
-        ${fieldTagsMarkup}
         <h2>${escapeHTML(post.title)}</h2>
         <p class="post-excerpt">${escapeHTML(excerpt)}</p>
       </button>
+      ${fieldTagsMarkup}
       <div class="post-footer">
         <p class="post-meta">${escapeHTML(author)}・${formatRelativeDate(post.created_at)}</p>
         <div class="post-reactions">
@@ -1184,6 +1343,12 @@ function renderPosts() {
 }
 
 async function handlePostListClick(event) {
+  const tagButton = event.target.closest("[data-search-tag]");
+  if (tagButton) {
+    applyPostSearch(tagButton.dataset.searchTag, true);
+    $("#postSearchInput").focus();
+    return;
+  }
   const button = event.target.closest("[data-action][data-post-id]");
   if (!button) return;
   if (button.dataset.action === "open") openPost(button.dataset.postId);
@@ -1271,15 +1436,15 @@ function openPost(postId, show = true) {
     state.replyingToReplyId = null;
   }
   state.selectedPostId = post.id;
-  $("#detailBadges").innerHTML = `<span class="post-badge">${escapeHTML(post.category)}</span><span class="post-badge type">${escapeHTML(post.post_type)}</span>`;
-  $("#detailTitle").textContent = post.title;
-  $("#detailMeta").textContent = `${post.profile?.nickname ?? "湖の仲間"}・${post.profile?.grade ?? "学年未設定"}・${formatRelativeDate(post.created_at)}`;
-  const detailFieldTags = parseFieldTags(post.field_tags);
-  $("#detailFieldTags").innerHTML = detailFieldTags.map((tag) => `<span>${escapeHTML(tag)}</span>`).join("");
-  $("#detailFieldTags").hidden = detailFieldTags.length === 0;
-  $("#detailBody").textContent = post.body;
-  const liked = state.likedPostIds.has(post.id);
   const isOwner = post.user_id === state.user.id;
+  $("#detailBadges").innerHTML = `<span class="post-badge">${escapeHTML(post.category)}</span><span class="post-badge type">${escapeHTML(post.post_type)}</span>${isOwner ? '<span class="post-badge owner"><i class="ph ph-user" aria-hidden="true"></i> 自分のボトル</span>' : ""}`;
+  $("#detailTitle").textContent = post.title;
+  $("#detailMeta").textContent = `${isOwner ? "あなた" : post.profile?.nickname ?? "湖の仲間"}・${post.profile?.grade ?? "学年未設定"}・${formatRelativeDate(post.created_at)}`;
+  const detailFieldTags = parseFieldTags(post.field_tags);
+  $("#detailFieldTags").innerHTML = detailFieldTags.map((tag) => `<button class="post-field-tag" type="button" data-search-tag="${escapeHTML(tag)}">${escapeHTML(tag)}</button>`).join("");
+  $("#detailFieldTags").hidden = detailFieldTags.length === 0;
+  renderTextWithLinks($("#detailBody"), post.body);
+  const liked = state.likedPostIds.has(post.id);
   const likeButton = $("#detailLikeButton");
   likeButton.classList.toggle("liked", liked);
   likeButton.innerHTML = `<span aria-hidden="true">♡</span> ${Number(post.like_count) || 0} いいね`;
