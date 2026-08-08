@@ -22,6 +22,8 @@ const PROFILE_FIELDS = "user_id,nickname,grade,major,interests,fish_type,created
 const PROFILE_PUBLIC_FIELDS = "user_id,nickname,grade,major,interests,fish_type";
 const PROFILE_FIELDS_WITHOUT_INTERESTS = "user_id,nickname,grade,major,fish_type,created_at,updated_at";
 const PROFILE_PUBLIC_FIELDS_WITHOUT_INTERESTS = "user_id,nickname,grade,major,fish_type";
+const POST_FIELDS = "id,user_id,title,body,category,post_type,field_tags,like_count,created_at,updated_at";
+const POST_FIELDS_WITHOUT_TAGS = "id,user_id,title,body,category,post_type,like_count,created_at,updated_at";
 const MAX_LAKE_FISH = 12;
 const MAX_LAKE_POSTS = 5;
 const ACTIVE_SESSION_MAX_AGE_HOURS = 12;
@@ -72,6 +74,7 @@ const state = {
   onlineUserIds: new Set(),
   presenceReady: false,
   interestsColumnAvailable: true,
+  postFieldTagsColumnAvailable: true,
   threadedRepliesAvailable: true,
   routeVersion: 0,
   realtimeReloadTimer: null,
@@ -95,13 +98,59 @@ function parseInterests(value) {
   return [...new Set(source.map((item) => String(item).trim()).filter(Boolean))].slice(0, 8);
 }
 
+function parseFieldTags(value) {
+  const source = Array.isArray(value) ? value : String(value ?? "").split(/[、,，]/);
+  return [...new Set(source.map((item) => String(item).trim()).filter(Boolean))].slice(0, 5);
+}
+
 function normalizeProfile(profile) {
   return profile ? { ...profile, interests: parseInterests(profile.interests) } : profile;
+}
+
+function normalizePost(post) {
+  return post ? { ...post, field_tags: parseFieldTags(post.field_tags) } : post;
 }
 
 function isMissingInterestsColumn(error) {
   const message = String(error?.message ?? "").toLowerCase();
   return message.includes("interests") && (message.includes("schema cache") || message.includes("column"));
+}
+
+function isMissingPostFieldTagsColumn(error) {
+  const message = String(error?.message ?? "").toLowerCase();
+  return message.includes("field_tags") && (message.includes("schema cache") || message.includes("column"));
+}
+
+function isSchoolGrade(grade) {
+  return /^(中学|高校)/.test(String(grade ?? ""));
+}
+
+function isUniversityGrade(grade) {
+  return /^(大学|大学院)/.test(String(grade ?? ""));
+}
+
+function syncEducationFields(mode) {
+  const isEdit = mode === "edit";
+  const grade = $(`#${isEdit ? "editGrade" : "profileGrade"}`).value;
+  const majorField = $(`#${isEdit ? "editMajorField" : "profileMajorField"}`);
+  const majorLabel = $(`#${isEdit ? "editMajorLabel" : "profileMajorLabel"}`);
+  const majorInput = $(`#${isEdit ? "editMajor" : "profileMajor"}`);
+  const interestsLabel = $(`#${isEdit ? "editInterestsLabel" : "profileInterestsLabel"}`);
+  const interestsHint = $(`#${isEdit ? "editInterestsHint" : "profileInterestsHint"}`);
+  const interestsInput = $(`#${isEdit ? "editInterests" : "profileInterests"}`);
+  const schoolGrade = isSchoolGrade(grade);
+  const universityGrade = isUniversityGrade(grade);
+
+  majorField.hidden = schoolGrade;
+  majorField.parentElement.classList.toggle("single-column", schoolGrade);
+  majorInput.required = universityGrade;
+  majorLabel.textContent = universityGrade ? "専攻分野" : "専攻・学びたい分野";
+  majorInput.placeholder = universityGrade ? "例：情報工学" : "例：情報・建築・生命科学";
+  interestsInput.required = schoolGrade;
+  interestsLabel.textContent = schoolGrade ? "興味のある分野" : "興味分野";
+  interestsHint.textContent = schoolGrade
+    ? "（1つ以上・カンマ区切り・最大8個）"
+    : "（カンマ区切り・最大8個）";
 }
 
 function isMissingParentReplyColumn(error) {
@@ -163,10 +212,15 @@ function rankedActiveSessions() {
 function postRelevance(post) {
   const ageHours = Math.max(0, (Date.now() - new Date(post.created_at).getTime()) / 3600000);
   const recency = Math.max(0, 30 - ageHours / 12);
-  const text = `${post.title} ${post.body}`.normalize("NFKC").toLowerCase();
+  const fieldTags = parseFieldTags(post.field_tags);
+  const normalizedTags = fieldTags.map((tag) => tag.normalize("NFKC").toLowerCase());
+  const profileTerms = [state.profile?.major, ...(state.profile?.interests ?? [])]
+    .filter(Boolean)
+    .map((term) => String(term).normalize("NFKC").toLowerCase());
+  const text = `${fieldTags.join(" ")} ${post.title} ${post.body}`.normalize("NFKC").toLowerCase();
   let topicScore = 0;
-  [state.profile?.major, ...(state.profile?.interests ?? [])].filter(Boolean).forEach((term) => {
-    const normalized = String(term).normalize("NFKC").toLowerCase();
+  profileTerms.forEach((normalized) => {
+    if (normalizedTags.some((tag) => tag === normalized || tag.includes(normalized) || normalized.includes(tag))) topicScore += 34;
     if (normalized && text.includes(normalized)) topicScore += 18;
   });
   profileFieldGroups(state.profile).forEach((group) => {
@@ -286,6 +340,10 @@ function bindStaticEvents() {
   $("#signupForm").addEventListener("submit", signup);
   $("#profileForm").addEventListener("submit", saveInitialProfile);
   $("#editProfileForm").addEventListener("submit", saveEditedProfile);
+  $("#profileGrade").addEventListener("change", () => syncEducationFields("profile"));
+  $("#editGrade").addEventListener("change", () => syncEducationFields("edit"));
+  syncEducationFields("profile");
+  syncEducationFields("edit");
 
   $$('[data-view]').forEach((button) => {
     button.addEventListener("click", () => showPage(button.dataset.view));
@@ -495,10 +553,11 @@ async function saveInitialProfile(event) {
   setButtonLoading(button, true);
 
   try {
+    const grade = $("#profileGrade").value;
     const profileFields = {
       nickname: $("#profileNickname").value.trim(),
-      grade: $("#profileGrade").value,
-      major: $("#profileMajor").value.trim(),
+      grade,
+      major: isSchoolGrade(grade) ? null : $("#profileMajor").value.trim() || null,
       interests: parseInterests($("#profileInterests").value),
       fish_type: $("input[name='fishType']:checked").value,
     };
@@ -613,11 +672,19 @@ async function loadActiveSessions() {
 }
 
 async function loadPosts() {
-  const { data: posts, error: postsError } = await supabase
+  let { data: posts, error: postsError } = await supabase
     .from("posts")
-    .select("id,user_id,title,body,category,post_type,like_count,created_at,updated_at")
+    .select(POST_FIELDS)
     .order("created_at", { ascending: false })
     .limit(60);
+  if (postsError && isMissingPostFieldTagsColumn(postsError)) {
+    state.postFieldTagsColumnAvailable = false;
+    ({ data: posts, error: postsError } = await supabase
+      .from("posts")
+      .select(POST_FIELDS_WITHOUT_TAGS)
+      .order("created_at", { ascending: false })
+      .limit(60));
+  }
   if (postsError) throw postsError;
 
   const profiles = await fetchProfiles((posts ?? []).map((post) => post.user_id));
@@ -629,7 +696,7 @@ async function loadPosts() {
 
   state.likedPostIds = new Set((myLikes ?? []).map((like) => like.post_id));
   state.posts = (posts ?? []).map((post) => ({
-    ...post,
+    ...normalizePost(post),
     profile: profiles.get(post.user_id) ?? null,
   }));
   renderPosts();
@@ -1059,7 +1126,7 @@ function openFishDrawer(session) {
   $("#drawerFish").src = FISH_ASSET_URL;
   $("#drawerFish").style.filter = fish.filter;
   $("#drawerName").textContent = `${profile.nickname}${isMe ? "（あなた）" : ""}`;
-  $("#drawerMeta").textContent = `${profile.grade || "学年未設定"}・${profile.major || "専攻未設定"}`;
+  $("#drawerMeta").textContent = [profile.grade || "学年未設定", profile.major].filter(Boolean).join("・");
   const interests = parseInterests(profile.interests);
   $("#drawerInterests").innerHTML = interests.map((interest) => `<span>${escapeHTML(interest)}</span>`).join("");
   $("#drawerInterests").hidden = interests.length === 0;
@@ -1085,12 +1152,17 @@ function renderPosts() {
     const replyCount = state.replies.filter((reply) => reply.post_id === post.id).length;
     const author = post.profile?.nickname ?? "湖の仲間";
     const excerpt = post.body.length > 130 ? `${post.body.slice(0, 130)}…` : post.body;
+    const fieldTags = parseFieldTags(post.field_tags);
+    const fieldTagsMarkup = fieldTags.length
+      ? `<span class="post-field-tags">${fieldTags.map((tag) => `<span>${escapeHTML(tag)}</span>`).join("")}</span>`
+      : "";
     card.innerHTML = `
       <button class="post-open-button" type="button" data-action="open" data-post-id="${post.id}">
         <span class="post-badges">
           <span class="post-badge">${escapeHTML(post.category)}</span>
           <span class="post-badge type">${escapeHTML(post.post_type)}</span>
         </span>
+        ${fieldTagsMarkup}
         <h2>${escapeHTML(post.title)}</h2>
         <p class="post-excerpt">${escapeHTML(excerpt)}</p>
       </button>
@@ -1140,6 +1212,7 @@ async function submitPost(event) {
         body: $("#postBody").value.trim(),
         category: $("#postCategory").value,
         post_type: $("#postType").value,
+        field_tags: parseFieldTags($("#postFields").value),
         like_count: 0,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -1156,19 +1229,31 @@ async function submitPost(event) {
       showToast("ボトルを湖へ流しました。", "success");
       return;
     }
-    const { error } = await supabase.from("posts").insert({
+    const payload = {
       user_id: state.user.id,
       title: $("#postTitle").value.trim(),
       body: $("#postBody").value.trim(),
       category: $("#postCategory").value,
       post_type: $("#postType").value,
-    });
+    };
+    if (state.postFieldTagsColumnAvailable) payload.field_tags = parseFieldTags($("#postFields").value);
+    let { error } = await supabase.from("posts").insert(payload);
+    if (error && isMissingPostFieldTagsColumn(error)) {
+      state.postFieldTagsColumnAvailable = false;
+      delete payload.field_tags;
+      ({ error } = await supabase.from("posts").insert(payload));
+    }
     if (error) throw error;
     form.reset();
     $("#postCharacterCount").textContent = "0";
     closeDialog("composerDialog");
     await Promise.all([loadPosts(), loadMyData()]);
-    showToast("ボトルを湖へ流しました。", "success");
+    showToast(
+      state.postFieldTagsColumnAvailable
+        ? "ボトルを湖へ流しました。"
+        : "ボトルを流しました。関連分野の保存にはSupabaseの追加SQLが必要です。",
+      state.postFieldTagsColumnAvailable ? "success" : "info",
+    );
   } catch (error) {
     showToast(readableError(error), "error");
   } finally {
@@ -1187,6 +1272,9 @@ function openPost(postId, show = true) {
   $("#detailBadges").innerHTML = `<span class="post-badge">${escapeHTML(post.category)}</span><span class="post-badge type">${escapeHTML(post.post_type)}</span>`;
   $("#detailTitle").textContent = post.title;
   $("#detailMeta").textContent = `${post.profile?.nickname ?? "湖の仲間"}・${post.profile?.grade ?? "学年未設定"}・${formatRelativeDate(post.created_at)}`;
+  const detailFieldTags = parseFieldTags(post.field_tags);
+  $("#detailFieldTags").innerHTML = detailFieldTags.map((tag) => `<span>${escapeHTML(tag)}</span>`).join("");
+  $("#detailFieldTags").hidden = detailFieldTags.length === 0;
   $("#detailBody").textContent = post.body;
   const liked = state.likedPostIds.has(post.id);
   const isOwner = post.user_id === state.user.id;
@@ -1212,6 +1300,7 @@ function openPostEditor() {
   }
   $("#editPostCategory").value = post.category;
   $("#editPostType").value = post.post_type;
+  $("#editPostFields").value = parseFieldTags(post.field_tags).join("、");
   $("#editPostTitle").value = post.title;
   $("#editPostBody").value = post.body;
   $("#editPostCharacterCount").textContent = String(post.body.length);
@@ -1233,6 +1322,7 @@ async function saveEditedPost(event) {
   const updates = {
     category: $("#editPostCategory").value,
     post_type: $("#editPostType").value,
+    field_tags: parseFieldTags($("#editPostFields").value),
     title: $("#editPostTitle").value.trim(),
     body: $("#editPostBody").value.trim(),
     updated_at: new Date().toISOString(),
@@ -1254,21 +1344,37 @@ async function saveEditedPost(event) {
       return;
     }
 
-    const { error } = await supabase
+    const payload = {
+      category: updates.category,
+      post_type: updates.post_type,
+      title: updates.title,
+      body: updates.body,
+    };
+    if (state.postFieldTagsColumnAvailable) payload.field_tags = updates.field_tags;
+    let { error } = await supabase
       .from("posts")
-      .update({
-        category: updates.category,
-        post_type: updates.post_type,
-        title: updates.title,
-        body: updates.body,
-      })
+      .update(payload)
       .eq("id", post.id)
       .eq("user_id", state.user.id);
+    if (error && isMissingPostFieldTagsColumn(error)) {
+      state.postFieldTagsColumnAvailable = false;
+      delete payload.field_tags;
+      ({ error } = await supabase
+        .from("posts")
+        .update(payload)
+        .eq("id", post.id)
+        .eq("user_id", state.user.id));
+    }
     if (error) throw error;
     closeDialog("editPostDialog");
     await Promise.all([loadPosts(), loadMyData()]);
     openPost(post.id);
-    showToast("ボトルの内容を更新しました。", "success");
+    showToast(
+      state.postFieldTagsColumnAvailable
+        ? "ボトルの内容を更新しました。"
+        : "内容を更新しました。関連分野の保存にはSupabaseの追加SQLが必要です。",
+      state.postFieldTagsColumnAvailable ? "success" : "info",
+    );
   } catch (error) {
     showToast(readableError(error), "error");
   } finally {
@@ -1759,7 +1865,7 @@ function renderProfileIdentity() {
   $("#myFish").src = FISH_ASSET_URL;
   $("#myFish").style.filter = fish.filter;
   $("#myNickname").textContent = state.profile.nickname;
-  $("#myMeta").textContent = `${state.profile.grade}・${state.profile.major}`;
+  $("#myMeta").textContent = [state.profile.grade, state.profile.major].filter(Boolean).join("・");
   const interests = parseInterests(state.profile.interests);
   $("#myInterests").innerHTML = interests.map((interest) => `<span>${escapeHTML(interest)}</span>`).join("");
   $("#myInterests").hidden = interests.length === 0;
@@ -1846,8 +1952,9 @@ function renderMyPosts() {
 function openProfileEditor() {
   $("#editNickname").value = state.profile.nickname;
   $("#editGrade").value = state.profile.grade;
-  $("#editMajor").value = state.profile.major;
+  $("#editMajor").value = state.profile.major ?? "";
   $("#editInterests").value = parseInterests(state.profile.interests).join("、");
+  syncEducationFields("edit");
   const radio = $(`input[name='editFishType'][value='${state.profile.fish_type}']`);
   if (radio) radio.checked = true;
   openDialog("editProfileDialog");
@@ -1859,10 +1966,11 @@ async function saveEditedProfile(event) {
   const button = $("button[type='submit']", event.currentTarget);
   setButtonLoading(button, true);
   try {
+    const grade = $("#editGrade").value;
     const updates = {
       nickname: $("#editNickname").value.trim(),
-      grade: $("#editGrade").value,
-      major: $("#editMajor").value.trim(),
+      grade,
+      major: isSchoolGrade(grade) ? null : $("#editMajor").value.trim() || null,
       interests: parseInterests($("#editInterests").value),
       fish_type: $("input[name='editFishType']:checked").value,
     };
@@ -1953,7 +2061,7 @@ function bootstrapPreviewMode() {
     fish_type: "coral",
   };
   const members = [
-    { user_id: "preview-a", nickname: "あおい", grade: "高校3年", major: "建築", interests: ["都市計画", "環境デザイン"], fish_type: "aqua" },
+    { user_id: "preview-a", nickname: "あおい", grade: "高校3年", major: null, interests: ["建築", "都市計画", "環境デザイン"], fish_type: "aqua" },
     { user_id: "preview-b", nickname: "りこ", grade: "大学1年", major: "生命科学", interests: ["細胞", "医療"], fish_type: "mint" },
     { user_id: "preview-c", nickname: "すず", grade: "大学3年", major: "応用化学", interests: ["材料", "有機化学"], fish_type: "lemon" },
     { user_id: "preview-d", nickname: "しおり", grade: "大学院", major: "機械工学", interests: ["ロボット", "制御工学"], fish_type: "lilac" },
@@ -1979,6 +2087,7 @@ function bootstrapPreviewMode() {
       body: "研究テーマだけでなく、普段のゼミの雰囲気や先輩の過ごし方も知ってから決めたいです。見学で聞いてよかった質問があれば教えてください。",
       category: "研究",
       post_type: "相談",
+      field_tags: ["研究室選び", "情報工学", "AI"],
       like_count: 12,
       created_at: new Date(now - 48 * 60000).toISOString(),
       updated_at: new Date(now - 48 * 60000).toISOString(),
@@ -1991,6 +2100,7 @@ function bootstrapPreviewMode() {
       body: "理工系の学生と直接話せる相談コーナーがありました。研究室の雰囲気も聞けて、進路を考える参考になりました。",
       category: "イベント",
       post_type: "情報共有",
+      field_tags: ["進路選び", "建築", "オープンキャンパス"],
       like_count: 8,
       created_at: new Date(now - 3 * 3600000).toISOString(),
       updated_at: new Date(now - 3 * 3600000).toISOString(),
@@ -2003,6 +2113,7 @@ function bootstrapPreviewMode() {
       body: "結果の説明だけになってしまいます。考察を書くときに、どんな順番で考えると整理しやすいですか？",
       category: "授業",
       post_type: "相談",
+      field_tags: ["物理", "レポート"],
       like_count: 5,
       created_at: new Date(now - 7 * 3600000).toISOString(),
       updated_at: new Date(now - 7 * 3600000).toISOString(),
@@ -2015,6 +2126,7 @@ function bootstrapPreviewMode() {
       body: "専門を選んだ理由と、授業以外で続けたことを聞かれました。難しい言葉より、自分の言葉で話すほうが伝わりやすかったです。",
       category: "就活",
       post_type: "情報共有",
+      field_tags: ["インターン", "面接", "応用化学"],
       like_count: 16,
       created_at: new Date(now - 22 * 3600000).toISOString(),
       updated_at: new Date(now - 22 * 3600000).toISOString(),

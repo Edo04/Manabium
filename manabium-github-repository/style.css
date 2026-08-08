@@ -5545,3 +5545,57 @@ textarea {
     transform: scale(1.035);
   }
 }
+
+/* Education-aware profiles and bottle field matching */
+.post-field-tags {
+  display: flex;
+  margin: 9px 0 10px;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.post-field-tags > span {
+  display: inline-flex;
+  min-height: 25px;
+  padding: 4px 9px;
+  align-items: center;
+  color: #52747a;
+  background: #e7f0ee;
+  border: 1px solid rgba(72, 112, 119, 0.08);
+  border-radius: 999px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.detail-field-tags {
+  margin: 12px 0 0;
+}
+
+.profile-form label[hidden],
+.profile-modal label[hidden] {
+  display: none !important;
+}
+
+.two-column.single-column {
+  grid-template-columns: 1fr;
+}
+
+.profile-form label,
+.profile-modal label,
+.composer-modal label {
+  transition: opacity 160ms ease;
+}
+
+@media (max-width: 760px) {
+  .post-field-tags {
+    margin: 8px 0;
+    gap: 4px;
+  }
+
+  .post-field-tags > span {
+    min-height: 24px;
+    padding: 4px 8px;
+    font-size: 0.59rem;
+  }
+}

@@ -66,14 +66,32 @@ create table if not exists public.posts (
   body text not null check (char_length(body) between 1 and 2000),
   category text not null check (category in ('授業', '研究', '就活', 'イベント')),
   post_type text not null check (post_type in ('相談', '情報共有')),
+  field_tags text[] not null default '{}'::text[],
   like_count integer not null default 0 check (like_count >= 0),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
 
+-- 投稿内容を興味・専攻の近い利用者へ優先表示するための関連分野タグです。
+alter table public.posts
+  add column if not exists field_tags text[] not null default '{}'::text[];
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'posts_field_tags_limit'
+      and conrelid = 'public.posts'::regclass
+  ) then
+    alter table public.posts
+      add constraint posts_field_tags_limit check (cardinality(field_tags) <= 5);
+  end if;
+end $$;
+
 create index if not exists posts_created_idx on public.posts (created_at desc);
 create index if not exists posts_category_created_idx on public.posts (category, created_at desc);
 create index if not exists posts_user_created_idx on public.posts (user_id, created_at desc);
+create index if not exists posts_field_tags_idx on public.posts using gin (field_tags);
 
 -- 同じ人が同じ投稿に複数回いいねできないよう、複合主キーにします。
 create table if not exists public.post_likes (
@@ -452,7 +470,7 @@ grant select, insert, delete on table public.study_sessions to authenticated;
 grant update (study_topic, ended_at, status) on table public.study_sessions to authenticated;
 
 grant select, insert, delete on table public.posts to authenticated;
-grant update (title, body, category, post_type) on table public.posts to authenticated;
+grant update (title, body, category, post_type, field_tags) on table public.posts to authenticated;
 
 grant select, insert, delete on table public.post_likes to authenticated;
 grant select, delete on table public.post_replies to authenticated;

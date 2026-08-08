@@ -235,6 +235,10 @@
               <span>学年</span>
               <select id="profileGrade" name="grade" required>
                 <option value="">選択してください</option>
+                <option>中学1年</option>
+                <option>中学2年</option>
+                <option>中学3年</option>
+                <option>高校1年</option>
                 <option>高校2年</option>
                 <option>高校3年</option>
                 <option>大学1年</option>
@@ -245,21 +249,20 @@
                 <option>その他</option>
               </select>
             </label>
-            <label>
-              <span>専攻分野</span>
+            <label id="profileMajorField">
+              <span id="profileMajorLabel">専攻・学びたい分野</span>
               <input
                 id="profileMajor"
                 name="major"
                 type="text"
                 maxlength="40"
                 placeholder="例：情報工学"
-                required
               />
             </label>
           </div>
 
           <label>
-            <span>興味分野 <small>（カンマ区切り・最大8個）</small></span>
+            <span><span id="profileInterestsLabel">興味分野</span> <small id="profileInterestsHint">（カンマ区切り・最大8個）</small></span>
             <input
               id="profileInterests"
               name="interests"
@@ -625,6 +628,11 @@
           </label>
         </div>
         <label>
+          <span>関連分野 <small>（カンマ区切り・最大5個）</small></span>
+          <input id="postFields" type="text" maxlength="120" placeholder="例：AI、ロボット、数学" />
+          <small>内容に近い分野の人へ、ボトルを優先して届けるために使います。</small>
+        </label>
+        <label>
           <span>タイトル</span>
           <input id="postTitle" type="text" maxlength="80" placeholder="何についてのメッセージですか？" required />
         </label>
@@ -673,6 +681,7 @@
         </div>
         <h2 id="detailTitle"></h2>
         <p id="detailMeta" class="post-meta"></p>
+        <div id="detailFieldTags" class="post-field-tags detail-field-tags" hidden></div>
         <p id="detailBody" class="detail-body"></p>
         <div class="detail-footer">
           <button id="detailLikeButton" class="like-button" type="button"></button>
@@ -739,6 +748,10 @@
           </label>
         </div>
         <label>
+          <span>関連分野 <small>（カンマ区切り・最大5個）</small></span>
+          <input id="editPostFields" type="text" maxlength="120" placeholder="例：AI、ロボット、数学" />
+        </label>
+        <label>
           <span>タイトル</span>
           <input id="editPostTitle" type="text" maxlength="80" required />
         </label>
@@ -785,17 +798,18 @@
           <label>
             <span>学年</span>
             <select id="editGrade" required>
+              <option>中学1年</option><option>中学2年</option><option>中学3年</option><option>高校1年</option>
               <option>高校2年</option><option>高校3年</option><option>大学1年</option><option>大学2年</option>
               <option>大学3年</option><option>大学4年</option><option>大学院</option><option>その他</option>
             </select>
           </label>
-          <label>
-            <span>専攻分野</span>
-            <input id="editMajor" type="text" maxlength="40" required />
+          <label id="editMajorField">
+            <span id="editMajorLabel">専攻・学びたい分野</span>
+            <input id="editMajor" type="text" maxlength="40" />
           </label>
         </div>
         <label>
-          <span>興味分野 <small>（カンマ区切り・最大8個）</small></span>
+          <span><span id="editInterestsLabel">興味分野</span> <small id="editInterestsHint">（カンマ区切り・最大8個）</small></span>
           <input id="editInterests" type="text" maxlength="160" placeholder="例：AI、ロボット、データ分析" />
         </label>
         <fieldset class="compact-fish-picker">
