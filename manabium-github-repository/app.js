@@ -513,7 +513,7 @@ function showPage(pageName, updateHash = true) {
   } else if (nextPage === "aquarium") {
     state.lastAquariumActivityAt = Date.now();
     state.aquariumIdle = false;
-    void ensureAquariumPresence();
+    void enterAquariumOnOpen();
     maybeShowAquariumIntro();
   }
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -555,6 +555,10 @@ function bindStaticEvents() {
     else renderAquarium();
     showToast("水槽を更新しました。", "success");
   });
+  $("#toggleAquariumChatButton").addEventListener("click", () => {
+    setAquariumChatOpen($("#aquariumChatPanel").hidden);
+  });
+  $("#closeAquariumChatButton").addEventListener("click", () => setAquariumChatOpen(false));
   $("#closeFishDrawer").addEventListener("click", () => {
     $("#fishDrawer").hidden = true;
     state.selectedFishPresence = null;
@@ -966,7 +970,7 @@ async function fetchProfiles(userIds) {
 function markAquariumUnavailable(error) {
   if (!isMissingAquariumSchema(error)) return false;
   state.aquariumAvailable = false;
-  state.aquariumPresenceJoined = false;
+  if (isAquariumPageActive()) upsertLocalOwnPresence();
   renderAquarium();
   return true;
 }
@@ -1044,6 +1048,9 @@ async function loadAquariumPresence() {
     profile: profiles.get(presence.user_id) ?? null,
   }));
   state.aquariumPresenceJoined = state.aquariumPresence.some((presence) => presence.user_id === state.user.id);
+  if (isAquariumPageActive() && state.aquariumPreferences.participate_as_fish && !state.aquariumPresenceJoined) {
+    upsertLocalOwnPresence();
+  }
   renderAquarium();
 }
 
@@ -1132,22 +1139,9 @@ function startAquariumTimers() {
 }
 
 async function writeAquariumPresence(status, focusTopic = null) {
-  if (IS_PREVIEW_MODE) {
-    const now = new Date().toISOString();
-    const next = {
-      user_id: state.user.id,
-      status,
-      focus_topic: status === "focus" ? focusTopic : null,
-      joined_at: state.aquariumPresence.find((item) => item.user_id === state.user.id)?.joined_at ?? now,
-      heartbeat_at: now,
-      updated_at: now,
-      profile: state.profile,
-    };
-    state.aquariumPresence = [next, ...state.aquariumPresence.filter((item) => item.user_id !== state.user.id)];
-    state.aquariumPresenceJoined = true;
-    renderAquarium();
-    return;
-  }
+  upsertLocalOwnPresence(status, focusTopic);
+  renderAquarium();
+  if (IS_PREVIEW_MODE || !state.aquariumAvailable) return;
 
   const payload = { status, focus_topic: status === "focus" ? (focusTopic || null) : null };
   let { data, error } = await supabase
@@ -1173,8 +1167,49 @@ async function writeAquariumPresence(status, focusTopic = null) {
   renderAquarium();
 }
 
+function upsertLocalOwnPresence(status = null, focusTopic = null) {
+  if (!state.user || !state.profile) return null;
+  const now = new Date().toISOString();
+  const existing = state.aquariumPresence.find((item) => item.user_id === state.user.id);
+  const resolvedStatus = status
+    ?? (state.currentStudy ? "focus" : existing?.status)
+    ?? state.aquariumPreferences.default_status
+    ?? "social";
+  const next = {
+    user_id: state.user.id,
+    status: resolvedStatus,
+    focus_topic: resolvedStatus === "focus"
+      ? (focusTopic ?? state.currentStudy?.study_topic ?? existing?.focus_topic ?? null)
+      : null,
+    joined_at: existing?.joined_at ?? now,
+    heartbeat_at: now,
+    updated_at: now,
+    profile: state.profile,
+  };
+  state.aquariumPresence = [next, ...state.aquariumPresence.filter((item) => item.user_id !== state.user.id)];
+  state.aquariumPresenceJoined = true;
+  return next;
+}
+
+async function enterAquariumOnOpen() {
+  if (!state.user || !state.profile || !isAquariumPageActive()) return;
+  state.aquariumIdle = false;
+  state.lastAquariumActivityAt = Date.now();
+  state.aquariumPreferences.participate_as_fish = true;
+  upsertLocalOwnPresence();
+  renderAquarium();
+
+  try {
+    await saveAquariumPreferences({ participate_as_fish: true });
+    await ensureAquariumPresence();
+  } catch (error) {
+    console.error("Failed to enter aquarium", error);
+    showToast("水槽への接続を再試行しています。自分の魚はこの画面で確認できます。", "info");
+  }
+}
+
 async function ensureAquariumPresence() {
-  if (!state.user || !state.profile || !state.aquariumAvailable) return;
+  if (!state.user || !state.profile) return;
   const idle = Date.now() - state.lastAquariumActivityAt > AQUARIUM_IDLE_TIMEOUT_MS;
   if (idle) state.aquariumIdle = true;
   if (!isAquariumPageActive() || !state.aquariumPreferences.participate_as_fish || state.aquariumIdle) {
@@ -1318,7 +1353,7 @@ async function sendAquariumReaction(messageCode, targetUserId = null) {
 
   try {
     let reaction;
-    if (IS_PREVIEW_MODE) {
+    if (IS_PREVIEW_MODE || !state.aquariumAvailable) {
       reaction = {
         id: `preview-reaction-${Date.now()}`,
         sender_user_id: state.user.id,
@@ -1339,6 +1374,7 @@ async function sendAquariumReaction(messageCode, targetUserId = null) {
     state.lastAquariumReactionAt = Date.now();
     if (targetUserId) state.lastAquariumReactionTargetAt.set(targetUserId, state.lastAquariumReactionAt);
     state.aquariumReactions = [reaction, ...state.aquariumReactions.filter((item) => item.id !== reaction.id)];
+    setAquariumChatOpen(true);
     renderAquarium();
     showToast("水槽に合図を送りました。", "success");
   } catch (error) {
@@ -1743,6 +1779,8 @@ function renderLake() {
   const visiblePresence = visibleAquariumPresence();
   $("#aquariumUserCount").textContent = String(presence.length);
   $("#aquariumFocusCount").textContent = String(presence.filter((item) => item.status === "focus").length);
+  $("#lakeCompanionCount").textContent = String(visiblePresence.length);
+  renderAquariumCompanions(visiblePresence);
   $("#lakeEmpty").hidden = visiblePresence.length > 0;
   const emptyCopy = $("#lakeEmpty p");
   if (emptyCopy) {
@@ -1797,6 +1835,31 @@ function renderLake() {
   });
 }
 
+function renderAquariumCompanions(presence) {
+  const list = $("#aquariumCompanionList");
+  list.replaceChildren();
+  if (!presence.length) {
+    list.innerHTML = '<p class="aquarium-companion-empty"><i class="ph ph-fish-simple" aria-hidden="true"></i> まだ仲間はいません。あなたの魚が最初に泳ぎます。</p>';
+    return;
+  }
+
+  presence.forEach((presenceItem) => {
+    const profile = presenceItem.profile ?? { nickname: "水槽の仲間", fish_type: "aqua" };
+    const fish = FISH[profile.fish_type] ?? FISH.aqua;
+    const status = AQUARIUM_STATUS[presenceItem.status] ?? AQUARIUM_STATUS.social;
+    const isMe = presenceItem.user_id === state.user?.id;
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "aquarium-companion-chip";
+    button.classList.toggle("is-me", isMe);
+    button.innerHTML = `
+      <span class="companion-fish"><img src="${FISH_ASSET_URL}" alt="" style="--fish-filter:${fish.filter}" /></span>
+      <span><strong>${escapeHTML(profile.nickname)}${isMe ? "（あなた）" : ""}</strong><small><span class="status-orb ${status.className}"></span>${status.label}</small></span>`;
+    button.addEventListener("click", () => openFishDrawer(presenceItem));
+    list.append(button);
+  });
+}
+
 function renderAquariumControls() {
   const ownPresence = activeAquariumPresence().find((item) => item.user_id === state.user?.id);
   const statusName = state.currentStudy ? "focus" : (ownPresence?.status ?? state.aquariumPreferences.default_status ?? "social");
@@ -1841,6 +1904,43 @@ function renderAquariumBroadcasts() {
     });
 }
 
+function setAquariumChatOpen(open) {
+  const panel = $("#aquariumChatPanel");
+  const button = $("#toggleAquariumChatButton");
+  panel.hidden = !open;
+  button.setAttribute("aria-expanded", String(open));
+  button.classList.toggle("active", open);
+  if (open) renderAquariumChat();
+}
+
+function renderAquariumChat() {
+  const feed = $("#aquariumChatFeed");
+  feed.replaceChildren();
+  const cutoff = Date.now() - 30 * 1000;
+  const messages = state.aquariumReactions
+    .filter((reaction) => (
+      !reaction.target_user_id
+      && new Date(reaction.created_at).getTime() >= cutoff
+      && !state.mutedUserIds.has(reaction.sender_user_id)
+    ))
+    .slice(0, 12)
+    .reverse();
+
+  if (!messages.length) {
+    feed.innerHTML = '<p class="aquarium-chat-empty">まだひとことはありません。最初の挨拶を送ってみましょう。</p>';
+    return;
+  }
+
+  messages.forEach((reaction) => {
+    const item = document.createElement("div");
+    item.className = "aquarium-chat-message";
+    if (reaction.sender_user_id === state.user?.id) item.classList.add("is-me");
+    item.innerHTML = `<strong>${escapeHTML(reaction.profile?.nickname ?? "水槽の仲間")}</strong><span>${escapeHTML(AQUARIUM_REACTIONS[reaction.message_code] ?? "")}</span>`;
+    feed.append(item);
+  });
+  feed.scrollTop = feed.scrollHeight;
+}
+
 function renderMutedUsers() {
   const container = $("#mutedUsersList");
   container.replaceChildren();
@@ -1860,8 +1960,10 @@ function renderMutedUsers() {
 
 function renderAquarium() {
   renderLake();
+  renderBottles();
   renderAquariumControls();
   renderAquariumBroadcasts();
+  renderAquariumChat();
   renderMutedUsers();
 }
 
@@ -1924,6 +2026,7 @@ function renderBottles() {
     button.style.setProperty("--bottle-y-two", `${-20 - (seed % 14)}px`);
     button.style.setProperty("--bottle-y-three", `${-8 - (seed % 13)}px`);
     button.style.setProperty("--bottle-sway", `${6 + (seed % 7)}deg`);
+    button.innerHTML = `<span class="floating-bottle-label">${escapeHTML(post.category)}</span>`;
     button.addEventListener("click", () => {
       createLakeRipple(button);
       openPost(post.id);
@@ -1956,6 +2059,7 @@ function renderBottles() {
     button.style.setProperty("--bottle-y-two", `${-22 - (seed % 13)}px`);
     button.style.setProperty("--bottle-y-three", `${-9 - (seed % 12)}px`);
     button.style.setProperty("--bottle-sway", `${7 + (seed % 7)}deg`);
+    button.innerHTML = '<span class="floating-bottle-label">返信</span>';
     button.addEventListener("click", () => {
       createLakeRipple(button);
       openReplyBottle(reply);

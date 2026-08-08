@@ -2285,6 +2285,422 @@ textarea:focus {
   }
 }
 
+/* ============================================================
+   Aquarium usability follow-up
+   Auto-entry, visible bottles, working chat and companion ribbon.
+   ============================================================ */
+#appView[data-active-page="aquarium"] #aquariumPage .lake-toolbar {
+  display: flex;
+  min-height: 86px;
+  padding: 15px 18px;
+  align-items: center;
+  gap: 18px;
+}
+
+#appView[data-active-page="aquarium"] #aquariumPage .lake-toolbar > .lake-heading-copy {
+  display: grid;
+  min-width: 0;
+  gap: 2px;
+}
+
+.lake-heading-copy h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.lake-heading-copy > p:last-child {
+  margin: 0;
+  color: #758a8e;
+  font-size: 0.64rem;
+}
+
+.lake-companion-count {
+  display: inline-grid;
+  min-width: 28px;
+  height: 28px;
+  padding-inline: 8px;
+  place-items: center;
+  color: #fffdfa;
+  background: #678f91;
+  border-radius: 999px;
+  font-family: var(--font-body);
+  font-size: 0.72rem;
+}
+
+#appView[data-active-page="aquarium"] #aquariumPage .lake-toolbar > .lake-toolbar-actions {
+  display: flex;
+  margin-left: auto;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 8px;
+}
+
+.lake-toolbar-actions .chat-button {
+  color: #fff;
+  background: #608b8d;
+  border-color: transparent;
+}
+
+.lake-toolbar-actions .chat-button:hover,
+.lake-toolbar-actions .chat-button.active {
+  color: #fff;
+  background: #486f73;
+}
+
+.aquarium-companion-ribbon {
+  position: relative;
+  z-index: 13;
+  padding: 10px 14px 11px;
+  background: rgba(248, 250, 246, 0.94);
+  border-bottom: 1px solid rgba(61, 103, 110, 0.1);
+}
+
+.aquarium-companion-list {
+  display: flex;
+  min-width: 0;
+  padding: 1px 2px 4px;
+  overflow-x: auto;
+  gap: 8px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(89, 127, 130, 0.3) transparent;
+}
+
+.aquarium-companion-chip {
+  display: flex;
+  min-width: 164px;
+  min-height: 54px;
+  padding: 6px 11px 6px 7px;
+  align-items: center;
+  flex: 0 0 auto;
+  gap: 8px;
+  color: #3f666c;
+  background: rgba(255, 255, 252, 0.9);
+  border: 1px solid rgba(72, 111, 116, 0.12);
+  border-radius: 18px;
+  box-shadow: 0 4px 14px rgba(45, 79, 84, 0.06);
+  cursor: pointer;
+  text-align: left;
+}
+
+.aquarium-companion-chip:hover,
+.aquarium-companion-chip:focus-visible {
+  background: #fff;
+  border-color: rgba(83, 131, 135, 0.32);
+  transform: translateY(-1px);
+}
+
+.aquarium-companion-chip.is-me {
+  background: #fff4ef;
+  border-color: rgba(193, 128, 117, 0.2);
+}
+
+.companion-fish {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  flex: 0 0 auto;
+  background: #eaf3f0;
+  border-radius: 14px;
+}
+
+.companion-fish img {
+  width: 36px;
+  filter: var(--fish-filter);
+}
+
+.aquarium-companion-chip > span:last-child {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.aquarium-companion-chip strong {
+  max-width: 105px;
+  overflow: hidden;
+  font-size: 0.68rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.aquarium-companion-chip small {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: #789094;
+  font-size: 0.56rem;
+}
+
+.aquarium-companion-chip small .status-orb {
+  width: 7px;
+  height: 7px;
+  box-shadow: none;
+}
+
+.aquarium-companion-empty {
+  display: flex;
+  min-height: 48px;
+  margin: 0;
+  align-items: center;
+  gap: 8px;
+  color: #71888c;
+  font-size: 0.67rem;
+}
+
+#appView[data-active-page="aquarium"] #aquariumPage .bottle-layer {
+  position: absolute;
+  z-index: 9;
+  inset: 0;
+  pointer-events: none;
+}
+
+#appView[data-active-page="aquarium"] #aquariumPage .floating-bottle {
+  z-index: 10;
+  pointer-events: auto;
+}
+
+.floating-bottle-label {
+  position: absolute;
+  right: 50%;
+  bottom: -14px;
+  display: block;
+  min-width: max-content;
+  padding: 4px 7px;
+  color: #496d73;
+  background: rgba(255, 253, 249, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.78);
+  border-radius: 999px;
+  box-shadow: 0 4px 12px rgba(42, 74, 79, 0.1);
+  font-size: 0.52rem;
+  font-weight: 700;
+  line-height: 1;
+  transform: translateX(50%);
+  backdrop-filter: blur(8px);
+}
+
+.aquarium-chat-panel {
+  position: relative;
+  z-index: 18;
+  display: grid;
+  padding: 18px;
+  gap: 12px;
+  background: rgba(249, 251, 247, 0.98);
+  border-top: 1px solid rgba(60, 101, 108, 0.12);
+  animation: aquarium-chat-reveal 180ms ease-out both;
+}
+
+.aquarium-chat-panel[hidden] {
+  display: none !important;
+}
+
+.aquarium-chat-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.aquarium-chat-heading h3 {
+  margin: 1px 0 0;
+  color: #345d65;
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+}
+
+.aquarium-chat-heading .drawer-close {
+  position: static;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+}
+
+.aquarium-chat-feed {
+  display: flex;
+  min-height: 76px;
+  max-height: 180px;
+  padding: 12px;
+  overflow-y: auto;
+  align-items: flex-start;
+  flex-direction: column;
+  gap: 7px;
+  background: #edf4f2;
+  border-radius: 17px;
+}
+
+.aquarium-chat-message {
+  display: flex;
+  max-width: min(88%, 480px);
+  padding: 8px 11px;
+  align-items: baseline;
+  gap: 8px;
+  color: #466b71;
+  background: #fff;
+  border-radius: 4px 14px 14px;
+  box-shadow: 0 3px 10px rgba(45, 77, 82, 0.06);
+  font-size: 0.68rem;
+}
+
+.aquarium-chat-message.is-me {
+  align-self: flex-end;
+  color: #775c60;
+  background: #fff0eb;
+  border-radius: 14px 4px 14px 14px;
+}
+
+.aquarium-chat-message strong {
+  flex: 0 0 auto;
+  font-size: 0.59rem;
+}
+
+.aquarium-chat-empty {
+  margin: auto;
+  color: #789094;
+  font-size: 0.65rem;
+  text-align: center;
+}
+
+.aquarium-chat-panel .aquarium-quick-messages {
+  min-height: 0;
+  padding: 0;
+  justify-content: flex-start;
+  background: transparent;
+  border: 0;
+}
+
+#aquariumPage.is-focus-mode .swimming-fish,
+#aquariumPage.is-focus-mode .swimming-fish .fish-asset,
+#aquariumPage.is-focus-mode .fish-motion,
+#aquariumPage.is-focus-mode .floating-bottle {
+  opacity: 1;
+  animation-play-state: running;
+}
+
+#aquariumPage.is-focus-mode .aquarium-control-deck,
+#aquariumPage.is-focus-mode .aquarium-chat-panel,
+#aquariumPage.is-focus-mode .lake-hint {
+  opacity: 1;
+}
+
+#aquariumPage .aquarium-study-dock {
+  border-color: rgba(99, 142, 143, 0.18);
+  box-shadow: 0 18px 46px rgba(36, 68, 74, 0.16);
+}
+
+@keyframes aquarium-chat-reveal {
+  from { opacity: 0; transform: translateY(-7px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 760px) {
+  #appView[data-active-page="aquarium"] #aquariumPage .lake-toolbar {
+    min-height: 98px;
+    padding: 13px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 9px;
+  }
+
+  #appView[data-active-page="aquarium"] #aquariumPage .lake-toolbar > .lake-heading-copy {
+    width: calc(100% - 104px);
+  }
+
+  .lake-heading-copy h2 {
+    font-size: 1.08rem;
+  }
+
+  .lake-heading-copy > p:last-child {
+    display: none;
+  }
+
+  #appView[data-active-page="aquarium"] #aquariumPage .lake-toolbar > .lake-toolbar-actions {
+    display: grid;
+    margin-left: auto;
+    grid-template-columns: 1fr;
+    gap: 5px;
+  }
+
+  .lake-toolbar-actions .icon-text-button {
+    min-width: 92px;
+    min-height: 38px;
+    padding: 7px 10px;
+    font-size: 0.64rem;
+  }
+
+  .aquarium-companion-ribbon {
+    padding: 8px 9px 9px;
+  }
+
+  .aquarium-companion-chip {
+    min-width: 148px;
+    min-height: 50px;
+  }
+
+  .companion-fish {
+    width: 38px;
+    height: 38px;
+  }
+
+  #appView[data-active-page="aquarium"] #aquariumPage .lake-surface {
+    height: 470px;
+    min-height: 470px;
+  }
+
+  #appView[data-active-page="aquarium"] #aquariumPage .floating-bottle {
+    width: 52px;
+    height: 70px;
+  }
+
+  .aquarium-chat-panel {
+    padding: 14px 11px;
+  }
+
+  .aquarium-chat-feed {
+    max-height: 150px;
+  }
+
+  .aquarium-chat-panel .aquarium-quick-messages {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    overflow: visible;
+  }
+
+  .aquarium-chat-panel .aquarium-quick-messages > span {
+    grid-column: 1 / -1;
+  }
+
+  .aquarium-chat-panel .aquarium-quick-messages button {
+    width: 100%;
+    min-height: 42px;
+  }
+
+  #aquariumPage .aquarium-study-dock {
+    width: calc(100% - 18px);
+    min-height: 78px;
+    padding: 11px;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 8px;
+  }
+
+  #aquariumPage .aquarium-study-timer {
+    grid-column: 2;
+    justify-self: start;
+  }
+
+  #aquariumPage .aquarium-stop-button {
+    grid-column: 3;
+    grid-row: 1 / span 2;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aquarium-chat-panel,
+  .aquarium-companion-chip {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
 @media (max-width: 430px) {
   .onboarding-shell { padding: 18px 12px; }
   .onboarding-card { padding: 25px 18px; border-radius: 23px; }
@@ -6723,5 +7139,47 @@ textarea {
     left: 10px;
     width: auto;
     transform: none;
+  }
+}
+
+/* Keep the aquarium action colors above the legacy icon-button theme. */
+#appView[data-active-page="aquarium"] #aquariumPage .lake-toolbar-actions .chat-button {
+  color: #fff;
+  background: #608b8d;
+  border-color: transparent;
+}
+
+#appView[data-active-page="aquarium"] #aquariumPage .lake-toolbar-actions .chat-button:hover,
+#appView[data-active-page="aquarium"] #aquariumPage .lake-toolbar-actions .chat-button:focus-visible,
+#appView[data-active-page="aquarium"] #aquariumPage .lake-toolbar-actions .chat-button.active {
+  color: #fff;
+  background: #486f73;
+}
+
+#appView[data-active-page="aquarium"] #aquariumPage #aquariumChatPanel {
+  position: absolute;
+  z-index: 45;
+  top: 176px;
+  right: 18px;
+  width: min(390px, calc(100% - 36px));
+  max-height: 430px;
+  overflow: auto;
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  border-radius: 24px;
+  box-shadow: 0 24px 60px rgba(34, 67, 73, 0.24);
+  backdrop-filter: blur(20px);
+}
+
+@media (max-width: 760px) {
+  #appView[data-active-page="aquarium"] #aquariumPage #aquariumChatPanel {
+    position: fixed;
+    z-index: 95;
+    top: auto;
+    right: 10px;
+    bottom: calc(var(--mobile-nav-height) + 14px + env(safe-area-inset-bottom));
+    left: 10px;
+    width: auto;
+    max-height: min(62dvh, 520px);
+    border-radius: 24px;
   }
 }

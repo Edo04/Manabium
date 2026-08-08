@@ -433,7 +433,7 @@
             <div>
               <p class="eyebrow">LIVE COMMUNITY AQUARIUM</p>
               <h1 id="aquariumTitle">いま、同じ水槽にいる。</h1>
-              <p>自由なチャットではなく、魚の気配と短い合図でゆるくつながる場所です。</p>
+              <p>今ここにいる仲間の魚やボトルを眺めながら、短いチャットでゆるくつながる場所です。</p>
             </div>
             <div class="aquarium-live-counts" aria-label="現在の水槽人数">
               <div><span class="presence-dot" aria-hidden="true"></span><strong id="aquariumUserCount">0</strong><span>人が水槽にいます</span></div>
@@ -455,15 +455,15 @@
               </div>
             </div>
             <div class="aquarium-participation-control">
-              <label class="aquarium-switch-row" for="joinAsFishToggle">
-                <span><strong>魚として参加</strong><small>オフなら姿を出さずに見られます</small></span>
-                <span class="toggle-switch"><input id="joinAsFishToggle" type="checkbox" checked /><span aria-hidden="true"></span></span>
-              </label>
               <button id="openFocusDialogButton" class="button button-coral aquarium-focus-button" type="button">
                 <i class="ph ph-timer" aria-hidden="true"></i> 集中する
               </button>
               <details class="aquarium-settings">
                 <summary><i class="ph ph-sliders-horizontal" aria-hidden="true"></i> 表示・通知の設定</summary>
+                <label class="aquarium-switch-row compact" for="joinAsFishToggle">
+                  <span><strong>魚を表示する</strong><small>水槽を開くと自動でオンになります</small></span>
+                  <span class="toggle-switch"><input id="joinAsFishToggle" type="checkbox" checked /><span aria-hidden="true"></span></span>
+                </label>
                 <label class="aquarium-switch-row compact" for="receiveReactionsToggle">
                   <span><strong>リアクションを受け取る</strong><small>オフなら吹き出しを表示しません</small></span>
                   <span class="toggle-switch"><input id="receiveReactionsToggle" type="checkbox" checked /><span aria-hidden="true"></span></span>
@@ -483,13 +483,22 @@
 
           <section class="lake-card" aria-labelledby="lakeTitle">
             <div class="lake-toolbar">
-              <div>
+              <div class="lake-heading-copy">
                 <p id="presenceConnectionStatus" class="presence-connection-status"><span></span>水槽につながっています</p>
-                <h2 id="lakeTitle">今ここにいる仲間</h2>
+                <h2 id="lakeTitle">今ここにいる仲間 <span id="lakeCompanionCount" class="lake-companion-count">0</span></h2>
+                <p>魚をタップすると、その人のプロフィールを見られます。</p>
               </div>
-              <button id="refreshLakeButton" class="icon-text-button" type="button">
-                <span aria-hidden="true">↻</span> 更新
-              </button>
+              <div class="lake-toolbar-actions">
+                <button id="toggleAquariumChatButton" class="icon-text-button chat-button" type="button" aria-expanded="false" aria-controls="aquariumChatPanel">
+                  <i class="ph ph-chat-circle-dots" aria-hidden="true"></i> チャット
+                </button>
+                <button id="refreshLakeButton" class="icon-text-button" type="button">
+                  <span aria-hidden="true">↻</span> 更新
+                </button>
+              </div>
+            </div>
+            <div class="aquarium-companion-ribbon" aria-label="水槽にいる仲間の一覧">
+              <div id="aquariumCompanionList" class="aquarium-companion-list"></div>
             </div>
             <div id="lakeSurface" class="lake-surface">
               <div class="lake-atmosphere" aria-hidden="true">
@@ -514,27 +523,38 @@
                 <span class="water-bubble bubble-ten"></span>
               </div>
               <div id="fishLayer" class="fish-layer"></div>
+              <div id="bottleLayer" class="bottle-layer"></div>
               <div id="aquariumBroadcastLayer" class="aquarium-broadcast-layer" aria-live="polite"></div>
               <div id="lakeEmpty" class="lake-empty">
                 <img src="./assets/fish-watercolor.png" alt="" />
                 <p><strong>いまは静かな水槽です</strong><span>魚として参加すると、あなたの魚が最初の一匹として泳ぎます。</span></p>
               </div>
             </div>
-            <div id="aquariumQuickMessages" class="aquarium-quick-messages" aria-label="水槽全体への定型文">
-              <span>水槽のみんなへ</span>
-              <button type="button" data-global-reaction="hello">こんにちは</button>
-              <button type="button" data-global-reaction="starting">今から頑張ります</button>
-              <button type="button" data-global-reaction="good_work">おつかれさま</button>
-              <button type="button" data-global-reaction="taking_break">休憩します</button>
-            </div>
-            <p class="lake-hint">魚をタップすると、公開プロフィールと送れる定型リアクションを確認できます。</p>
+            <section id="aquariumChatPanel" class="aquarium-chat-panel" aria-labelledby="aquariumChatTitle" hidden>
+              <div class="aquarium-chat-heading">
+                <div>
+                  <p class="eyebrow">AQUARIUM CHAT</p>
+                  <h3 id="aquariumChatTitle">水槽のみんなへ</h3>
+                </div>
+                <button id="closeAquariumChatButton" class="drawer-close" type="button" aria-label="チャットを閉じる">×</button>
+              </div>
+              <div id="aquariumChatFeed" class="aquarium-chat-feed" aria-live="polite"></div>
+              <div id="aquariumQuickMessages" class="aquarium-quick-messages" aria-label="水槽全体への定型チャット">
+                <span>ひとことを選ぶ</span>
+                <button type="button" data-global-reaction="hello">こんにちは</button>
+                <button type="button" data-global-reaction="starting">今から頑張ります</button>
+                <button type="button" data-global-reaction="good_work">おつかれさま</button>
+                <button type="button" data-global-reaction="taking_break">休憩します</button>
+              </div>
+            </section>
+            <p class="lake-hint">魚は仲間のプロフィール、ボトルは相談や情報共有です。どちらもタップして開けます。</p>
           </section>
 
-          <section id="aquariumStudyDock" class="aquarium-study-dock" aria-label="現在の学習" hidden>
-            <span class="aquarium-study-icon" aria-hidden="true"><i class="ph ph-book-open-text"></i></span>
+          <section id="aquariumStudyDock" class="aquarium-study-dock" aria-label="集中モード" hidden>
+            <span class="aquarium-study-icon" aria-hidden="true"><i class="ph ph-timer"></i></span>
             <div class="aquarium-study-copy">
-              <span>いま学んでいること</span>
-              <strong id="aquariumStudyTopic">学習中</strong>
+              <span>集中モード</span>
+              <strong id="aquariumStudyTopic">集中タイム</strong>
             </div>
             <strong id="aquariumStudyTimer" class="aquarium-study-timer">00:00:00</strong>
             <button id="aquariumStopStudyButton" class="button button-light aquarium-stop-button" type="button">
