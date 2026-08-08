@@ -4159,3 +4159,1044 @@ textarea {
     justify-content: flex-end;
   }
 }
+
+/* ============================================================
+   Mobile app — independent phone layout
+   Desktop keeps the immersive sidebar composition above.
+   ============================================================ */
+@media (max-width: 760px) {
+  :root {
+    --mobile-gutter: 16px;
+    --mobile-header-height: 64px;
+    --mobile-nav-height: 72px;
+  }
+
+  html,
+  body {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  body {
+    padding-bottom: 0;
+    background: #f4f1ec;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+
+  .app-shell {
+    min-height: 100dvh;
+    overflow-x: clip;
+    background:
+      radial-gradient(circle at 90% 2%, rgba(193, 218, 216, 0.24), transparent 28%),
+      #f4f1ec;
+  }
+
+  .app-header {
+    position: fixed;
+    z-index: 50;
+    inset: 0 0 auto;
+    display: flex;
+    width: 100%;
+    height: var(--mobile-header-height);
+    padding: 8px max(var(--mobile-gutter), env(safe-area-inset-right)) 8px max(var(--mobile-gutter), env(safe-area-inset-left));
+    align-items: center;
+    flex-direction: row;
+    justify-content: space-between;
+    background: rgba(249, 247, 242, 0.9);
+    border: 0;
+    border-bottom: 1px solid rgba(55, 84, 90, 0.09);
+    box-shadow: 0 8px 24px rgba(47, 73, 78, 0.05);
+    backdrop-filter: blur(18px) saturate(1.1);
+  }
+
+  .app-shell[data-active-page="aquarium"] .app-header {
+    background: linear-gradient(to bottom, rgba(244, 249, 247, 0.88), rgba(244, 249, 247, 0.62));
+    border-bottom-color: rgba(255, 255, 255, 0.34);
+    box-shadow: none;
+  }
+
+  .app-header .brand {
+    min-width: 0;
+    flex-direction: row;
+    gap: 9px;
+    font-size: 1.02rem;
+    letter-spacing: 0.06em;
+  }
+
+  .app-header .brand-mark {
+    width: 40px;
+    height: 40px;
+    border-radius: 13px;
+    box-shadow: 0 6px 18px rgba(47, 74, 80, 0.1);
+  }
+
+  .app-header .brand-word {
+    display: inline;
+  }
+
+  .desktop-nav {
+    display: none;
+  }
+
+  .header-actions {
+    width: auto;
+    margin-top: 0;
+  }
+
+  .user-fish-button {
+    width: 42px;
+    height: 42px;
+    padding: 6px;
+    background: rgba(246, 239, 234, 0.92);
+    box-shadow: 0 6px 18px rgba(47, 74, 80, 0.08);
+  }
+
+  .page-container {
+    width: 100%;
+    min-height: 100dvh;
+    padding: 0;
+    margin: 0;
+  }
+
+  .page,
+  .page > *,
+  .home-content-grid > *,
+  .profile-grid > *,
+  .history-grid > * {
+    min-width: 0;
+  }
+
+  .page:not(#aquariumPage) {
+    width: 100%;
+    padding: calc(var(--mobile-header-height) + 18px) var(--mobile-gutter) calc(var(--mobile-nav-height) + 36px + env(safe-area-inset-bottom));
+    margin: 0;
+  }
+
+  .page-intro {
+    margin-bottom: 20px;
+    align-items: stretch;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .page-intro .eyebrow {
+    margin-bottom: 5px;
+    font-size: 0.62rem;
+    letter-spacing: 0.2em;
+  }
+
+  .page-intro h1,
+  .board-intro h1,
+  .profile-intro h1 {
+    margin-bottom: 7px;
+    font-size: clamp(2.05rem, 10.5vw, 2.75rem);
+    line-height: 1.18;
+    overflow-wrap: anywhere;
+    text-wrap: pretty;
+  }
+
+  .page-intro > div > p:last-child {
+    margin: 0;
+    color: #667d82;
+    font-size: 0.82rem;
+    line-height: 1.75;
+  }
+
+  /* Mobile home */
+  .home-page {
+    display: grid;
+    gap: 14px;
+  }
+
+  .home-welcome {
+    display: grid;
+    min-height: 0;
+    padding: 19px 4px 8px;
+    align-items: start;
+    justify-items: start;
+    gap: 15px;
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .home-welcome-copy {
+    max-width: 100%;
+  }
+
+  .home-welcome .eyebrow {
+    margin-bottom: 8px;
+    font-size: 0.61rem;
+    letter-spacing: 0.2em;
+  }
+
+  .home-welcome h1 {
+    max-width: 100%;
+    margin-bottom: 9px;
+    color: #2d5159;
+    font-size: clamp(2.05rem, 10.5vw, 2.7rem);
+    line-height: 1.24;
+    overflow-wrap: anywhere;
+    text-wrap: pretty;
+  }
+
+  .home-welcome-copy > p:last-child {
+    color: #6b7f83;
+    font-size: 0.79rem;
+    line-height: 1.7;
+  }
+
+  .home-community-status {
+    min-width: 0;
+    padding: 9px 13px;
+    gap: 8px;
+    background: rgba(231, 240, 238, 0.9);
+    border-radius: 999px;
+  }
+
+  .home-community-status strong {
+    font-size: 1.05rem;
+  }
+
+  .home-community-status span:last-child {
+    font-size: 0.68rem;
+  }
+
+  .study-controller.home-study-controller {
+    position: static;
+    display: grid;
+    inset: auto;
+    width: 100%;
+    min-height: 0;
+    padding: 17px;
+    margin: 0;
+    grid-template-columns: 1fr;
+    gap: 15px;
+    background: rgba(255, 255, 255, 0.94);
+    border: 1px solid rgba(59, 90, 96, 0.09);
+    border-radius: 23px;
+    box-shadow: 0 12px 34px rgba(44, 71, 77, 0.08);
+    transform: none;
+  }
+
+  .home-study-controller .controller-copy {
+    display: grid;
+    min-width: 0;
+    grid-template-columns: 42px minmax(0, 1fr);
+    gap: 11px;
+  }
+
+  .home-study-controller .controller-icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 14px;
+    grid-row: span 2;
+  }
+
+  .home-study-controller .controller-copy h2 {
+    align-self: end;
+    font-family: "Zen Maru Gothic", "Hiragino Maru Gothic ProN", sans-serif;
+    font-size: 0.98rem;
+  }
+
+  .home-study-controller .controller-copy p {
+    display: block;
+    align-self: start;
+    font-size: 0.66rem;
+  }
+
+  .home-study-controller .study-start-controls {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 9px;
+  }
+
+  .home-study-controller .study-start-controls input,
+  .home-study-controller .study-start-controls .button {
+    width: 100%;
+    min-height: 50px;
+  }
+
+  .home-study-controller .study-start-controls input {
+    padding: 12px 14px;
+    background: #fbfbf9;
+    border-radius: 15px;
+  }
+
+  .home-study-controller .study-start-controls .button {
+    border-radius: 16px;
+  }
+
+  .home-study-controller .study-running-controls {
+    display: grid;
+    align-items: center;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 11px;
+  }
+
+  .home-study-controller .study-timer {
+    font-size: 1.15rem;
+  }
+
+  .home-study-controller .study-running-controls .button {
+    min-height: 46px;
+    padding-inline: 15px;
+  }
+
+  .home-content-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .home-aquarium-card,
+  .home-message-card,
+  .home-progress-card {
+    border-radius: 23px;
+    box-shadow: 0 12px 32px rgba(43, 71, 77, 0.08);
+  }
+
+  .home-aquarium-card {
+    min-height: 292px;
+    padding: 15px;
+    grid-row: auto;
+    align-items: flex-end;
+    background-position: center bottom;
+  }
+
+  .home-aquarium-card > div {
+    width: 100%;
+    max-width: none;
+    padding: 18px;
+    border-radius: 18px;
+  }
+
+  .home-aquarium-card h2 {
+    font-size: 1.55rem;
+  }
+
+  .home-aquarium-card p:not(.eyebrow) {
+    font-size: 0.76rem;
+  }
+
+  .home-aquarium-card .button {
+    width: 100%;
+    min-height: 46px;
+  }
+
+  .home-message-card,
+  .home-progress-card {
+    min-height: 0;
+    padding: 20px;
+  }
+
+  .home-message-card {
+    min-height: 188px;
+    padding-right: 84px;
+  }
+
+  .home-message-card > img {
+    right: 9px;
+    bottom: 14px;
+    width: 68px;
+    height: 94px;
+  }
+
+  .home-message-card h2,
+  .home-progress-card h2 {
+    font-size: 1.18rem;
+  }
+
+  .home-latest-title {
+    margin-top: 13px;
+    font-size: 0.82rem;
+  }
+
+  .home-progress-values {
+    margin: 16px 0 12px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .home-progress-values strong {
+    font-size: 0.98rem;
+  }
+
+  .home-progress-values span {
+    font-size: 0.57rem;
+    line-height: 1.45;
+  }
+
+  /* Mobile bottle board */
+  .board-intro .button-primary {
+    width: 100%;
+    min-height: 50px;
+    border-radius: 16px;
+  }
+
+  .category-filters {
+    display: flex;
+    width: calc(100% + (var(--mobile-gutter) * 2));
+    padding: 4px var(--mobile-gutter) 9px;
+    margin: 0 calc(var(--mobile-gutter) * -1) 18px;
+    overflow-x: auto;
+    gap: 7px;
+    background: transparent;
+    border-radius: 0;
+    scrollbar-width: none;
+    scroll-snap-type: x proximity;
+  }
+
+  .category-filters::-webkit-scrollbar {
+    display: none;
+  }
+
+  .category-chip {
+    min-width: max-content;
+    min-height: 42px;
+    padding: 8px 16px;
+    flex: 0 0 auto;
+    color: #718589;
+    background: rgba(255, 255, 255, 0.74);
+    border: 1px solid rgba(67, 98, 104, 0.08);
+    scroll-snap-align: start;
+  }
+
+  .category-chip.active {
+    color: #375f67;
+    background: #e4efed;
+    border-color: rgba(59, 98, 104, 0.12);
+    box-shadow: none;
+  }
+
+  .post-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 13px;
+  }
+
+  .post-card {
+    border-radius: 21px;
+    box-shadow: 0 10px 28px rgba(43, 71, 77, 0.07);
+  }
+
+  .post-card > button:first-child {
+    padding: 18px 18px 11px;
+  }
+
+  .post-card h2 {
+    font-size: 1.18rem;
+    line-height: 1.45;
+    text-wrap: pretty;
+  }
+
+  .post-card p {
+    font-size: 0.77rem;
+    line-height: 1.8;
+  }
+
+  .post-footer {
+    padding: 0 17px 16px;
+  }
+
+  /* Mobile profile */
+  .profile-intro {
+    position: relative;
+    padding-right: 108px;
+  }
+
+  .profile-intro .button-ghost {
+    position: absolute;
+    top: 7px;
+    right: 0;
+    min-height: 42px;
+    padding: 8px 14px;
+    font-size: 0.72rem;
+  }
+
+  .profile-grid,
+  .history-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .profile-card,
+  .history-card {
+    border-radius: 23px;
+    box-shadow: 0 10px 30px rgba(43, 71, 77, 0.07);
+  }
+
+  .user-profile-card {
+    min-height: 0;
+    padding: 25px 20px 22px;
+  }
+
+  .user-profile-card .small-link {
+    top: 17px;
+    right: 17px;
+    min-height: 40px;
+    padding: 7px 13px;
+  }
+
+  .my-fish {
+    width: 112px;
+    height: 74px;
+  }
+
+  .user-profile-card h2 {
+    margin-top: 6px;
+    font-size: 1.65rem;
+  }
+
+  .profile-interest-list {
+    max-width: 100%;
+    justify-content: center;
+  }
+
+  .stats-card {
+    padding: 22px 18px;
+  }
+
+  .stat-row {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 5px;
+  }
+
+  .stat-row > div {
+    min-width: 0;
+    padding-inline: 3px;
+  }
+
+  .stat-row strong {
+    font-size: 1.03rem;
+    overflow-wrap: anywhere;
+  }
+
+  .stat-row span {
+    font-size: 0.58rem;
+    line-height: 1.45;
+  }
+
+  .weekly-chart {
+    min-width: 0;
+    gap: 5px;
+  }
+
+  .history-grid {
+    margin-top: 14px;
+  }
+
+  .history-card {
+    padding: 20px 18px;
+  }
+
+  /* Mobile aquarium */
+  #aquariumPage {
+    position: relative;
+    width: 100%;
+    height: 100dvh;
+    min-height: 0;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  #aquariumPage .lake-card,
+  #aquariumPage .lake-surface {
+    inset: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  #aquariumPage .lake-surface {
+    background-position: 54% center;
+  }
+
+  .aquarium-intro {
+    position: absolute;
+    z-index: 14;
+    top: calc(var(--mobile-header-height) + 12px);
+    right: 62px;
+    left: 12px;
+    display: grid;
+    width: auto;
+    max-width: none;
+    padding: 11px 13px;
+    align-items: center;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+    background: rgba(252, 250, 246, 0.83);
+    border: 1px solid rgba(255, 255, 255, 0.66);
+    border-radius: 18px;
+    box-shadow: 0 10px 28px rgba(38, 68, 74, 0.11);
+    backdrop-filter: blur(14px);
+    pointer-events: none;
+  }
+
+  .aquarium-intro .eyebrow,
+  .aquarium-intro > div:first-child > p:last-child {
+    display: none;
+  }
+
+  .aquarium-intro h1 {
+    margin: 0;
+    color: #315760;
+    font-size: 1.16rem;
+    line-height: 1.25;
+    white-space: nowrap;
+  }
+
+  .aquarium-intro .now-studying-badge {
+    display: inline-flex;
+    min-width: max-content;
+    padding: 6px 8px;
+    margin: 0;
+    gap: 5px;
+    background: rgba(239, 245, 242, 0.92);
+    border: 0;
+    box-shadow: none;
+    font-size: 0.62rem;
+  }
+
+  .aquarium-intro .now-studying-badge .pulse-dot {
+    width: 6px;
+    height: 6px;
+  }
+
+  .lake-toolbar {
+    z-index: 16;
+    top: calc(var(--mobile-header-height) + 14px);
+    right: 12px;
+  }
+
+  .icon-text-button {
+    display: grid;
+    width: 44px;
+    height: 44px;
+    min-height: 44px;
+    padding: 0;
+    place-items: center;
+    background: rgba(252, 250, 246, 0.86);
+    border-radius: 15px;
+    box-shadow: 0 8px 22px rgba(39, 69, 75, 0.1);
+    font-size: 0;
+  }
+
+  .icon-text-button span {
+    font-size: 1.2rem;
+  }
+
+  .swimming-fish {
+    width: clamp(68px, 21vw, 88px);
+    padding: 7px;
+  }
+
+  .fish-label {
+    bottom: -7px;
+    max-width: 92px;
+    padding: 4px 7px 5px;
+    overflow: hidden;
+    font-size: 0.59rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .floating-bottle {
+    width: 52px;
+    height: 72px;
+  }
+
+  .aquarium-study-dock {
+    z-index: 24;
+    bottom: calc(var(--mobile-nav-height) + 22px + env(safe-area-inset-bottom));
+    left: 12px;
+    display: grid;
+    width: calc(100% - 24px);
+    min-height: 0;
+    padding: 13px;
+    margin: 0;
+    align-items: center;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 9px 12px;
+    border-radius: 21px;
+    transform: none;
+  }
+
+  .aquarium-study-icon {
+    display: none;
+  }
+
+  .aquarium-study-copy span {
+    display: block;
+    font-size: 0.58rem;
+  }
+
+  .aquarium-study-copy strong {
+    font-size: 0.9rem;
+  }
+
+  .aquarium-study-timer {
+    min-width: max-content;
+    font-size: 0.98rem;
+  }
+
+  .aquarium-stop-button {
+    width: 100%;
+    min-height: 43px;
+    grid-column: 1 / -1;
+    border-radius: 14px;
+  }
+
+  .fish-drawer {
+    position: absolute;
+    z-index: 30;
+    right: 12px;
+    bottom: calc(var(--mobile-nav-height) + 22px + env(safe-area-inset-bottom));
+    display: grid;
+    width: calc(100% - 24px);
+    max-height: min(52dvh, 440px);
+    padding: 18px;
+    overflow-y: auto;
+    grid-template-columns: 72px minmax(0, 1fr);
+    gap: 13px;
+    background: rgba(253, 251, 247, 0.95);
+    border-radius: 23px;
+    box-shadow: 0 18px 48px rgba(35, 65, 71, 0.2);
+  }
+
+  .drawer-fish {
+    width: 70px;
+  }
+
+  .drawer-name {
+    font-size: 1.16rem;
+  }
+
+  .drawer-interest-list {
+    margin: 7px 0;
+  }
+
+  .drawer-topic {
+    font-size: 0.75rem;
+  }
+
+  .lake-hint {
+    display: none;
+  }
+
+  /* Mobile bottom navigation */
+  .mobile-nav {
+    position: fixed;
+    z-index: 60;
+    right: 10px;
+    bottom: max(10px, env(safe-area-inset-bottom));
+    left: 10px;
+    display: grid;
+    width: auto;
+    height: var(--mobile-nav-height);
+    padding: 6px;
+    align-items: stretch;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 3px;
+    background: rgba(251, 249, 245, 0.94);
+    border: 1px solid rgba(62, 91, 97, 0.1);
+    border-radius: 23px;
+    box-shadow: 0 14px 36px rgba(38, 65, 71, 0.16);
+    backdrop-filter: blur(20px) saturate(1.1);
+  }
+
+  .mobile-nav-link {
+    display: flex;
+    min-width: 0;
+    min-height: 56px;
+    padding: 5px 2px;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 1px;
+    color: #7a898c;
+    background: transparent;
+    border-radius: 17px;
+    font-size: 0.59rem;
+    line-height: 1.2;
+  }
+
+  .mobile-nav-link i {
+    font-size: 1.35rem;
+  }
+
+  .mobile-nav-link.active,
+  .mobile-nav-link[aria-current="page"] {
+    color: #365f67;
+    background: #e4efed;
+    box-shadow: inset 0 0 0 1px rgba(64, 101, 107, 0.06);
+  }
+
+  /* Mobile dialogs become bottom sheets */
+  .modal,
+  .post-modal,
+  .composer-modal,
+  .profile-modal,
+  .confirm-modal {
+    position: fixed;
+    inset: auto 0 0;
+    width: 100%;
+    max-width: none;
+    max-height: min(92dvh, 900px);
+    padding: 0;
+    margin: auto 0 0;
+    overflow: auto;
+    border-radius: 28px 28px 0 0;
+  }
+
+  .modal[open] {
+    animation: mobile-sheet-in 220ms ease-out both;
+  }
+
+  .modal > form,
+  .modal > article,
+  .post-modal > article {
+    padding: 22px 18px calc(24px + env(safe-area-inset-bottom));
+  }
+
+  .modal-heading {
+    position: sticky;
+    z-index: 2;
+    top: -22px;
+    padding-top: 2px;
+    background: #fcfbf8;
+  }
+
+  .modal-heading h2 {
+    font-size: 1.55rem;
+  }
+
+  .modal-close {
+    width: 44px;
+    height: 44px;
+    min-height: 44px;
+  }
+
+  .two-column {
+    grid-template-columns: 1fr;
+  }
+
+  .modal-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 9px;
+  }
+
+  .modal-actions .button {
+    width: 100%;
+  }
+
+  .detail-body {
+    margin: 20px 0;
+    font-size: 0.88rem;
+    line-height: 1.9;
+  }
+
+  .reply-item {
+    padding: 13px;
+    border-radius: 15px;
+  }
+
+  .reply-item-meta,
+  .detail-footer,
+  .nested-reply-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .reply-item-actions,
+  .post-owner-actions,
+  .nested-reply-actions > div {
+    width: 100%;
+  }
+
+  .reply-action-button,
+  .post-owner-actions .button {
+    min-height: 40px;
+    flex: 1;
+  }
+
+  .reply-compose-row {
+    grid-template-columns: 1fr;
+  }
+
+  .reply-compose-row .button {
+    width: 100%;
+  }
+
+  .toast-region {
+    top: calc(var(--mobile-header-height) + 8px);
+    right: 12px;
+    left: 12px;
+    width: auto;
+  }
+
+  @keyframes mobile-sheet-in {
+    from {
+      opacity: 0;
+      transform: translateY(28px);
+    }
+  }
+}
+
+/* Mobile authentication is a separate, compact entry experience. */
+@media (max-width: 620px) {
+  .auth-shell {
+    display: block;
+    min-height: 100dvh;
+    overflow: visible;
+    background: #eaf2ef;
+  }
+
+  .welcome-panel {
+    min-height: 272px;
+    padding: 18px 18px 54px;
+    background-position: center 58%;
+  }
+
+  .welcome-panel .brand-large {
+    gap: 8px;
+    font-size: 1rem;
+  }
+
+  .welcome-panel .brand-mark {
+    width: 38px;
+    height: 38px;
+    border-radius: 12px;
+  }
+
+  .welcome-copy {
+    max-width: 340px;
+    padding: 0;
+    margin: 38px 0 0;
+  }
+
+  .welcome-copy h1 {
+    max-width: 330px;
+    margin-bottom: 11px;
+    font-size: clamp(2.25rem, 11vw, 3rem);
+    line-height: 1.22;
+  }
+
+  .welcome-copy > p:last-child {
+    display: block;
+    max-width: 320px;
+    margin: 0;
+    font-size: 0.72rem;
+    line-height: 1.65;
+  }
+
+  .auth-panel {
+    position: relative;
+    z-index: 3;
+    min-height: calc(100dvh - 240px);
+    padding: 0 12px calc(28px + env(safe-area-inset-bottom));
+    margin-top: -34px;
+    background: transparent;
+  }
+
+  .auth-card {
+    width: 100%;
+    max-width: 480px;
+    padding: 22px 18px;
+    border-radius: 27px;
+    box-shadow: 0 20px 48px rgba(42, 69, 75, 0.14);
+  }
+
+  .auth-card h2 {
+    margin-bottom: 6px;
+    font-size: 1.82rem;
+  }
+
+  .auth-card > .subtle {
+    font-size: 0.72rem;
+  }
+
+  .auth-card .segmented {
+    margin: 17px 0 18px;
+  }
+
+  .auth-card .segment {
+    min-height: 45px;
+    font-size: 0.76rem;
+  }
+
+  .auth-card .auth-form {
+    gap: 13px;
+  }
+
+  .auth-card label > span:first-child {
+    font-size: 0.69rem;
+  }
+
+  .auth-input-wrap input {
+    min-height: 50px;
+    padding-right: 46px;
+    border-radius: 15px;
+  }
+
+  .auth-card .button-wide {
+    min-height: 50px;
+    margin-top: 3px;
+    border-radius: 16px;
+  }
+
+  .auth-card .auth-note {
+    margin-top: 16px;
+    font-size: 0.63rem;
+    line-height: 1.75;
+  }
+
+  .onboarding-shell {
+    padding: 12px;
+  }
+
+  .onboarding-card {
+    width: 100%;
+    padding: 22px 18px;
+    border-radius: 27px;
+  }
+
+  .fish-picker {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 380px) {
+  :root {
+    --mobile-gutter: 13px;
+  }
+
+  .home-welcome h1,
+  .page-intro h1,
+  .board-intro h1,
+  .profile-intro h1 {
+    font-size: 2rem;
+  }
+
+  .home-progress-values strong,
+  .stat-row strong {
+    font-size: 0.9rem;
+  }
+
+  .aquarium-intro h1 {
+    font-size: 1.02rem;
+  }
+
+  .aquarium-intro .now-studying-badge {
+    font-size: 0.56rem;
+  }
+}

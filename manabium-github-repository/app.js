@@ -252,13 +252,21 @@ function showPage(pageName, updateHash = true) {
   const allowed = ["home", "aquarium", "board", "mypage"];
   const nextPage = allowed.includes(pageName) ? pageName : "home";
 
+  $("#appView").dataset.activePage = nextPage;
+
   $$('[data-page]').forEach((page) => {
     const active = page.dataset.page === nextPage;
     page.hidden = !active;
     page.classList.toggle("active", active);
   });
   $$('[data-view]').forEach((button) => {
-    button.classList.toggle("active", button.dataset.view === nextPage);
+    const active = button.dataset.view === nextPage;
+    button.classList.toggle("active", active);
+    if (active) {
+      button.setAttribute("aria-current", "page");
+    } else {
+      button.removeAttribute("aria-current");
+    }
   });
   if (updateHash) {
     const nextUrl = new URL(location.href);
