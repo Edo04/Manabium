@@ -446,7 +446,8 @@ revoke all on table public.posts from anon, authenticated;
 revoke all on table public.post_likes from anon, authenticated;
 revoke all on table public.post_replies from anon, authenticated;
 
-grant select, insert on table public.profiles to authenticated;
+grant select on table public.profiles to authenticated;
+grant insert (user_id, nickname, grade, major, interests, fish_type) on table public.profiles to authenticated;
 grant update (nickname, grade, major, interests, fish_type) on table public.profiles to authenticated;
 
 grant select, insert, delete on table public.study_sessions to authenticated;

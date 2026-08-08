@@ -487,21 +487,41 @@ async function saveInitialProfile(event) {
   setButtonLoading(button, true);
 
   try {
-    const profile = {
-      user_id: state.user.id,
+    const profileFields = {
       nickname: $("#profileNickname").value.trim(),
       grade: $("#profileGrade").value,
       major: $("#profileMajor").value.trim(),
       interests: parseInterests($("#profileInterests").value),
       fish_type: $("input[name='fishType']:checked").value,
     };
-    if (!state.interestsColumnAvailable) delete profile.interests;
-    const { data, error } = await supabase
+    if (!state.interestsColumnAvailable) delete profileFields.interests;
+    const selectFields = state.interestsColumnAvailable ? PROFILE_FIELDS : PROFILE_FIELDS_WITHOUT_INTERESTS;
+
+    // Auth登録時のトリガーが作った空のプロフィール行を更新します。
+    // upsertでuser_idまで更新すると、変更禁止の主キー権限に触れるため使用しません。
+    let { data, error } = await supabase
       .from("profiles")
-      .upsert(profile, { onConflict: "user_id" })
-      .select()
-      .single();
+      .update(profileFields)
+      .eq("user_id", state.user.id)
+      .select(selectFields)
+      .maybeSingle();
     if (error) throw error;
+
+    // 過去の環境などで自動作成トリガーが未設定でも登録できるようにします。
+    if (!data) {
+      if (state.profile) {
+        const permissionError = new Error("プロフィールの更新が許可されていません。Supabaseのプロフィール設定を確認してください。");
+        permissionError.code = "PROFILE_UPDATE_BLOCKED";
+        throw permissionError;
+      }
+      ({ data, error } = await supabase
+        .from("profiles")
+        .insert({ user_id: state.user.id, ...profileFields })
+        .select(selectFields)
+        .single());
+      if (error) throw error;
+    }
+
     state.profile = normalizeProfile(data);
     showOnly("app");
     renderProfileIdentity();
