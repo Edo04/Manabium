@@ -1,0 +1,6 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "manabium",
+  "pages_build_output_dir": ".",
+  "compatibility_date": "2026-08-07"
+}

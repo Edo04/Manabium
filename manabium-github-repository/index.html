@@ -1,0 +1,762 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="理工系女子が、学習・研究・就活・イベントの情報を安心して共有できるコミュニティ Manabium"
+    />
+    <meta name="theme-color" content="#dff7f5" />
+    <title>Manabium | ひとりじゃない学びの湖</title>
+    <link rel="icon" href="./assets/manabium-icon.png" type="image/png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@500;600&amp;family=Zen+Maru+Gothic:wght@400;500;700&amp;display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.2/src/regular/style.css"
+    />
+    <link rel="stylesheet" href="./style.css" />
+    <script type="module" src="./app.js"></script>
+  </head>
+  <body>
+    <div class="ambient ambient-one" aria-hidden="true"></div>
+    <div class="ambient ambient-two" aria-hidden="true"></div>
+
+    <div id="toastRegion" class="toast-region" aria-live="polite" aria-atomic="true"></div>
+
+    <main id="authView" class="auth-shell">
+      <section class="welcome-panel" aria-labelledby="welcomeTitle">
+        <a class="brand brand-large" href="#" aria-label="Manabium トップ">
+          <img class="brand-mark" src="./assets/manabium-icon.png" alt="" />
+          <span>Manabium</span>
+        </a>
+        <div class="welcome-copy">
+          <p class="eyebrow">STEM GIRLS COMMUNITY</p>
+          <h1 id="welcomeTitle">学びの時間を、<br />ひとりにしない。</h1>
+          <p>
+            同じ理工系の仲間の気配を感じながら勉強し、授業・研究・就活の体験を匿名で分かち合える、小さな湖です。
+          </p>
+        </div>
+        <div class="mini-lake" aria-hidden="true">
+          <img class="mini-fish fish-a" src="./assets/fish-watercolor.png" alt="" />
+          <img class="mini-fish fish-b" src="./assets/fish-watercolor.png" alt="" />
+          <img class="mini-fish fish-c" src="./assets/fish-watercolor.png" alt="" />
+          <span class="mini-bubble bubble-a"></span>
+          <span class="mini-bubble bubble-b"></span>
+          <span class="water-line"></span>
+        </div>
+        <ul class="welcome-points" aria-label="Manabiumの特徴">
+          <li><span aria-hidden="true">◌</span> ニックネームで安心して参加</li>
+          <li><span aria-hidden="true">◌</span> 勉強中の仲間を水槽で感じる</li>
+          <li><span aria-hidden="true">◌</span> 先輩・同級生の体験を見つける</li>
+        </ul>
+      </section>
+
+      <section class="auth-panel" aria-labelledby="authHeading">
+        <div class="auth-card">
+          <p class="mobile-brand">Manabium</p>
+          <h2 id="authHeading">湖へようこそ</h2>
+          <p class="subtle">メールアドレスとパスワードで始められます。</p>
+
+          <div class="segmented" role="tablist" aria-label="認証方法">
+            <button
+              id="loginTab"
+              class="segment active"
+              type="button"
+              role="tab"
+              aria-selected="true"
+              aria-controls="loginForm"
+            >
+              ログイン
+            </button>
+            <button
+              id="signupTab"
+              class="segment"
+              type="button"
+              role="tab"
+              aria-selected="false"
+              aria-controls="signupForm"
+            >
+              新規登録
+            </button>
+          </div>
+
+          <form id="loginForm" class="auth-form" novalidate>
+            <label>
+              <span>メールアドレス</span>
+              <input
+                id="loginEmail"
+                name="email"
+                type="email"
+                autocomplete="email"
+                inputmode="email"
+                placeholder="you@example.com"
+                required
+              />
+            </label>
+            <label>
+              <span>パスワード</span>
+              <input
+                id="loginPassword"
+                name="password"
+                type="password"
+                autocomplete="current-password"
+                minlength="8"
+                placeholder="8文字以上"
+                required
+              />
+            </label>
+            <button class="button button-primary button-wide" type="submit">
+              <span class="button-label">ログインする</span>
+              <span class="spinner" aria-hidden="true"></span>
+            </button>
+          </form>
+
+          <form id="signupForm" class="auth-form" hidden novalidate>
+            <label>
+              <span>メールアドレス</span>
+              <input
+                id="signupEmail"
+                name="email"
+                type="email"
+                autocomplete="email"
+                inputmode="email"
+                placeholder="you@example.com"
+                required
+              />
+            </label>
+            <label>
+              <span>パスワード</span>
+              <input
+                id="signupPassword"
+                name="password"
+                type="password"
+                autocomplete="new-password"
+                minlength="8"
+                placeholder="8文字以上"
+                required
+              />
+            </label>
+            <label>
+              <span>パスワード（確認）</span>
+              <input
+                id="signupPasswordConfirm"
+                name="passwordConfirm"
+                type="password"
+                autocomplete="new-password"
+                minlength="8"
+                placeholder="同じパスワードを入力"
+                required
+              />
+            </label>
+            <label class="check-row">
+              <input id="communityAgreement" type="checkbox" required />
+              <span>相手を尊重し、個人を特定できる情報を書かないことに同意します</span>
+            </label>
+            <button class="button button-primary button-wide" type="submit">
+              <span class="button-label">アカウントを作る</span>
+              <span class="spinner" aria-hidden="true"></span>
+            </button>
+          </form>
+
+          <p class="auth-note">
+            登録後に確認メールが届く場合があります。表示名は次の画面で設定します。
+          </p>
+        </div>
+      </section>
+    </main>
+
+    <main id="onboardingView" class="onboarding-shell" hidden>
+      <section class="onboarding-card" aria-labelledby="setupTitle">
+        <div class="step-chip">STEP 1 / 1</div>
+        <h1 id="setupTitle">あなたの魚を湖へ</h1>
+        <p class="subtle">本名や学校名は不要です。あとからマイページで変更できます。</p>
+
+        <form id="profileForm" class="profile-form" novalidate>
+          <label>
+            <span>ニックネーム</span>
+            <input
+              id="profileNickname"
+              name="nickname"
+              type="text"
+              maxlength="20"
+              placeholder="例：みずいろ"
+              required
+            />
+          </label>
+
+          <div class="two-column">
+            <label>
+              <span>学年</span>
+              <select id="profileGrade" name="grade" required>
+                <option value="">選択してください</option>
+                <option>高校2年</option>
+                <option>高校3年</option>
+                <option>大学1年</option>
+                <option>大学2年</option>
+                <option>大学3年</option>
+                <option>大学4年</option>
+                <option>大学院</option>
+                <option>その他</option>
+              </select>
+            </label>
+            <label>
+              <span>専攻分野</span>
+              <input
+                id="profileMajor"
+                name="major"
+                type="text"
+                maxlength="40"
+                placeholder="例：情報工学"
+                required
+              />
+            </label>
+          </div>
+
+          <label>
+            <span>興味分野 <small>（カンマ区切り・最大8個）</small></span>
+            <input
+              id="profileInterests"
+              name="interests"
+              type="text"
+              maxlength="160"
+              placeholder="例：AI、ロボット、データ分析"
+            />
+          </label>
+
+          <fieldset class="fish-picker">
+            <legend>魚を選ぶ</legend>
+            <label class="fish-choice">
+              <input type="radio" name="fishType" value="coral" checked />
+              <img class="fish-preview fish-coral" src="./assets/fish-watercolor.png" alt="" />
+              <span>コーラル</span>
+            </label>
+            <label class="fish-choice">
+              <input type="radio" name="fishType" value="aqua" />
+              <img class="fish-preview fish-aqua" src="./assets/fish-watercolor.png" alt="" />
+              <span>アクア</span>
+            </label>
+            <label class="fish-choice">
+              <input type="radio" name="fishType" value="lemon" />
+              <img class="fish-preview fish-lemon" src="./assets/fish-watercolor.png" alt="" />
+              <span>レモン</span>
+            </label>
+            <label class="fish-choice">
+              <input type="radio" name="fishType" value="lilac" />
+              <img class="fish-preview fish-lilac" src="./assets/fish-watercolor.png" alt="" />
+              <span>ライラック</span>
+            </label>
+            <label class="fish-choice">
+              <input type="radio" name="fishType" value="mint" />
+              <img class="fish-preview fish-mint" src="./assets/fish-watercolor.png" alt="" />
+              <span>ミント</span>
+            </label>
+            <label class="fish-choice">
+              <input type="radio" name="fishType" value="peach" />
+              <img class="fish-preview fish-peach" src="./assets/fish-watercolor.png" alt="" />
+              <span>ピーチ</span>
+            </label>
+          </fieldset>
+
+          <button class="button button-primary button-wide" type="submit">
+            <span class="button-label">湖に入る</span>
+            <span class="spinner" aria-hidden="true"></span>
+          </button>
+        </form>
+      </section>
+    </main>
+
+    <div id="appView" class="app-shell" hidden>
+      <header class="app-header">
+        <a class="brand" href="#home" data-view-link="home">
+          <img class="brand-mark" src="./assets/manabium-icon.png" alt="" />
+          <span class="brand-word">Manabium</span>
+        </a>
+        <nav class="desktop-nav" aria-label="メインメニュー">
+          <button class="nav-link active" type="button" data-view="home">
+            <i class="ph ph-house" aria-hidden="true"></i><span class="nav-label">ホーム</span>
+          </button>
+          <button class="nav-link" type="button" data-view="aquarium">
+            <i class="ph ph-fish-simple" aria-hidden="true"></i><span class="nav-label">学習水槽</span>
+          </button>
+          <button class="nav-link" type="button" data-view="board" aria-label="ボトルメッセージ">
+            <i class="ph ph-envelope-simple" aria-hidden="true"></i><span class="nav-label">ボトル</span>
+          </button>
+          <button class="nav-link" type="button" data-view="mypage">
+            <i class="ph ph-user-circle" aria-hidden="true"></i><span class="nav-label">マイページ</span>
+          </button>
+        </nav>
+        <div class="header-actions">
+          <button id="headerFish" class="user-fish-button" type="button" data-view="mypage" aria-label="マイページを開く">
+            <img src="./assets/fish-watercolor.png" alt="" />
+          </button>
+        </div>
+      </header>
+
+      <main class="page-container">
+        <section id="homePage" class="page active home-page" data-page="home" aria-labelledby="homePageTitle">
+          <header class="home-welcome">
+            <div class="home-welcome-copy">
+              <p class="eyebrow">TODAY AT MANABIUM</p>
+              <h1 id="homePageTitle">おかえりなさい、<span id="homeGreetingName">あなた</span>さん</h1>
+              <p>小さく始めて、今日の学びをひとつ積み重ねよう。</p>
+            </div>
+            <div class="home-community-status">
+              <span class="pulse-dot" aria-hidden="true"></span>
+              <div><strong id="homeActiveUserCount">0</strong><span>人がいま勉強中</span></div>
+            </div>
+          </header>
+
+          <section class="study-controller home-study-controller" aria-labelledby="timerHeading">
+            <div class="controller-copy">
+              <span class="controller-icon" aria-hidden="true"><i class="ph ph-book-open-text"></i></span>
+              <div>
+                <h2 id="timerHeading">今日、何を学ぶ？</h2>
+                <p>勉強内容は水槽にいる仲間にだけ見えます。</p>
+              </div>
+            </div>
+            <div id="studyStartControls" class="study-start-controls">
+              <label class="sr-only" for="studyTopic">勉強内容</label>
+              <input id="studyTopic" type="text" maxlength="80" placeholder="例：線形代数のレポート" />
+              <button id="startStudyButton" class="button button-coral" type="button">
+                <i class="ph ph-play" aria-hidden="true"></i> 勉強を始める
+              </button>
+            </div>
+            <div id="studyRunningControls" class="study-running-controls" hidden>
+              <div>
+                <span id="runningTopic" class="running-topic">学習中</span>
+                <strong id="studyTimer" class="study-timer">00:00:00</strong>
+              </div>
+              <button id="stopStudyButton" class="button button-outline" type="button">学習を終了</button>
+            </div>
+          </section>
+
+          <div class="home-content-grid">
+            <section class="home-aquarium-card" aria-labelledby="homeAquariumTitle">
+              <div>
+                <p class="eyebrow">STUDY TOGETHER</p>
+                <h2 id="homeAquariumTitle">仲間の気配を見に行く</h2>
+                <p>静かな水槽で、同じ時間に学んでいる人を感じられます。</p>
+                <button class="button button-light" type="button" data-view="aquarium">
+                  水槽をひらく <i class="ph ph-arrow-right" aria-hidden="true"></i>
+                </button>
+              </div>
+            </section>
+
+            <section class="home-message-card" aria-labelledby="homeMessageTitle">
+              <img src="./assets/message-bottle.png" alt="ボトルメッセージ" />
+              <div>
+                <p class="eyebrow">NEW BOTTLE</p>
+                <h2 id="homeMessageTitle">新しく流れてきた話</h2>
+                <p id="homeLatestPostTitle" class="home-latest-title">まだ新しいボトルはありません</p>
+                <p id="homeLatestPostMeta" class="home-latest-meta">授業・研究・進路の体験を探せます。</p>
+                <button class="small-link" type="button" data-view="board">ボトルを読む</button>
+              </div>
+            </section>
+
+            <section class="home-progress-card" aria-labelledby="homeProgressTitle">
+              <div class="home-card-heading">
+                <div>
+                  <p class="eyebrow">MY PROGRESS</p>
+                  <h2 id="homeProgressTitle">今週の積み重ね</h2>
+                </div>
+                <i class="ph ph-chart-line-up" aria-hidden="true"></i>
+              </div>
+              <div class="home-progress-values">
+                <div><strong id="homeStudyTime">0分</strong><span>学習時間</span></div>
+                <div><strong id="homeSessionCount">0回</strong><span>完了した学習</span></div>
+                <div><strong id="homeReplyCount">0件</strong><span>届いた返信</span></div>
+              </div>
+              <button class="small-link" type="button" data-view="mypage">記録を見る</button>
+            </section>
+          </div>
+        </section>
+
+        <section id="aquariumPage" class="page" data-page="aquarium" aria-labelledby="aquariumTitle" hidden>
+          <div class="page-intro aquarium-intro">
+            <div>
+              <p class="eyebrow">LIVE AQUARIUM</p>
+              <h1 id="aquariumTitle">みんなの学習水槽</h1>
+              <p>専攻や興味の近い仲間から、いま学んでいることが見られます。</p>
+            </div>
+            <div class="now-studying-badge">
+              <span class="pulse-dot" aria-hidden="true"></span>
+              <strong id="activeUserCount">0</strong> 人が勉強中
+            </div>
+          </div>
+
+          <section class="lake-card" aria-labelledby="lakeTitle">
+            <div class="lake-toolbar">
+              <div>
+                <p class="eyebrow">LIVE AQUARIUM</p>
+                <h2 id="lakeTitle">みんなの気配</h2>
+              </div>
+              <button id="refreshLakeButton" class="icon-text-button" type="button">
+                <span aria-hidden="true">↻</span> 更新
+              </button>
+            </div>
+            <div id="lakeSurface" class="lake-surface">
+              <div id="fishLayer" class="fish-layer"></div>
+              <div id="bottleLayer" class="bottle-layer"></div>
+              <div id="lakeEmpty" class="lake-empty">
+                <span aria-hidden="true">◌</span>
+                <p>いまは静かな湖です。最初の一匹になってみませんか？</p>
+              </div>
+            </div>
+            <p class="lake-hint">専攻・興味の近い仲間とボトルを優先表示しています。魚をタップすると詳しく見られます。</p>
+          </section>
+
+          <section id="aquariumStudyDock" class="aquarium-study-dock" aria-label="現在の学習" hidden>
+            <span class="aquarium-study-icon" aria-hidden="true"><i class="ph ph-book-open-text"></i></span>
+            <div class="aquarium-study-copy">
+              <span>いま学んでいること</span>
+              <strong id="aquariumStudyTopic">学習中</strong>
+            </div>
+            <strong id="aquariumStudyTimer" class="aquarium-study-timer">00:00:00</strong>
+            <button id="aquariumStopStudyButton" class="button button-light aquarium-stop-button" type="button">
+              学習を終了
+            </button>
+          </section>
+
+          <aside id="fishDrawer" class="fish-drawer" aria-live="polite" hidden>
+            <button id="closeFishDrawer" class="drawer-close" type="button" aria-label="閉じる">×</button>
+            <img id="drawerFish" class="drawer-fish" src="./assets/fish-watercolor.png" alt="" />
+            <div>
+              <p id="drawerMatchBadge" class="drawer-match-badge" hidden>あなたと近い分野</p>
+              <p id="drawerName" class="drawer-name">仲間の魚</p>
+              <p id="drawerMeta" class="drawer-meta">専攻・学年</p>
+              <div id="drawerInterests" class="drawer-interest-list"></div>
+              <p id="drawerTopic" class="drawer-topic">勉強中</p>
+              <p id="drawerElapsed" class="drawer-elapsed"></p>
+            </div>
+          </aside>
+        </section>
+
+        <section id="boardPage" class="page" data-page="board" aria-labelledby="boardTitle" hidden>
+          <div class="page-intro board-intro">
+            <div>
+              <p class="eyebrow">BOTTLE MESSAGE</p>
+              <h1 id="boardTitle">ボトルメッセージ</h1>
+              <p>誰かの経験が、いまのあなたのヒントになるかもしれません。</p>
+            </div>
+            <button id="openComposerButton" class="button button-primary" type="button">
+              <i class="ph ph-paper-plane-tilt" aria-hidden="true"></i> メッセージを流す
+            </button>
+          </div>
+
+          <div id="categoryFilters" class="category-filters" role="group" aria-label="カテゴリーで絞り込む">
+            <button class="category-chip active" type="button" data-category="all">すべて</button>
+            <button class="category-chip" type="button" data-category="授業">授業</button>
+            <button class="category-chip" type="button" data-category="研究">研究</button>
+            <button class="category-chip" type="button" data-category="就活">就活</button>
+            <button class="category-chip" type="button" data-category="イベント">イベント</button>
+          </div>
+
+          <div id="postList" class="post-grid" aria-live="polite"></div>
+          <div id="postEmpty" class="empty-card" hidden>
+            <span aria-hidden="true">✉</span>
+            <h2>まだボトルがありません</h2>
+            <p>このカテゴリーの最初のメッセージを流してみましょう。</p>
+          </div>
+        </section>
+
+        <section id="mypagePage" class="page" data-page="mypage" aria-labelledby="mypageTitle" hidden>
+          <div class="page-intro profile-intro">
+            <div>
+              <p class="eyebrow">MY PAGE</p>
+              <h1 id="mypageTitle">マイページ</h1>
+              <p>積み重ねた学びと、流したメッセージを振り返れます。</p>
+            </div>
+            <button id="logoutButton" class="button button-ghost" type="button">ログアウト</button>
+          </div>
+
+          <div class="profile-grid">
+            <section class="profile-card user-profile-card" aria-labelledby="profileSummaryTitle">
+              <button id="editProfileButton" class="small-link" type="button">編集</button>
+              <img id="myFish" class="my-fish" src="./assets/fish-watercolor.png" alt="" />
+              <h2 id="profileSummaryTitle"><span id="myNickname">—</span></h2>
+              <p id="myMeta">—</p>
+              <div id="myInterests" class="profile-interest-list"></div>
+              <p class="privacy-note">本名・学校名は表示されません</p>
+            </section>
+
+            <section class="profile-card stats-card" aria-labelledby="statsTitle">
+              <div class="section-heading">
+                <div>
+                  <p class="eyebrow">STUDY LOG</p>
+                  <h2 id="statsTitle">学びの記録</h2>
+                </div>
+              </div>
+              <div class="stat-row">
+                <div><strong id="totalStudyTime">0分</strong><span>累計学習時間</span></div>
+                <div><strong id="completedSessionCount">0回</strong><span>完了セッション</span></div>
+                <div><strong id="myPostCount">0件</strong><span>投稿</span></div>
+              </div>
+              <div id="weeklyChart" class="weekly-chart" aria-label="直近7日間の学習時間"></div>
+            </section>
+          </div>
+
+          <div class="history-grid">
+            <section class="history-card" aria-labelledby="sessionHistoryTitle">
+              <div class="section-heading">
+                <h2 id="sessionHistoryTitle">最近の学習</h2>
+              </div>
+              <div id="sessionHistory" class="history-list"></div>
+            </section>
+            <section class="history-card" aria-labelledby="myPostsTitle">
+              <div class="section-heading">
+                <h2 id="myPostsTitle">自分のボトル</h2>
+              </div>
+              <div id="myPostList" class="history-list"></div>
+            </section>
+          </div>
+        </section>
+      </main>
+
+      <nav class="mobile-nav" aria-label="モバイルメニュー">
+        <button class="mobile-nav-link active" type="button" data-view="home">
+          <i class="ph ph-house" aria-hidden="true"></i><span>ホーム</span>
+        </button>
+        <button class="mobile-nav-link" type="button" data-view="aquarium">
+          <i class="ph ph-fish-simple" aria-hidden="true"></i><span>水槽</span>
+        </button>
+        <button class="mobile-nav-link" type="button" data-view="board">
+          <i class="ph ph-envelope-simple" aria-hidden="true"></i><span>ボトル</span>
+        </button>
+        <button class="mobile-nav-link" type="button" data-view="mypage">
+          <i class="ph ph-user-circle" aria-hidden="true"></i><span>マイページ</span>
+        </button>
+      </nav>
+    </div>
+
+    <dialog id="composerDialog" class="modal composer-modal">
+      <form id="postForm" method="dialog" novalidate>
+        <div class="modal-heading">
+          <div>
+            <p class="eyebrow">NEW MESSAGE</p>
+            <h2>ボトルを流す</h2>
+          </div>
+          <button class="modal-close" type="button" data-close-dialog="composerDialog" aria-label="閉じる">×</button>
+        </div>
+        <p class="subtle">学校名・研究室名・氏名など、個人を特定できる情報は書かないでください。</p>
+
+        <div class="two-column">
+          <label>
+            <span>カテゴリー</span>
+            <select id="postCategory" required>
+              <option value="授業">授業</option>
+              <option value="研究">研究</option>
+              <option value="就活">就活</option>
+              <option value="イベント">イベント</option>
+            </select>
+          </label>
+          <label>
+            <span>投稿の種類</span>
+            <select id="postType" required>
+              <option value="相談">相談したい</option>
+              <option value="情報共有">情報を共有したい</option>
+            </select>
+          </label>
+        </div>
+        <label>
+          <span>タイトル</span>
+          <input id="postTitle" type="text" maxlength="80" placeholder="何についてのメッセージですか？" required />
+        </label>
+        <label>
+          <span>本文</span>
+          <textarea
+            id="postBody"
+            rows="7"
+            maxlength="2000"
+            placeholder="経験したことや、聞いてみたいことを書いてください。"
+            required
+          ></textarea>
+          <small><span id="postCharacterCount">0</span> / 2000</small>
+        </label>
+
+        <section class="ai-helper" aria-labelledby="aiHelperTitle">
+          <div>
+            <span class="ai-spark" aria-hidden="true">✦</span>
+            <div>
+              <h3 id="aiHelperTitle">AI投稿サポート</h3>
+              <p>文章の雰囲気を確認したり、意味を変えずに読みやすく整えたりできます。</p>
+            </div>
+          </div>
+          <div class="ai-actions">
+            <button id="analyzePostButton" class="button button-small button-ghost" type="button">雰囲気を確認</button>
+            <button id="rewritePostButton" class="button button-small button-ai" type="button">読みやすく整える</button>
+          </div>
+          <div id="aiResult" class="ai-result" aria-live="polite" hidden></div>
+        </section>
+
+        <div class="modal-actions">
+          <button class="button button-ghost" type="button" data-close-dialog="composerDialog">キャンセル</button>
+          <button id="submitPostButton" class="button button-primary" type="submit">
+            <span class="button-label">湖へ流す</span>
+            <span class="spinner" aria-hidden="true"></span>
+          </button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="postDialog" class="modal post-modal">
+      <article>
+        <div class="modal-heading">
+          <div id="detailBadges" class="post-badges"></div>
+          <button class="modal-close" type="button" data-close-dialog="postDialog" aria-label="閉じる">×</button>
+        </div>
+        <h2 id="detailTitle"></h2>
+        <p id="detailMeta" class="post-meta"></p>
+        <p id="detailBody" class="detail-body"></p>
+        <div class="detail-footer">
+          <button id="detailLikeButton" class="like-button" type="button"></button>
+          <div id="postOwnerActions" class="post-owner-actions" hidden>
+            <button id="editPostButton" class="button button-small button-ghost" type="button">
+              <i class="ph ph-pencil-simple" aria-hidden="true"></i> 編集
+            </button>
+            <button id="deletePostButton" class="button button-small button-danger-ghost" type="button">
+              <i class="ph ph-trash" aria-hidden="true"></i> 削除
+            </button>
+          </div>
+        </div>
+        <section class="reply-section" aria-labelledby="replyTitle">
+          <div class="reply-section-heading">
+            <div>
+              <p class="eyebrow">REPLIES</p>
+              <h3 id="replyTitle">届いた返信</h3>
+            </div>
+            <span id="detailReplyCount" class="reply-count">0件</span>
+          </div>
+          <div id="replyList" class="reply-list" aria-live="polite"></div>
+          <p id="replyOwnerNotice" class="reply-owner-notice" hidden><i class="ph ph-lock-key" aria-hidden="true"></i> この返信は、あなたと返信した人だけが確認できます。</p>
+          <form id="replyForm" class="reply-form" novalidate>
+            <label for="replyBody">このボトルに返信する</label>
+            <div class="reply-compose-row">
+              <textarea id="replyBody" rows="3" maxlength="1000" placeholder="体験やアドバイスを、やさしい言葉で届けよう" required></textarea>
+              <button id="submitReplyButton" class="button button-primary" type="submit">
+                <span class="button-label">返信する</span>
+                <span class="spinner" aria-hidden="true"></span>
+              </button>
+            </div>
+            <p class="reply-delivery-note"><i class="ph ph-drop" aria-hidden="true"></i> 返信ボトルは、この投稿を書いた人の学習水槽だけに届きます。</p>
+          </form>
+        </section>
+      </article>
+    </dialog>
+
+    <dialog id="editPostDialog" class="modal composer-modal">
+      <form id="editPostForm" method="dialog" novalidate>
+        <div class="modal-heading">
+          <div>
+            <p class="eyebrow">EDIT BOTTLE</p>
+            <h2>ボトルを編集</h2>
+          </div>
+          <button class="modal-close" type="button" data-close-dialog="editPostDialog" aria-label="閉じる">×</button>
+        </div>
+
+        <div class="two-column">
+          <label>
+            <span>カテゴリー</span>
+            <select id="editPostCategory" required>
+              <option value="授業">授業</option>
+              <option value="研究">研究</option>
+              <option value="就活">就活</option>
+              <option value="イベント">イベント</option>
+            </select>
+          </label>
+          <label>
+            <span>投稿の種類</span>
+            <select id="editPostType" required>
+              <option value="相談">相談したい</option>
+              <option value="情報共有">情報を共有したい</option>
+            </select>
+          </label>
+        </div>
+        <label>
+          <span>タイトル</span>
+          <input id="editPostTitle" type="text" maxlength="80" required />
+        </label>
+        <label>
+          <span>本文</span>
+          <textarea id="editPostBody" rows="7" maxlength="2000" required></textarea>
+          <small><span id="editPostCharacterCount">0</span> / 2000</small>
+        </label>
+        <div class="modal-actions">
+          <button class="button button-ghost" type="button" data-close-dialog="editPostDialog">キャンセル</button>
+          <button id="saveEditedPostButton" class="button button-primary" type="submit">
+            <span class="button-label">変更を保存</span><span class="spinner" aria-hidden="true"></span>
+          </button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="deletePostDialog" class="modal confirm-modal">
+      <article>
+        <span class="confirm-icon" aria-hidden="true"><i class="ph ph-trash"></i></span>
+        <p class="eyebrow">DELETE BOTTLE</p>
+        <h2>このボトルを削除しますか？</h2>
+        <p>「<span id="deletePostTitle">この投稿</span>」と、届いた返信も削除されます。この操作は元に戻せません。</p>
+        <div class="modal-actions">
+          <button class="button button-ghost" type="button" data-close-dialog="deletePostDialog">キャンセル</button>
+          <button id="confirmDeletePostButton" class="button button-danger" type="button">
+            <span class="button-label">削除する</span><span class="spinner" aria-hidden="true"></span>
+          </button>
+        </div>
+      </article>
+    </dialog>
+
+    <dialog id="editProfileDialog" class="modal profile-modal">
+      <form id="editProfileForm" method="dialog" novalidate>
+        <div class="modal-heading">
+          <h2>プロフィール編集</h2>
+          <button class="modal-close" type="button" data-close-dialog="editProfileDialog" aria-label="閉じる">×</button>
+        </div>
+        <label>
+          <span>ニックネーム</span>
+          <input id="editNickname" type="text" maxlength="20" required />
+        </label>
+        <div class="two-column">
+          <label>
+            <span>学年</span>
+            <select id="editGrade" required>
+              <option>高校2年</option><option>高校3年</option><option>大学1年</option><option>大学2年</option>
+              <option>大学3年</option><option>大学4年</option><option>大学院</option><option>その他</option>
+            </select>
+          </label>
+          <label>
+            <span>専攻分野</span>
+            <input id="editMajor" type="text" maxlength="40" required />
+          </label>
+        </div>
+        <label>
+          <span>興味分野 <small>（カンマ区切り・最大8個）</small></span>
+          <input id="editInterests" type="text" maxlength="160" placeholder="例：AI、ロボット、データ分析" />
+        </label>
+        <fieldset class="compact-fish-picker">
+          <legend>魚</legend>
+          <label><input type="radio" name="editFishType" value="coral" /><img class="fish-coral" src="./assets/fish-watercolor.png" alt="コーラル" /></label>
+          <label><input type="radio" name="editFishType" value="aqua" /><img class="fish-aqua" src="./assets/fish-watercolor.png" alt="アクア" /></label>
+          <label><input type="radio" name="editFishType" value="lemon" /><img class="fish-lemon" src="./assets/fish-watercolor.png" alt="レモン" /></label>
+          <label><input type="radio" name="editFishType" value="lilac" /><img class="fish-lilac" src="./assets/fish-watercolor.png" alt="ライラック" /></label>
+          <label><input type="radio" name="editFishType" value="mint" /><img class="fish-mint" src="./assets/fish-watercolor.png" alt="ミント" /></label>
+          <label><input type="radio" name="editFishType" value="peach" /><img class="fish-peach" src="./assets/fish-watercolor.png" alt="ピーチ" /></label>
+        </fieldset>
+        <div class="modal-actions">
+          <button class="button button-ghost" type="button" data-close-dialog="editProfileDialog">キャンセル</button>
+          <button class="button button-primary" type="submit">
+            <span class="button-label">保存する</span><span class="spinner" aria-hidden="true"></span>
+          </button>
+        </div>
+      </form>
+    </dialog>
+
+    <noscript>
+      <div class="noscript">Manabiumを利用するにはJavaScriptを有効にしてください。</div>
+    </noscript>
+  </body>
+</html>
