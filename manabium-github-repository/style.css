@@ -2387,6 +2387,82 @@ textarea:focus {
   font-size: 0.72rem;
 }
 
+.reply-item-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.reply-item-actions,
+.reply-edit-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 7px;
+}
+
+.reply-action-button {
+  display: inline-flex;
+  min-height: 32px;
+  padding: 6px 10px;
+  border: 1px solid rgba(96, 126, 132, 0.2);
+  border-radius: 999px;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  color: #58767c;
+  background: rgba(255, 255, 255, 0.7);
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 160ms ease, background-color 160ms ease, border-color 160ms ease;
+}
+
+.reply-action-button:hover {
+  border-color: rgba(76, 116, 123, 0.38);
+  background: #fff;
+  transform: translateY(-1px);
+}
+
+.reply-action-button.danger {
+  color: #a46162;
+}
+
+.reply-action-button.save {
+  border-color: #789ba1;
+  color: #fff;
+  background: #789ba1;
+}
+
+.reply-action-button.cancel {
+  background: transparent;
+}
+
+.reply-edit-form {
+  display: grid;
+  gap: 10px;
+}
+
+.reply-edit-form textarea {
+  width: 100%;
+  min-height: 96px;
+  padding: 12px 14px;
+  border: 1px solid rgba(91, 126, 133, 0.26);
+  border-radius: 13px;
+  color: #385960;
+  background: rgba(255, 255, 255, 0.86);
+  font: inherit;
+  line-height: 1.75;
+  resize: vertical;
+}
+
+.reply-edit-form textarea:focus {
+  border-color: #789ba1;
+  outline: 3px solid rgba(120, 155, 161, 0.16);
+}
+
 .reply-empty {
   padding: 20px;
   color: #70868a;
@@ -3519,5 +3595,14 @@ textarea {
 
   .post-owner-actions .button {
     flex: 1;
+  }
+
+  .reply-item-meta {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .reply-item-actions {
+    width: 100%;
   }
 }

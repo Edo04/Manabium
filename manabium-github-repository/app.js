@@ -64,6 +64,7 @@ const state = {
   selectedCategory: "all",
   currentStudy: null,
   selectedPostId: null,
+  editingReplyId: null,
   timerId: null,
   realtimeChannel: null,
   presenceChannel: null,
@@ -306,6 +307,8 @@ function bindStaticEvents() {
   });
   $("#confirmDeletePostButton").addEventListener("click", deleteSelectedPost);
   $("#replyForm").addEventListener("submit", submitReply);
+  $("#replyList").addEventListener("click", handleReplyListClick);
+  $("#replyList").addEventListener("submit", saveEditedReply);
   $("#analyzePostButton").addEventListener("click", () => runAiHelper("analyze"));
   $("#rewritePostButton").addEventListener("click", () => runAiHelper("rewrite"));
 
@@ -434,6 +437,8 @@ function cleanupSignedInState() {
   state.mySessions = [];
   state.myPosts = [];
   state.currentStudy = null;
+  state.selectedPostId = null;
+  state.editingReplyId = null;
   state.likedPostIds.clear();
   state.onlineUserIds.clear();
   state.presenceReady = false;
@@ -1060,6 +1065,7 @@ async function submitPost(event) {
 function openPost(postId, show = true) {
   const post = state.posts.find((item) => item.id === postId);
   if (!post) return;
+  if (show || state.selectedPostId !== post.id) state.editingReplyId = null;
   state.selectedPostId = post.id;
   $("#detailBadges").innerHTML = `<span class="post-badge">${escapeHTML(post.category)}</span><span class="post-badge type">${escapeHTML(post.post_type)}</span>`;
   $("#detailTitle").textContent = post.title;
@@ -1222,13 +1228,140 @@ function renderReplies(postId) {
   replies.forEach((reply) => {
     const item = document.createElement("article");
     item.className = "reply-item";
+    item.dataset.replyId = reply.id;
     const author = reply.profile?.nickname ?? "湖の仲間";
     const meta = [reply.profile?.grade, reply.profile?.major].filter(Boolean).join("・");
-    item.innerHTML = `
-      <p>${escapeHTML(reply.body)}</p>
-      <footer>${escapeHTML(author)}${meta ? `・${escapeHTML(meta)}` : ""}・${formatRelativeDate(reply.created_at)}</footer>`;
+    const isSender = reply.sender_user_id === state.user?.id;
+    const isEditing = isSender && state.editingReplyId === reply.id;
+
+    if (isEditing) {
+      item.classList.add("editing");
+      item.innerHTML = `
+        <form class="reply-edit-form" data-reply-edit-form="${escapeHTML(reply.id)}">
+          <label class="sr-only" for="reply-editor-${escapeHTML(reply.id)}">返信内容を編集</label>
+          <textarea id="reply-editor-${escapeHTML(reply.id)}" data-reply-editor="${escapeHTML(reply.id)}" rows="4" maxlength="1000" required>${escapeHTML(reply.body)}</textarea>
+          <div class="reply-edit-actions">
+            <button type="button" class="reply-action-button cancel" data-reply-action="cancel" data-reply-id="${escapeHTML(reply.id)}">キャンセル</button>
+            <button type="submit" class="reply-action-button save" data-reply-id="${escapeHTML(reply.id)}">
+              <span class="button-label">保存する</span>
+            </button>
+          </div>
+        </form>`;
+    } else {
+      item.innerHTML = `
+        <p>${escapeHTML(reply.body)}</p>
+        <div class="reply-item-meta">
+          <footer>${escapeHTML(author)}${meta ? `・${escapeHTML(meta)}` : ""}・${formatRelativeDate(reply.created_at)}</footer>
+          ${isSender ? `
+            <div class="reply-item-actions" aria-label="返信の操作">
+              <button type="button" class="reply-action-button" data-reply-action="edit" data-reply-id="${escapeHTML(reply.id)}"><i class="ph ph-pencil-simple" aria-hidden="true"></i> 編集</button>
+              <button type="button" class="reply-action-button danger" data-reply-action="delete" data-reply-id="${escapeHTML(reply.id)}"><i class="ph ph-trash" aria-hidden="true"></i> 削除</button>
+            </div>` : ""}
+        </div>`;
+    }
     container.append(item);
   });
+}
+
+function ownReply(replyId) {
+  return state.replies.find((reply) => reply.id === replyId && reply.sender_user_id === state.user?.id) ?? null;
+}
+
+function handleReplyListClick(event) {
+  const button = event.target.closest("[data-reply-action]");
+  if (!button) return;
+  const reply = ownReply(button.dataset.replyId);
+  if (!reply) {
+    showToast("この返信は操作できません。", "error");
+    return;
+  }
+
+  if (button.dataset.replyAction === "edit") {
+    state.editingReplyId = reply.id;
+    renderReplies(reply.post_id);
+    window.setTimeout(() => $(`[data-reply-editor="${reply.id}"]`)?.focus(), 50);
+    return;
+  }
+
+  if (button.dataset.replyAction === "cancel") {
+    state.editingReplyId = null;
+    renderReplies(reply.post_id);
+    return;
+  }
+
+  if (button.dataset.replyAction === "delete") deleteOwnReply(reply);
+}
+
+async function saveEditedReply(event) {
+  const form = event.target.closest("[data-reply-edit-form]");
+  if (!form) return;
+  event.preventDefault();
+  if (!form.reportValidity()) return;
+
+  const reply = ownReply(form.dataset.replyEditForm);
+  if (!reply) {
+    showToast("この返信は編集できません。", "error");
+    return;
+  }
+  const body = $(`[data-reply-editor="${reply.id}"]`, form)?.value.trim();
+  if (!body) {
+    showToast("返信内容を入力してください。", "error");
+    return;
+  }
+  const button = $("button[type='submit']", form);
+  setButtonLoading(button, true);
+
+  try {
+    if (IS_PREVIEW_MODE) {
+      reply.body = body;
+    } else {
+      const { error } = await supabase
+        .from("post_replies")
+        .update({ body })
+        .eq("id", reply.id)
+        .eq("sender_user_id", state.user.id);
+      if (error) throw error;
+      await loadReplies();
+    }
+    state.editingReplyId = null;
+    renderReplies(reply.post_id);
+    showToast("返信を更新しました。", "success");
+  } catch (error) {
+    showToast(readableError(error), "error");
+  } finally {
+    setButtonLoading(button, false);
+  }
+}
+
+async function deleteOwnReply(reply) {
+  if (!ownReply(reply.id)) {
+    showToast("この返信は削除できません。", "error");
+    return;
+  }
+  if (!window.confirm("この返信を削除しますか？\nこの操作は元に戻せません。")) return;
+
+  try {
+    if (IS_PREVIEW_MODE) {
+      state.replies = state.replies.filter((item) => item.id !== reply.id);
+    } else {
+      const { error } = await supabase
+        .from("post_replies")
+        .delete()
+        .eq("id", reply.id)
+        .eq("sender_user_id", state.user.id);
+      if (error) throw error;
+      await loadReplies();
+    }
+    if (state.editingReplyId === reply.id) state.editingReplyId = null;
+    renderReplies(reply.post_id);
+    renderPosts();
+    renderBottles();
+    renderMyPosts();
+    renderHome();
+    showToast("返信を削除しました。", "success");
+  } catch (error) {
+    showToast(readableError(error), "error");
+  }
 }
 
 async function submitReply(event) {
