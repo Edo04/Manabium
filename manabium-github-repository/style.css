@@ -4054,3 +4054,108 @@ textarea {
     width: 100%;
   }
 }
+
+/* Threaded private replies */
+.reply-item {
+  position: relative;
+  margin-left: var(--reply-indent, 0);
+  transition: margin 180ms ease, background-color 180ms ease;
+}
+
+.reply-item.is-thread-reply::before {
+  position: absolute;
+  top: -11px;
+  bottom: 50%;
+  left: -15px;
+  width: 10px;
+  content: "";
+  border-bottom: 1px solid rgba(87, 123, 130, 0.24);
+  border-left: 1px solid rgba(87, 123, 130, 0.24);
+  border-radius: 0 0 0 8px;
+}
+
+.reply-context {
+  display: flex;
+  margin-bottom: 7px !important;
+  align-items: center;
+  gap: 5px;
+  color: #789095 !important;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.reply-body {
+  margin-bottom: 9px !important;
+}
+
+.reply-action-button.reply {
+  color: #47727a;
+  background: #edf4f2;
+  border-color: rgba(76, 117, 123, 0.16);
+}
+
+.nested-reply-form {
+  display: grid;
+  padding-top: 14px;
+  margin-top: 13px;
+  gap: 9px;
+  border-top: 1px solid rgba(81, 119, 125, 0.13);
+}
+
+.nested-reply-form > label {
+  color: #456971;
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.nested-reply-form textarea {
+  min-height: 90px;
+  padding: 12px 14px;
+  color: #385960;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(91, 126, 133, 0.23);
+  border-radius: 13px;
+  resize: vertical;
+}
+
+.nested-reply-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.nested-reply-actions > p {
+  display: flex;
+  margin: 0;
+  align-items: center;
+  gap: 5px;
+  color: #6d858a;
+  font-size: 0.66rem;
+}
+
+.nested-reply-actions > div {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 7px;
+}
+
+@media (max-width: 620px) {
+  .reply-item {
+    margin-left: var(--reply-indent-mobile, 0);
+  }
+
+  .reply-item.is-thread-reply::before {
+    left: -8px;
+    width: 6px;
+  }
+
+  .nested-reply-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .nested-reply-actions > div {
+    justify-content: flex-end;
+  }
+}

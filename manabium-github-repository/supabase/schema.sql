@@ -85,10 +85,11 @@ create table if not exists public.post_likes (
 
 create index if not exists post_likes_user_idx on public.post_likes (user_id);
 
--- 投稿への非公開返信。送信者と元投稿者だけが内容を読めます。
+-- 投稿への非公開返信。parent_reply_idがある場合は、返信同士の1対1スレッドになります。
 create table if not exists public.post_replies (
   id uuid primary key default gen_random_uuid(),
   post_id uuid not null references public.posts(id) on delete cascade,
+  parent_reply_id uuid references public.post_replies(id) on delete set null,
   sender_user_id uuid not null references auth.users(id) on delete cascade,
   recipient_user_id uuid not null references auth.users(id) on delete cascade,
   body text not null check (char_length(body) between 1 and 1000),
@@ -97,12 +98,25 @@ create table if not exists public.post_replies (
   constraint reply_sender_and_recipient_are_different check (sender_user_id <> recipient_user_id)
 );
 
+-- 既存テーブルへschema.sqlを再実行した場合も、スレッド列と外部キーを追加します。
+alter table public.post_replies
+  add column if not exists parent_reply_id uuid;
+alter table public.post_replies
+  drop constraint if exists post_replies_parent_reply_id_fkey;
+alter table public.post_replies
+  add constraint post_replies_parent_reply_id_fkey
+  foreign key (parent_reply_id)
+  references public.post_replies(id)
+  on delete set null;
+
 create index if not exists post_replies_post_created_idx
   on public.post_replies (post_id, created_at desc);
 create index if not exists post_replies_recipient_created_idx
   on public.post_replies (recipient_user_id, created_at desc);
 create index if not exists post_replies_sender_created_idx
   on public.post_replies (sender_user_id, created_at desc);
+create index if not exists post_replies_parent_created_idx
+  on public.post_replies (parent_reply_id, created_at asc);
 
 -- ============================================================
 -- 2. Database functions and triggers
@@ -235,18 +249,36 @@ set like_count = (
   where pl.post_id = p.id
 );
 
--- 返信先はブラウザから受け取らず、必ず元投稿の作成者へ固定します。
+-- 最初の返信は元投稿者へ、返信への返信は直前の送信者へ届けます。
+-- parent_reply_idを使う場合、直前の受信者だけが次の返信を送れます。
 create or replace function public.set_reply_recipient()
 returns trigger
 language plpgsql
 security definer
 set search_path = ''
 as $$
+declare
+  parent_post_id uuid;
+  parent_sender_user_id uuid;
+  parent_recipient_user_id uuid;
 begin
-  new.recipient_user_id := (
-    select p.user_id from public.posts p where p.id = new.post_id
-  );
-  if new.recipient_user_id is null then raise exception 'Post not found'; end if;
+  if new.parent_reply_id is null then
+    new.recipient_user_id := (
+      select p.user_id from public.posts p where p.id = new.post_id
+    );
+    if new.recipient_user_id is null then raise exception 'Post not found'; end if;
+  else
+    select r.post_id, r.sender_user_id, r.recipient_user_id
+      into parent_post_id, parent_sender_user_id, parent_recipient_user_id
+      from public.post_replies r
+      where r.id = new.parent_reply_id;
+    if parent_post_id is null then raise exception 'Parent reply not found'; end if;
+    if new.sender_user_id <> parent_recipient_user_id then
+      raise exception 'Only the reply recipient can respond';
+    end if;
+    new.post_id := parent_post_id;
+    new.recipient_user_id := parent_sender_user_id;
+  end if;
   if new.recipient_user_id = new.sender_user_id then raise exception 'Cannot reply to your own post'; end if;
   new.is_read := false;
   return new;
@@ -374,16 +406,13 @@ using (
 );
 
 drop policy if exists "Users can reply as themselves to another users post" on public.post_replies;
-create policy "Users can reply as themselves to another users post"
+drop policy if exists "Users can send private threaded replies" on public.post_replies;
+create policy "Users can send private threaded replies"
 on public.post_replies for insert
 to authenticated
 with check (
   (select auth.uid()) = sender_user_id
   and recipient_user_id <> sender_user_id
-  and exists (
-    select 1 from public.posts p
-    where p.id = post_id and p.user_id = recipient_user_id
-  )
 );
 
 drop policy if exists "Recipients can mark their replies as read" on public.post_replies;
@@ -428,7 +457,7 @@ grant update (title, body, category, post_type) on table public.posts to authent
 
 grant select, insert, delete on table public.post_likes to authenticated;
 grant select, delete on table public.post_replies to authenticated;
-grant insert (post_id, sender_user_id, body) on table public.post_replies to authenticated;
+grant insert (post_id, parent_reply_id, sender_user_id, body) on table public.post_replies to authenticated;
 grant update (body, is_read) on table public.post_replies to authenticated;
 
 -- ============================================================

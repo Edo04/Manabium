@@ -65,12 +65,14 @@ const state = {
   currentStudy: null,
   selectedPostId: null,
   editingReplyId: null,
+  replyingToReplyId: null,
   timerId: null,
   realtimeChannel: null,
   presenceChannel: null,
   onlineUserIds: new Set(),
   presenceReady: false,
   interestsColumnAvailable: true,
+  threadedRepliesAvailable: true,
   routeVersion: 0,
   realtimeReloadTimer: null,
 };
@@ -100,6 +102,11 @@ function normalizeProfile(profile) {
 function isMissingInterestsColumn(error) {
   const message = String(error?.message ?? "").toLowerCase();
   return message.includes("interests") && (message.includes("schema cache") || message.includes("column"));
+}
+
+function isMissingParentReplyColumn(error) {
+  const message = String(error?.message ?? "").toLowerCase();
+  return message.includes("parent_reply_id") && (message.includes("schema cache") || message.includes("column"));
 }
 
 function searchableProfileText(profile) {
@@ -326,6 +333,7 @@ function bindStaticEvents() {
   $("#replyForm").addEventListener("submit", submitReply);
   $("#replyList").addEventListener("click", handleReplyListClick);
   $("#replyList").addEventListener("submit", saveEditedReply);
+  $("#replyList").addEventListener("submit", submitNestedReply);
   $("#analyzePostButton").addEventListener("click", () => runAiHelper("analyze"));
   $("#rewritePostButton").addEventListener("click", () => runAiHelper("rewrite"));
 
@@ -456,9 +464,11 @@ function cleanupSignedInState() {
   state.currentStudy = null;
   state.selectedPostId = null;
   state.editingReplyId = null;
+  state.replyingToReplyId = null;
   state.likedPostIds.clear();
   state.onlineUserIds.clear();
   state.presenceReady = false;
+  state.threadedRepliesAvailable = true;
   stopTimer();
   if (state.realtimeChannel) {
     supabase.removeChannel(state.realtimeChannel);
@@ -604,16 +614,25 @@ async function loadPosts() {
 }
 
 async function loadReplies() {
-  const { data: replies, error } = await supabase
+  let { data: replies, error } = await supabase
     .from("post_replies")
-    .select("id,post_id,sender_user_id,recipient_user_id,body,is_read,created_at")
+    .select("id,post_id,parent_reply_id,sender_user_id,recipient_user_id,body,is_read,created_at")
     .order("created_at", { ascending: false })
     .limit(240);
+  if (error && isMissingParentReplyColumn(error)) {
+    state.threadedRepliesAvailable = false;
+    ({ data: replies, error } = await supabase
+      .from("post_replies")
+      .select("id,post_id,sender_user_id,recipient_user_id,body,is_read,created_at")
+      .order("created_at", { ascending: false })
+      .limit(240));
+  }
   if (error) throw error;
 
   const profiles = await fetchProfiles((replies ?? []).map((reply) => reply.sender_user_id));
   state.replies = (replies ?? []).map((reply) => ({
     ...reply,
+    parent_reply_id: reply.parent_reply_id ?? null,
     profile: profiles.get(reply.sender_user_id) ?? null,
   }));
   renderPosts();
@@ -1082,7 +1101,10 @@ async function submitPost(event) {
 function openPost(postId, show = true) {
   const post = state.posts.find((item) => item.id === postId);
   if (!post) return;
-  if (show || state.selectedPostId !== post.id) state.editingReplyId = null;
+  if (show || state.selectedPostId !== post.id) {
+    state.editingReplyId = null;
+    state.replyingToReplyId = null;
+  }
   state.selectedPostId = post.id;
   $("#detailBadges").innerHTML = `<span class="post-badge">${escapeHTML(post.category)}</span><span class="post-badge type">${escapeHTML(post.post_type)}</span>`;
   $("#detailTitle").textContent = post.title;
@@ -1242,14 +1264,35 @@ function renderReplies(postId) {
     return;
   }
 
+  const repliesById = new Map(replies.map((reply) => [reply.id, reply]));
+  const childrenByParent = new Map();
   replies.forEach((reply) => {
+    if (!reply.parent_reply_id || !repliesById.has(reply.parent_reply_id)) return;
+    const children = childrenByParent.get(reply.parent_reply_id) ?? [];
+    children.push(reply);
+    childrenByParent.set(reply.parent_reply_id, children);
+  });
+  const roots = replies.filter((reply) => !reply.parent_reply_id || !repliesById.has(reply.parent_reply_id));
+  const renderedIds = new Set();
+
+  const appendReply = (reply, depth = 0) => {
+    if (renderedIds.has(reply.id)) return;
+    renderedIds.add(reply.id);
     const item = document.createElement("article");
     item.className = "reply-item";
     item.dataset.replyId = reply.id;
+    item.dataset.parentReplyId = reply.parent_reply_id ?? "";
+    item.style.setProperty("--reply-indent", `${Math.min(depth, 4) * 24}px`);
+    item.style.setProperty("--reply-indent-mobile", `${Math.min(depth, 3) * 12}px`);
+    if (reply.parent_reply_id) item.classList.add("is-thread-reply");
     const author = reply.profile?.nickname ?? "湖の仲間";
     const meta = [reply.profile?.grade, reply.profile?.major].filter(Boolean).join("・");
     const isSender = reply.sender_user_id === state.user?.id;
+    const canReply = state.threadedRepliesAvailable && reply.recipient_user_id === state.user?.id;
     const isEditing = isSender && state.editingReplyId === reply.id;
+    const isReplying = canReply && state.replyingToReplyId === reply.id;
+    const parentReply = reply.parent_reply_id ? repliesById.get(reply.parent_reply_id) : null;
+    const parentAuthor = parentReply?.profile?.nickname ?? "相手";
 
     if (isEditing) {
       item.classList.add("editing");
@@ -1265,19 +1308,37 @@ function renderReplies(postId) {
           </div>
         </form>`;
     } else {
+      const actionButtons = [
+        canReply ? `<button type="button" class="reply-action-button reply" data-reply-action="reply" data-reply-id="${escapeHTML(reply.id)}"><i class="ph ph-arrow-bend-up-left" aria-hidden="true"></i> 返信</button>` : "",
+        isSender ? `<button type="button" class="reply-action-button" data-reply-action="edit" data-reply-id="${escapeHTML(reply.id)}"><i class="ph ph-pencil-simple" aria-hidden="true"></i> 編集</button>` : "",
+        isSender ? `<button type="button" class="reply-action-button danger" data-reply-action="delete" data-reply-id="${escapeHTML(reply.id)}"><i class="ph ph-trash" aria-hidden="true"></i> 削除</button>` : "",
+      ].filter(Boolean).join("");
       item.innerHTML = `
-        <p>${escapeHTML(reply.body)}</p>
+        ${parentReply ? `<p class="reply-context"><i class="ph ph-arrow-bend-down-right" aria-hidden="true"></i> ${escapeHTML(parentAuthor)}さんへの返信</p>` : ""}
+        <p class="reply-body">${escapeHTML(reply.body)}</p>
         <div class="reply-item-meta">
           <footer>${escapeHTML(author)}${meta ? `・${escapeHTML(meta)}` : ""}・${formatRelativeDate(reply.created_at)}</footer>
-          ${isSender ? `
-            <div class="reply-item-actions" aria-label="返信の操作">
-              <button type="button" class="reply-action-button" data-reply-action="edit" data-reply-id="${escapeHTML(reply.id)}"><i class="ph ph-pencil-simple" aria-hidden="true"></i> 編集</button>
-              <button type="button" class="reply-action-button danger" data-reply-action="delete" data-reply-id="${escapeHTML(reply.id)}"><i class="ph ph-trash" aria-hidden="true"></i> 削除</button>
-            </div>` : ""}
-        </div>`;
+          ${actionButtons ? `<div class="reply-item-actions" aria-label="返信の操作">${actionButtons}</div>` : ""}
+        </div>
+        ${isReplying ? `
+          <form class="nested-reply-form" data-nested-reply-form="${escapeHTML(reply.id)}">
+            <label for="nested-reply-${escapeHTML(reply.id)}">${escapeHTML(author)}さんに返信</label>
+            <textarea id="nested-reply-${escapeHTML(reply.id)}" data-nested-reply-body="${escapeHTML(reply.id)}" rows="3" maxlength="1000" placeholder="返信内容を入力" required></textarea>
+            <div class="nested-reply-actions">
+              <p><i class="ph ph-drop" aria-hidden="true"></i> この返信は${escapeHTML(author)}さんの水槽だけに届きます。</p>
+              <div>
+                <button type="button" class="reply-action-button cancel" data-reply-action="cancel-reply" data-reply-id="${escapeHTML(reply.id)}">キャンセル</button>
+                <button type="submit" class="reply-action-button save"><span class="button-label">返信を届ける</span><span class="spinner" aria-hidden="true"></span></button>
+              </div>
+            </div>
+          </form>` : ""}`;
     }
     container.append(item);
-  });
+    (childrenByParent.get(reply.id) ?? []).forEach((child) => appendReply(child, depth + 1));
+  };
+
+  roots.forEach((reply) => appendReply(reply));
+  replies.forEach((reply) => appendReply(reply));
 }
 
 function ownReply(replyId) {
@@ -1287,26 +1348,108 @@ function ownReply(replyId) {
 function handleReplyListClick(event) {
   const button = event.target.closest("[data-reply-action]");
   if (!button) return;
-  const reply = ownReply(button.dataset.replyId);
+  const reply = state.replies.find((item) => item.id === button.dataset.replyId);
   if (!reply) {
     showToast("この返信は操作できません。", "error");
     return;
   }
 
-  if (button.dataset.replyAction === "edit") {
-    state.editingReplyId = reply.id;
+  if (button.dataset.replyAction === "reply") {
+    if (reply.recipient_user_id !== state.user?.id) {
+      showToast("受け取った返信にだけ返信できます。", "error");
+      return;
+    }
+    state.editingReplyId = null;
+    state.replyingToReplyId = reply.id;
     renderReplies(reply.post_id);
-    window.setTimeout(() => $(`[data-reply-editor="${reply.id}"]`)?.focus(), 50);
+    window.setTimeout(() => $(`[data-nested-reply-body="${reply.id}"]`)?.focus(), 50);
+    return;
+  }
+
+  if (button.dataset.replyAction === "cancel-reply") {
+    state.replyingToReplyId = null;
+    renderReplies(reply.post_id);
+    return;
+  }
+
+  const ownedReply = ownReply(reply.id);
+  if (!ownedReply) {
+    showToast("この返信は操作できません。", "error");
+    return;
+  }
+
+  if (button.dataset.replyAction === "edit") {
+    state.replyingToReplyId = null;
+    state.editingReplyId = ownedReply.id;
+    renderReplies(ownedReply.post_id);
+    window.setTimeout(() => $(`[data-reply-editor="${ownedReply.id}"]`)?.focus(), 50);
     return;
   }
 
   if (button.dataset.replyAction === "cancel") {
     state.editingReplyId = null;
-    renderReplies(reply.post_id);
+    renderReplies(ownedReply.post_id);
     return;
   }
 
-  if (button.dataset.replyAction === "delete") deleteOwnReply(reply);
+  if (button.dataset.replyAction === "delete") deleteOwnReply(ownedReply);
+}
+
+async function submitNestedReply(event) {
+  const form = event.target.closest("[data-nested-reply-form]");
+  if (!form) return;
+  event.preventDefault();
+  if (!form.reportValidity()) return;
+
+  const parentReply = state.replies.find((reply) => reply.id === form.dataset.nestedReplyForm);
+  if (!state.threadedRepliesAvailable || !parentReply || parentReply.recipient_user_id !== state.user?.id) {
+    showToast("この返信には返信できません。", "error");
+    return;
+  }
+  const body = $(`[data-nested-reply-body="${parentReply.id}"]`, form)?.value.trim();
+  if (!body) {
+    showToast("返信内容を入力してください。", "error");
+    return;
+  }
+
+  const button = $("button[type='submit']", form);
+  setButtonLoading(button, true);
+  try {
+    if (IS_PREVIEW_MODE) {
+      state.replies.push({
+        id: `preview-thread-reply-${Date.now()}`,
+        post_id: parentReply.post_id,
+        parent_reply_id: parentReply.id,
+        sender_user_id: state.user.id,
+        recipient_user_id: parentReply.sender_user_id,
+        body,
+        is_read: false,
+        created_at: new Date().toISOString(),
+        profile: state.profile,
+      });
+    } else {
+      const { error } = await supabase.from("post_replies").insert({
+        post_id: parentReply.post_id,
+        parent_reply_id: parentReply.id,
+        sender_user_id: state.user.id,
+        body,
+      });
+      if (error) throw error;
+      await loadReplies();
+    }
+
+    state.replyingToReplyId = null;
+    renderReplies(parentReply.post_id);
+    renderPosts();
+    renderBottles();
+    renderMyPosts();
+    renderHome();
+    showToast(`${parentReply.profile?.nickname ?? "相手"}さんへ返信を届けました。`, "success");
+  } catch (error) {
+    showToast(readableError(error), "error");
+  } finally {
+    setButtonLoading(button, false);
+  }
 }
 
 async function saveEditedReply(event) {
@@ -1359,7 +1502,9 @@ async function deleteOwnReply(reply) {
 
   try {
     if (IS_PREVIEW_MODE) {
-      state.replies = state.replies.filter((item) => item.id !== reply.id);
+      state.replies = state.replies
+        .filter((item) => item.id !== reply.id)
+        .map((item) => item.parent_reply_id === reply.id ? { ...item, parent_reply_id: null } : item);
     } else {
       const { error } = await supabase
         .from("post_replies")
@@ -1370,6 +1515,7 @@ async function deleteOwnReply(reply) {
       await loadReplies();
     }
     if (state.editingReplyId === reply.id) state.editingReplyId = null;
+    if (state.replyingToReplyId === reply.id) state.replyingToReplyId = null;
     renderReplies(reply.post_id);
     renderPosts();
     renderBottles();
@@ -1403,6 +1549,7 @@ async function submitReply(event) {
       state.replies.unshift({
         id: `preview-reply-${Date.now()}`,
         post_id: state.selectedPostId,
+        parent_reply_id: null,
         sender_user_id: state.user.id,
         recipient_user_id: selectedPost.user_id,
         body,
@@ -1800,6 +1947,7 @@ function bootstrapPreviewMode() {
     {
       id: "preview-reply-1",
       post_id: "preview-post-1",
+      parent_reply_id: null,
       sender_user_id: members[3].user_id,
       recipient_user_id: userId,
       body: "私は、ゼミの頻度とコアタイム、卒研生が困ったときに誰へ相談するかを聞きました。普段の居場所も見せてもらうと雰囲気がわかりやすかったです。",
@@ -1810,12 +1958,35 @@ function bootstrapPreviewMode() {
     {
       id: "preview-reply-2",
       post_id: "preview-post-3",
+      parent_reply_id: null,
       sender_user_id: userId,
       recipient_user_id: members[1].user_id,
       body: "予想と違った点を一つ選んで、原因の候補と追加で確かめたいことを書くと考察らしくまとまりました。",
       is_read: true,
       created_at: new Date(now - 2 * 3600000).toISOString(),
       profile: me,
+    },
+    {
+      id: "preview-reply-3",
+      post_id: "preview-post-1",
+      parent_reply_id: "preview-reply-1",
+      sender_user_id: userId,
+      recipient_user_id: members[3].user_id,
+      body: "ありがとう！普段の相談相手まで聞くの、大事ですね。見学のときに確認してみます。",
+      is_read: true,
+      created_at: new Date(now - 12 * 60000).toISOString(),
+      profile: me,
+    },
+    {
+      id: "preview-reply-4",
+      post_id: "preview-post-1",
+      parent_reply_id: "preview-reply-3",
+      sender_user_id: members[3].user_id,
+      recipient_user_id: userId,
+      body: "ぜひ。可能なら、先輩が普段使っている作業スペースも見せてもらうと安心です。",
+      is_read: false,
+      created_at: new Date(now - 4 * 60000).toISOString(),
+      profile: members[3],
     },
   ];
   state.mySessions = [
