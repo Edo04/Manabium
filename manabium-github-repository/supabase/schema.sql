@@ -85,7 +85,7 @@ create table if not exists public.post_likes (
 
 create index if not exists post_likes_user_idx on public.post_likes (user_id);
 
--- 投稿への非公開返信。parent_reply_idがある場合は、返信同士の1対1スレッドになります。
+-- 投稿への返信。ログイン利用者全員が閲覧でき、parent_reply_idで会話をつなぎます。
 create table if not exists public.post_replies (
   id uuid primary key default gen_random_uuid(),
   post_id uuid not null references public.posts(id) on delete cascade,
@@ -391,19 +391,17 @@ on public.post_likes for delete
 to authenticated
 using ((select auth.uid()) = user_id);
 
--- 返信：送信者と元投稿者だけが閲覧できます。
+-- 返信：ログイン利用者は全返信を閲覧できます。変更・削除は以降のポリシーで当事者だけに制限します。
 drop policy if exists "Authenticated users can view replies" on public.post_replies;
 drop policy if exists "Users can create their own reply" on public.post_replies;
 drop policy if exists "Users can delete their own reply" on public.post_replies;
 
 drop policy if exists "Reply participants can view private replies" on public.post_replies;
-create policy "Reply participants can view private replies"
+drop policy if exists "Authenticated users can view all replies" on public.post_replies;
+create policy "Authenticated users can view all replies"
 on public.post_replies for select
 to authenticated
-using (
-  (select auth.uid()) = recipient_user_id
-  or (select auth.uid()) = sender_user_id
-);
+using (true);
 
 drop policy if exists "Users can reply as themselves to another users post" on public.post_replies;
 drop policy if exists "Users can send private threaded replies" on public.post_replies;

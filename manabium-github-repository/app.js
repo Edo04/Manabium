@@ -1345,7 +1345,7 @@ function renderReplies(postId) {
             <label for="nested-reply-${escapeHTML(reply.id)}">${escapeHTML(author)}さんに返信</label>
             <textarea id="nested-reply-${escapeHTML(reply.id)}" data-nested-reply-body="${escapeHTML(reply.id)}" rows="3" maxlength="1000" placeholder="返信内容を入力" required></textarea>
             <div class="nested-reply-actions">
-              <p><i class="ph ph-drop" aria-hidden="true"></i> この返信は${escapeHTML(author)}さんの水槽だけに届きます。</p>
+              <p><i class="ph ph-drop" aria-hidden="true"></i> 内容はここで全員が確認でき、返信ボトルは${escapeHTML(author)}さんの水槽だけに届きます。</p>
               <div>
                 <button type="button" class="reply-action-button cancel" data-reply-action="cancel-reply" data-reply-id="${escapeHTML(reply.id)}">キャンセル</button>
                 <button type="submit" class="reply-action-button save"><span class="button-label">返信を届ける</span><span class="spinner" aria-hidden="true"></span></button>
