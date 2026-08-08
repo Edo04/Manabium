@@ -5200,3 +5200,324 @@ textarea {
     font-size: 0.56rem;
   }
 }
+
+/* ============================================================
+   Living aquarium motion
+   Slow, layered animation keeps the lake calm while feeling alive.
+   ============================================================ */
+.lake-surface {
+  isolation: isolate;
+  background: #a9ced2;
+}
+
+.lake-surface::before {
+  position: absolute;
+  z-index: 0;
+  inset: -3%;
+  content: "";
+  background: url("./assets/aquarium-background.png") center / cover no-repeat;
+  transform: scale(1.025) translate3d(0, 0, 0);
+  transform-origin: 50% 55%;
+  animation: aquarium-breathe 24s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+.lake-surface::after {
+  position: absolute;
+  z-index: 2;
+  inset: 0;
+  content: "";
+  background:
+    linear-gradient(180deg, rgba(234, 249, 247, 0.08), transparent 32%, rgba(55, 105, 113, 0.08)),
+    radial-gradient(ellipse at center, transparent 46%, rgba(43, 82, 90, 0.1) 100%);
+  pointer-events: none;
+}
+
+.lake-atmosphere {
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.lake-light-rays,
+.lake-caustics,
+.lake-current {
+  position: absolute;
+  display: block;
+  pointer-events: none;
+}
+
+.lake-light-rays {
+  top: -20%;
+  left: 9%;
+  width: 76%;
+  height: 82%;
+  background:
+    linear-gradient(105deg, transparent 16%, rgba(255, 255, 244, 0.17) 28%, transparent 39%),
+    linear-gradient(98deg, transparent 45%, rgba(255, 255, 247, 0.13) 57%, transparent 68%),
+    linear-gradient(112deg, transparent 68%, rgba(255, 255, 250, 0.1) 77%, transparent 86%);
+  filter: blur(7px);
+  opacity: 0.8;
+  transform: skewX(-8deg) rotate(-2deg);
+  transform-origin: top center;
+  animation: light-rays-sway 14s ease-in-out infinite alternate;
+}
+
+.lake-caustics {
+  top: -4%;
+  right: -8%;
+  left: -8%;
+  height: 38%;
+  background:
+    radial-gradient(ellipse at 12% 30%, transparent 42%, rgba(255, 255, 247, 0.22) 46%, transparent 51%),
+    radial-gradient(ellipse at 38% 12%, transparent 45%, rgba(255, 255, 250, 0.18) 49%, transparent 55%),
+    radial-gradient(ellipse at 65% 32%, transparent 41%, rgba(255, 255, 248, 0.19) 46%, transparent 52%),
+    radial-gradient(ellipse at 88% 8%, transparent 42%, rgba(255, 255, 248, 0.17) 47%, transparent 53%);
+  background-size: 210px 105px, 270px 120px, 230px 115px, 290px 125px;
+  filter: blur(2px);
+  opacity: 0.56;
+  transform: translate3d(-1%, 0, 0) scale(1.05);
+  animation: caustics-drift 18s ease-in-out infinite alternate;
+}
+
+.lake-current {
+  top: 37%;
+  left: -24%;
+  width: 148%;
+  height: 18%;
+  background: linear-gradient(100deg, transparent 14%, rgba(235, 251, 248, 0.13) 43%, rgba(255, 255, 250, 0.2) 50%, rgba(235, 251, 248, 0.11) 57%, transparent 84%);
+  filter: blur(10px);
+  opacity: 0.5;
+  transform: translate3d(-12%, 0, 0) rotate(-4deg);
+  animation: water-current 21s ease-in-out infinite;
+}
+
+.water-mote {
+  position: absolute;
+  display: block;
+  width: 3px;
+  height: 3px;
+  background: rgba(255, 255, 245, 0.64);
+  border-radius: 50%;
+  box-shadow: 0 0 7px rgba(255, 255, 244, 0.78);
+  opacity: 0;
+  animation: mote-drift 11s ease-in-out infinite;
+}
+
+.mote-one { top: 28%; left: 16%; animation-delay: -2s; }
+.mote-two { top: 55%; left: 29%; width: 2px; height: 2px; animation-delay: -8s; }
+.mote-three { top: 39%; left: 48%; animation-delay: -5s; }
+.mote-four { top: 66%; left: 65%; width: 4px; height: 4px; animation-delay: -10s; }
+.mote-five { top: 23%; left: 77%; width: 2px; height: 2px; animation-delay: -6s; }
+.mote-six { top: 74%; left: 88%; animation-delay: -3s; }
+
+.water-bubble {
+  position: absolute;
+  bottom: -34px;
+  left: var(--bubble-left);
+  display: block;
+  width: var(--bubble-size);
+  height: var(--bubble-size);
+  border: 1px solid rgba(247, 255, 253, 0.68);
+  border-radius: 50%;
+  box-shadow:
+    inset 2px 2px 3px rgba(255, 255, 255, 0.35),
+    0 0 8px rgba(240, 255, 252, 0.18);
+  opacity: 0;
+  animation: bubble-rise var(--bubble-duration) linear infinite;
+  animation-delay: var(--bubble-delay);
+}
+
+.bubble-one { --bubble-left: 8%; --bubble-size: 7px; --bubble-duration: 13s; --bubble-delay: -4s; --bubble-drift: 22px; }
+.bubble-two { --bubble-left: 18%; --bubble-size: 13px; --bubble-duration: 17s; --bubble-delay: -11s; --bubble-drift: -18px; }
+.bubble-three { --bubble-left: 31%; --bubble-size: 5px; --bubble-duration: 12s; --bubble-delay: -8s; --bubble-drift: 14px; }
+.bubble-four { --bubble-left: 42%; --bubble-size: 9px; --bubble-duration: 15s; --bubble-delay: -2s; --bubble-drift: -24px; }
+.bubble-five { --bubble-left: 55%; --bubble-size: 6px; --bubble-duration: 14s; --bubble-delay: -10s; --bubble-drift: 19px; }
+.bubble-six { --bubble-left: 67%; --bubble-size: 15px; --bubble-duration: 19s; --bubble-delay: -6s; --bubble-drift: -16px; }
+.bubble-seven { --bubble-left: 78%; --bubble-size: 8px; --bubble-duration: 13.5s; --bubble-delay: -12s; --bubble-drift: 25px; }
+.bubble-eight { --bubble-left: 91%; --bubble-size: 5px; --bubble-duration: 11.5s; --bubble-delay: -7s; --bubble-drift: -12px; }
+.bubble-nine { --bubble-left: 24%; --bubble-size: 4px; --bubble-duration: 10.5s; --bubble-delay: -3s; --bubble-drift: 17px; }
+.bubble-ten { --bubble-left: 72%; --bubble-size: 6px; --bubble-duration: 16s; --bubble-delay: -14s; --bubble-drift: -21px; }
+
+.fish-layer,
+.bottle-layer {
+  z-index: 5;
+}
+
+.bottle-layer {
+  z-index: 6;
+}
+
+.lake-empty {
+  z-index: 7;
+}
+
+.swimming-fish {
+  animation-name: fish-roam;
+  animation-timing-function: cubic-bezier(0.42, 0, 0.4, 1);
+}
+
+.fish-motion {
+  display: block;
+  width: 100%;
+  transform-origin: 50% 55%;
+  animation: fish-body-float var(--body-duration, 3.8s) ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+.swimming-fish .fish-asset {
+  animation-name: fish-natural-turn;
+  animation-timing-function: ease-in-out;
+}
+
+.swimming-fish:hover .fish-motion,
+.swimming-fish:focus-visible .fish-motion {
+  animation-play-state: paused;
+}
+
+.floating-bottle {
+  animation: bottle-drift 6.4s ease-in-out infinite;
+  animation-delay: var(--delay);
+  will-change: transform;
+}
+
+.lake-tap-ripple {
+  position: absolute;
+  z-index: 8;
+  width: 18px;
+  height: 8px;
+  border: 1.5px solid rgba(247, 255, 253, 0.78);
+  border-radius: 50%;
+  box-shadow: 0 0 10px rgba(240, 255, 252, 0.3);
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.35);
+  animation: lake-ripple 1.15s ease-out forwards;
+  pointer-events: none;
+}
+
+.lake-tap-ripple::after {
+  position: absolute;
+  inset: -1px;
+  content: "";
+  border: 1px solid rgba(247, 255, 253, 0.5);
+  border-radius: inherit;
+  animation: lake-ripple-inner 1.15s 90ms ease-out forwards;
+}
+
+@keyframes aquarium-breathe {
+  0% { transform: scale(1.025) translate3d(-0.4%, -0.2%, 0); }
+  100% { transform: scale(1.065) translate3d(0.7%, 0.4%, 0); }
+}
+
+@keyframes light-rays-sway {
+  0% { opacity: 0.52; transform: skewX(-8deg) rotate(-3deg) translateX(-2%); }
+  100% { opacity: 0.82; transform: skewX(-2deg) rotate(2deg) translateX(3%); }
+}
+
+@keyframes caustics-drift {
+  0% { opacity: 0.38; transform: translate3d(-2%, -1%, 0) scale(1.04) rotate(-1deg); }
+  100% { opacity: 0.62; transform: translate3d(3%, 3%, 0) scale(1.1) rotate(1.5deg); }
+}
+
+@keyframes water-current {
+  0%, 100% { opacity: 0.25; transform: translate3d(-13%, -5px, 0) rotate(-4deg); }
+  50% { opacity: 0.58; transform: translate3d(12%, 8px, 0) rotate(-1deg); }
+}
+
+@keyframes mote-drift {
+  0%, 100% { opacity: 0; transform: translate3d(-7px, 10px, 0); }
+  30% { opacity: 0.65; }
+  68% { opacity: 0.3; transform: translate3d(18px, -18px, 0); }
+}
+
+@keyframes bubble-rise {
+  0% { opacity: 0; transform: translate3d(0, 0, 0) scale(0.72); }
+  12% { opacity: 0.72; }
+  64% { opacity: 0.48; }
+  100% { opacity: 0; transform: translate3d(var(--bubble-drift), -108dvh, 0) scale(1.08); }
+}
+
+@keyframes fish-roam {
+  0%, 5% { transform: translate3d(0, 0, 0); }
+  19% { transform: translate3d(var(--route-x-one), var(--route-y-one), 0); }
+  39% { transform: translate3d(var(--route-x-two), var(--route-y-two), 0); }
+  47%, 53% { transform: translate3d(var(--route-x-three), var(--route-y-three), 0); }
+  69% { transform: translate3d(var(--route-x-two), var(--route-y-two), 0); }
+  87% { transform: translate3d(var(--route-x-one), var(--route-y-one), 0); }
+  97%, 100% { transform: translate3d(0, 0, 0); }
+}
+
+@keyframes fish-natural-turn {
+  0%, 46% { transform: scaleX(1); }
+  49% { transform: scaleX(0.14); }
+  52%, 96% { transform: scaleX(-1); }
+  98.5% { transform: scaleX(-0.14); }
+  100% { transform: scaleX(1); }
+}
+
+@keyframes fish-body-float {
+  0% { transform: translate3d(0, -2px, 0) rotate(-1.2deg); }
+  100% { transform: translate3d(0, 4px, 0) rotate(1.4deg); }
+}
+
+@keyframes bottle-drift {
+  0%, 100% { transform: translate3d(0, 1px, 0) rotate(var(--rotation)); }
+  32% { transform: translate3d(4px, -9px, 0) rotate(calc(var(--rotation) + 4deg)); }
+  66% { transform: translate3d(-3px, -5px, 0) rotate(calc(var(--rotation) - 3deg)); }
+}
+
+@keyframes lake-ripple {
+  0% { opacity: 0.8; transform: translate(-50%, -50%) scale(0.35); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(5.4); }
+}
+
+@keyframes lake-ripple-inner {
+  0% { opacity: 0.62; transform: scale(0.45); }
+  100% { opacity: 0; transform: scale(3.6); }
+}
+
+@media (max-width: 760px) {
+  .lake-surface::before {
+    inset: -2%;
+    animation-duration: 30s;
+  }
+
+  .lake-light-rays {
+    left: -4%;
+    width: 105%;
+    opacity: 0.58;
+  }
+
+  .lake-caustics {
+    height: 31%;
+    opacity: 0.44;
+  }
+
+  .bubble-nine,
+  .bubble-ten {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lake-surface::before,
+  .lake-light-rays,
+  .lake-caustics,
+  .lake-current,
+  .water-mote,
+  .water-bubble,
+  .swimming-fish,
+  .swimming-fish .fish-asset,
+  .fish-motion,
+  .floating-bottle,
+  .lake-tap-ripple,
+  .lake-tap-ripple::after {
+    animation: none !important;
+  }
+
+  .lake-surface::before {
+    transform: scale(1.035);
+  }
+}

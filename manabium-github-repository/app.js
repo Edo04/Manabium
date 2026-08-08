@@ -870,6 +870,22 @@ function hashNumber(value) {
   return [...String(value)].reduce((total, character) => ((total << 5) - total + character.charCodeAt(0)) | 0, 0);
 }
 
+function createLakeRipple(source) {
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const surface = $("#lakeSurface");
+  if (!surface || !source) return;
+
+  const surfaceRect = surface.getBoundingClientRect();
+  const sourceRect = source.getBoundingClientRect();
+  const ripple = document.createElement("span");
+  ripple.className = "lake-tap-ripple";
+  ripple.style.left = `${sourceRect.left + sourceRect.width / 2 - surfaceRect.left}px`;
+  ripple.style.top = `${sourceRect.top + sourceRect.height / 2 - surfaceRect.top}px`;
+  ripple.addEventListener("animationend", () => ripple.remove(), { once: true });
+  surface.append(ripple);
+  window.setTimeout(() => ripple.remove(), 1300);
+}
+
 function renderLake() {
   const layer = $("#fishLayer");
   layer.replaceChildren();
@@ -882,6 +898,7 @@ function renderLake() {
     const profile = session.profile ?? { nickname: "湖の仲間", fish_type: "aqua", grade: "—", major: "—", interests: [] };
     const fish = FISH[profile.fish_type] ?? FISH.aqua;
     const seed = Math.abs(hashNumber(session.id));
+    const phoneLayout = window.matchMedia("(max-width: 760px)").matches;
     const similarity = profileSimilarity(profile);
     const isMe = session.user_id === state.user?.id;
     const button = document.createElement("button");
@@ -891,14 +908,22 @@ function renderLake() {
     button.classList.toggle("is-similar", !isMe && similarity >= 22);
     button.setAttribute("aria-label", `${profile.nickname}さんの学習情報を見る`);
     button.style.setProperty("--top", `${20 + (seed % 50)}%`);
-    button.style.setProperty("--static-left", `${12 + ((seed + index * 21) % 58)}%`);
-    button.style.setProperty("--drift-x", `${38 + (seed % 54)}px`);
-    button.style.setProperty("--drift-y", `${-10 + (seed % 21)}px`);
+    button.style.setProperty("--static-left", `${phoneLayout ? 8 + ((seed + index * 21) % 50) : 12 + ((seed + index * 21) % 58)}%`);
+    button.style.setProperty("--route-x-one", `${phoneLayout ? 18 + (seed % 18) : 24 + (seed % 34)}px`);
+    button.style.setProperty("--route-y-one", `${-18 + (seed % 31)}px`);
+    button.style.setProperty("--route-x-two", `${phoneLayout ? 34 + (seed % 21) : 52 + (seed % 48)}px`);
+    button.style.setProperty("--route-y-two", `${-24 + ((seed * 3) % 49)}px`);
+    button.style.setProperty("--route-x-three", `${phoneLayout ? 52 + (seed % 24) : 78 + (seed % 62)}px`);
+    button.style.setProperty("--route-y-three", `${-18 + ((seed * 7) % 39)}px`);
     button.style.setProperty("--delay", `${-(seed % 13)}s`);
-    button.style.setProperty("--duration", `${18 + (seed % 11)}s`);
+    button.style.setProperty("--duration", `${20 + (seed % 13)}s`);
+    button.style.setProperty("--body-duration", `${3.2 + ((seed % 7) * 0.18)}s`);
     button.style.setProperty("--fish-filter", fish.filter);
-    button.innerHTML = `<img class="fish-asset" src="${FISH_ASSET_URL}" alt="" /><span class="fish-label">${escapeHTML(profile.nickname)}${isMe ? "（あなた）" : ""}</span>`;
-    button.addEventListener("click", () => openFishDrawer(session));
+    button.innerHTML = `<span class="fish-motion"><img class="fish-asset" src="${FISH_ASSET_URL}" alt="" /></span><span class="fish-label">${escapeHTML(profile.nickname)}${isMe ? "（あなた）" : ""}</span>`;
+    button.addEventListener("click", () => {
+      createLakeRipple(button);
+      openFishDrawer(session);
+    });
     layer.append(button);
   });
 }
@@ -952,7 +977,10 @@ function renderBottles() {
     button.style.top = `${17 + ((seed + index * 11) % 60)}%`;
     button.style.setProperty("--rotation", `${-14 + (seed % 29)}deg`);
     button.style.setProperty("--delay", `${-(seed % 5)}s`);
-    button.addEventListener("click", () => openPost(post.id));
+    button.addEventListener("click", () => {
+      createLakeRipple(button);
+      openPost(post.id);
+    });
     layer.append(button);
   });
 
@@ -973,7 +1001,10 @@ function renderBottles() {
     button.style.top = `${22 + ((seed + index * 13) % 52)}%`;
     button.style.setProperty("--rotation", `${-10 + (seed % 21)}deg`);
     button.style.setProperty("--delay", `${-(seed % 5)}s`);
-    button.addEventListener("click", () => openReplyBottle(reply));
+    button.addEventListener("click", () => {
+      createLakeRipple(button);
+      openReplyBottle(reply);
+    });
     layer.append(button);
   });
 }
