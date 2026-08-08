@@ -15,6 +15,7 @@ create table if not exists public.profiles (
   interests text[] not null default '{}'::text[],
   fish_type text not null default 'coral'
     check (fish_type in ('coral', 'aqua', 'lemon', 'lilac', 'mint', 'peach')),
+  bio text check (bio is null or char_length(bio) <= 80),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
@@ -22,6 +23,9 @@ create table if not exists public.profiles (
 -- 既存プロジェクトにschema.sqlを再実行した場合も、興味分野の列を追加します。
 alter table public.profiles
   add column if not exists interests text[] not null default '{}'::text[];
+
+alter table public.profiles
+  add column if not exists bio text;
 
 do $$
 begin
@@ -32,6 +36,18 @@ begin
   ) then
     alter table public.profiles
       add constraint profiles_interests_limit check (cardinality(interests) <= 8);
+  end if;
+end $$;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'profiles_bio_length'
+      and conrelid = 'public.profiles'::regclass
+  ) then
+    alter table public.profiles
+      add constraint profiles_bio_length check (bio is null or char_length(bio) <= 80);
   end if;
 end $$;
 
@@ -135,6 +151,61 @@ create index if not exists post_replies_sender_created_idx
   on public.post_replies (sender_user_id, created_at desc);
 create index if not exists post_replies_parent_created_idx
   on public.post_replies (parent_reply_id, created_at asc);
+
+-- 水槽画面を現在開き、「魚として参加」がオンの利用者だけが1行を持ちます。
+create table if not exists public.aquarium_presence (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  status text not null default 'social'
+    check (status in ('social', 'focus', 'break', 'observe')),
+  focus_topic text check (focus_topic is null or char_length(focus_topic) <= 80),
+  joined_at timestamptz not null default now(),
+  heartbeat_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create index if not exists aquarium_presence_heartbeat_idx
+  on public.aquarium_presence (heartbeat_at desc);
+create index if not exists aquarium_presence_status_heartbeat_idx
+  on public.aquarium_presence (status, heartbeat_at desc);
+
+create table if not exists public.aquarium_preferences (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  participate_as_fish boolean not null default true,
+  receive_reactions boolean not null default true,
+  default_status text not null default 'social'
+    check (default_status in ('social', 'break', 'observe')),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.aquarium_reactions (
+  id uuid primary key default gen_random_uuid(),
+  sender_user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  target_user_id uuid references auth.users(id) on delete cascade,
+  message_code text not null check (message_code in (
+    'hello', 'starting', 'good_work', 'taking_break',
+    'together', 'same_field', 'support', 'interesting', 'good_work_direct'
+  )),
+  created_at timestamptz not null default now(),
+  constraint aquarium_reaction_not_self check (
+    target_user_id is null or sender_user_id <> target_user_id
+  )
+);
+
+create index if not exists aquarium_reactions_created_idx
+  on public.aquarium_reactions (created_at desc);
+create index if not exists aquarium_reactions_sender_created_idx
+  on public.aquarium_reactions (sender_user_id, created_at desc);
+create index if not exists aquarium_reactions_target_created_idx
+  on public.aquarium_reactions (target_user_id, created_at desc);
+
+create table if not exists public.aquarium_mutes (
+  owner_user_id uuid not null references auth.users(id) on delete cascade,
+  muted_user_id uuid not null references auth.users(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (owner_user_id, muted_user_id),
+  constraint aquarium_mute_not_self check (owner_user_id <> muted_user_id)
+);
 
 -- ============================================================
 -- 2. Database functions and triggers
@@ -308,6 +379,137 @@ create trigger post_replies_set_recipient
 before insert on public.post_replies
 for each row execute function public.set_reply_recipient();
 
+-- heartbeatとuser_idはクライアントが偽装できないようDB側で決めます。
+create or replace function public.prepare_aquarium_presence()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if auth.uid() is null then raise exception 'Authentication required'; end if;
+  new.user_id := auth.uid();
+  new.heartbeat_at := now();
+  new.updated_at := now();
+  if tg_op = 'UPDATE' then new.joined_at := old.joined_at; end if;
+  if new.status <> 'focus' then new.focus_topic := null; end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists aquarium_presence_prepare on public.aquarium_presence;
+create trigger aquarium_presence_prepare
+before insert or update on public.aquarium_presence
+for each row execute function public.prepare_aquarium_presence();
+
+create or replace function public.prepare_aquarium_preferences()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if auth.uid() is null then raise exception 'Authentication required'; end if;
+  new.user_id := auth.uid();
+  new.updated_at := now();
+  if tg_op = 'UPDATE' then new.created_at := old.created_at; end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists aquarium_preferences_prepare on public.aquarium_preferences;
+create trigger aquarium_preferences_prepare
+before insert or update on public.aquarium_preferences
+for each row execute function public.prepare_aquarium_preferences();
+
+-- 定型文の種類・在室状態・受信設定・ミュート・クールダウンをDBでも検証します。
+create or replace function public.validate_aquarium_reaction()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  sender_status text;
+  target_status text;
+  target_accepts boolean;
+begin
+  if auth.uid() is null then raise exception 'Authentication required'; end if;
+  new.sender_user_id := auth.uid();
+  new.created_at := now();
+
+  select p.status into sender_status
+  from public.aquarium_presence p
+  where p.user_id = auth.uid()
+    and p.heartbeat_at > now() - interval '90 seconds';
+  if sender_status is null then raise exception 'You are not active in the aquarium'; end if;
+
+  if new.target_user_id is null then
+    if new.message_code not in ('hello', 'starting', 'good_work', 'taking_break') then
+      raise exception 'Invalid aquarium-wide message';
+    end if;
+    if exists (
+      select 1 from public.aquarium_reactions r
+      where r.sender_user_id = auth.uid()
+        and r.created_at > now() - interval '8 seconds'
+    ) then
+      raise exception 'Reaction cooldown';
+    end if;
+  else
+    if new.target_user_id = auth.uid() then raise exception 'Cannot react to yourself'; end if;
+    if new.message_code not in ('together', 'same_field', 'support', 'interesting', 'good_work_direct') then
+      raise exception 'Invalid direct reaction';
+    end if;
+
+    select p.status into target_status
+    from public.aquarium_presence p
+    where p.user_id = new.target_user_id
+      and p.heartbeat_at > now() - interval '90 seconds';
+    if target_status is null then raise exception 'Target is not active in the aquarium'; end if;
+    if target_status = 'observe' then raise exception 'Target is observing only'; end if;
+    if target_status = 'focus'
+      and new.message_code not in ('together', 'support', 'good_work_direct') then
+      raise exception 'Only supportive reactions are available during focus';
+    end if;
+
+    select coalesce(pref.receive_reactions, true) into target_accepts
+    from (select 1) seed
+    left join public.aquarium_preferences pref on pref.user_id = new.target_user_id;
+    if not target_accepts then raise exception 'Target is not receiving reactions'; end if;
+
+    if exists (
+      select 1 from public.aquarium_mutes m
+      where (m.owner_user_id = new.target_user_id and m.muted_user_id = auth.uid())
+         or (m.owner_user_id = auth.uid() and m.muted_user_id = new.target_user_id)
+    ) then
+      raise exception 'Reaction is muted';
+    end if;
+    if exists (
+      select 1 from public.aquarium_reactions r
+      where r.sender_user_id = auth.uid()
+        and r.target_user_id = new.target_user_id
+        and r.created_at > now() - interval '20 seconds'
+    ) then
+      raise exception 'Reaction target cooldown';
+    end if;
+    if exists (
+      select 1 from public.aquarium_reactions r
+      where r.sender_user_id = auth.uid()
+        and r.created_at > now() - interval '5 seconds'
+    ) then
+      raise exception 'Reaction cooldown';
+    end if;
+  end if;
+
+  delete from public.aquarium_reactions
+  where created_at < now() - interval '1 day';
+  return new;
+end;
+$$;
+
+drop trigger if exists aquarium_reactions_validate on public.aquarium_reactions;
+create trigger aquarium_reactions_validate
+before insert on public.aquarium_reactions
+for each row execute function public.validate_aquarium_reaction();
+
 -- ============================================================
 -- 3. Row Level Security
 -- ============================================================
@@ -317,6 +519,10 @@ alter table public.study_sessions enable row level security;
 alter table public.posts enable row level security;
 alter table public.post_likes enable row level security;
 alter table public.post_replies enable row level security;
+alter table public.aquarium_presence enable row level security;
+alter table public.aquarium_preferences enable row level security;
+alter table public.aquarium_reactions enable row level security;
+alter table public.aquarium_mutes enable row level security;
 
 -- プロフィール：ログイン利用者は公開項目を閲覧でき、変更できるのは自分だけ。
 drop policy if exists "Authenticated users can view community profiles" on public.profiles;
@@ -452,6 +658,81 @@ on public.post_replies for delete
 to authenticated
 using ((select auth.uid()) = sender_user_id);
 
+-- 水槽presence：認証済み利用者だけが期限内の行を閲覧し、本人の行だけ変更できます。
+drop policy if exists "Authenticated users can view active aquarium presence" on public.aquarium_presence;
+create policy "Authenticated users can view active aquarium presence"
+on public.aquarium_presence for select
+to authenticated
+using (heartbeat_at > now() - interval '90 seconds');
+
+drop policy if exists "Users can create their own aquarium presence" on public.aquarium_presence;
+create policy "Users can create their own aquarium presence"
+on public.aquarium_presence for insert
+to authenticated
+with check ((select auth.uid()) = user_id);
+
+drop policy if exists "Users can update their own aquarium presence" on public.aquarium_presence;
+create policy "Users can update their own aquarium presence"
+on public.aquarium_presence for update
+to authenticated
+using ((select auth.uid()) = user_id)
+with check ((select auth.uid()) = user_id);
+
+drop policy if exists "Users can delete their own aquarium presence" on public.aquarium_presence;
+create policy "Users can delete their own aquarium presence"
+on public.aquarium_presence for delete
+to authenticated
+using ((select auth.uid()) = user_id);
+
+drop policy if exists "Users can view their own aquarium preferences" on public.aquarium_preferences;
+create policy "Users can view their own aquarium preferences"
+on public.aquarium_preferences for select
+to authenticated
+using ((select auth.uid()) = user_id);
+
+drop policy if exists "Users can create their own aquarium preferences" on public.aquarium_preferences;
+create policy "Users can create their own aquarium preferences"
+on public.aquarium_preferences for insert
+to authenticated
+with check ((select auth.uid()) = user_id);
+
+drop policy if exists "Users can update their own aquarium preferences" on public.aquarium_preferences;
+create policy "Users can update their own aquarium preferences"
+on public.aquarium_preferences for update
+to authenticated
+using ((select auth.uid()) = user_id)
+with check ((select auth.uid()) = user_id);
+
+drop policy if exists "Authenticated users can view recent aquarium reactions" on public.aquarium_reactions;
+create policy "Authenticated users can view recent aquarium reactions"
+on public.aquarium_reactions for select
+to authenticated
+using (created_at > now() - interval '30 seconds');
+
+drop policy if exists "Users can send aquarium reactions as themselves" on public.aquarium_reactions;
+create policy "Users can send aquarium reactions as themselves"
+on public.aquarium_reactions for insert
+to authenticated
+with check ((select auth.uid()) = sender_user_id);
+
+drop policy if exists "Users can view their own aquarium mutes" on public.aquarium_mutes;
+create policy "Users can view their own aquarium mutes"
+on public.aquarium_mutes for select
+to authenticated
+using ((select auth.uid()) = owner_user_id);
+
+drop policy if exists "Users can create their own aquarium mutes" on public.aquarium_mutes;
+create policy "Users can create their own aquarium mutes"
+on public.aquarium_mutes for insert
+to authenticated
+with check ((select auth.uid()) = owner_user_id and owner_user_id <> muted_user_id);
+
+drop policy if exists "Users can remove their own aquarium mutes" on public.aquarium_mutes;
+create policy "Users can remove their own aquarium mutes"
+on public.aquarium_mutes for delete
+to authenticated
+using ((select auth.uid()) = owner_user_id);
+
 -- ============================================================
 -- 4. Grants (RLSに加え、変更可能な列も制限します)
 -- ============================================================
@@ -461,10 +742,14 @@ revoke all on table public.study_sessions from anon, authenticated;
 revoke all on table public.posts from anon, authenticated;
 revoke all on table public.post_likes from anon, authenticated;
 revoke all on table public.post_replies from anon, authenticated;
+revoke all on table public.aquarium_presence from anon, authenticated;
+revoke all on table public.aquarium_preferences from anon, authenticated;
+revoke all on table public.aquarium_reactions from anon, authenticated;
+revoke all on table public.aquarium_mutes from anon, authenticated;
 
 grant select on table public.profiles to authenticated;
-grant insert (user_id, nickname, grade, major, interests, fish_type) on table public.profiles to authenticated;
-grant update (nickname, grade, major, interests, fish_type) on table public.profiles to authenticated;
+grant insert (user_id, nickname, grade, major, interests, fish_type, bio) on table public.profiles to authenticated;
+grant update (nickname, grade, major, interests, fish_type, bio) on table public.profiles to authenticated;
 
 grant select, insert, delete on table public.study_sessions to authenticated;
 grant update (study_topic, ended_at, status) on table public.study_sessions to authenticated;
@@ -477,6 +762,20 @@ grant select, delete on table public.post_replies to authenticated;
 grant insert (post_id, parent_reply_id, sender_user_id, body) on table public.post_replies to authenticated;
 grant update (body, is_read) on table public.post_replies to authenticated;
 
+grant select, delete on table public.aquarium_presence to authenticated;
+grant insert (status, focus_topic) on table public.aquarium_presence to authenticated;
+grant update (status, focus_topic, heartbeat_at) on table public.aquarium_presence to authenticated;
+
+grant select on table public.aquarium_preferences to authenticated;
+grant insert (participate_as_fish, receive_reactions, default_status) on table public.aquarium_preferences to authenticated;
+grant update (participate_as_fish, receive_reactions, default_status) on table public.aquarium_preferences to authenticated;
+
+grant select on table public.aquarium_reactions to authenticated;
+grant insert (target_user_id, message_code) on table public.aquarium_reactions to authenticated;
+
+grant select, delete on table public.aquarium_mutes to authenticated;
+grant insert (owner_user_id, muted_user_id) on table public.aquarium_mutes to authenticated;
+
 -- ============================================================
 -- 5. Realtime publication
 -- ============================================================
@@ -485,6 +784,8 @@ alter table public.study_sessions replica identity full;
 alter table public.posts replica identity full;
 alter table public.post_likes replica identity full;
 alter table public.post_replies replica identity full;
+alter table public.aquarium_presence replica identity full;
+alter table public.aquarium_reactions replica identity full;
 
 do $$
 declare
@@ -521,6 +822,20 @@ begin
       where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'post_replies'
     ) then
       alter publication supabase_realtime add table public.post_replies;
+    end if;
+
+    if not exists (
+      select 1 from pg_publication_tables
+      where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'aquarium_presence'
+    ) then
+      alter publication supabase_realtime add table public.aquarium_presence;
+    end if;
+
+    if not exists (
+      select 1 from pg_publication_tables
+      where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'aquarium_reactions'
+    ) then
+      alter publication supabase_realtime add table public.aquarium_reactions;
     end if;
   end if;
 end $$;
