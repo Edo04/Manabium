@@ -27,8 +27,8 @@
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.2/src/regular/style.css"
     />
-    <link rel="stylesheet" href="./style.css?v=20260809-home-motion-3" />
-    <script type="module" src="./app.js?v=20260809-home-motion-3"></script>
+    <link rel="stylesheet" href="./style.css?v=20260809-home-motion-4" />
+    <script type="module" src="./app.js?v=20260809-home-motion-4"></script>
   </head>
   <body>
     <div class="ambient ambient-one" aria-hidden="true"></div>
@@ -57,6 +57,14 @@
         </div>
       </header>
 
+      <nav id="publicDepthNav" class="public-depth-nav" aria-label="ページ内の現在位置">
+        <a href="#publicTop" data-depth-label="入口"><span></span><b>01</b></a>
+        <a href="#publicAbout" data-depth-label="湖について"><span></span><b>02</b></a>
+        <a href="#publicDiscovery" data-depth-label="仲間との出会い"><span></span><b>03</b></a>
+        <a href="#publicBottle" data-depth-label="ボトル"><span></span><b>04</b></a>
+        <a href="#publicSafety" data-depth-label="安心のしくみ"><span></span><b>05</b></a>
+      </nav>
+
       <div id="publicMain">
         <section id="publicTop" class="public-hero" aria-labelledby="publicHeroTitle">
           <div class="public-hero-water" aria-hidden="true">
@@ -77,6 +85,7 @@
             />
             <img class="public-floating-bottle" src="./assets/message-bottle.png" alt="" />
           </div>
+          <canvas id="publicRippleCanvas" class="public-ripple-canvas" aria-hidden="true"></canvas>
 
           <div class="public-hero-inner">
             <div class="public-hero-copy" data-reveal>
@@ -104,12 +113,13 @@
               </ul>
             </div>
 
-            <aside class="public-lake-card" data-reveal aria-label="Manabiumの湖のイメージ">
+            <aside id="publicLakeCard" class="public-lake-card" data-reveal aria-label="Manabiumの湖のイメージ">
               <div class="public-lake-card-head">
                 <span><i></i>湖につながっています</span>
                 <small>LIVE COMMUNITY</small>
               </div>
               <div class="public-lake-card-scene" aria-hidden="true">
+                <span class="public-scene-touch"><i class="ph ph-cursor-click"></i> 水面に触れてみて</span>
                 <span class="public-scene-ripple ripple-one"></span>
                 <span class="public-scene-ripple ripple-two"></span>
                 <img class="public-scene-fish scene-fish-one" src="./assets/fish-watercolor.png" alt="" />
@@ -177,7 +187,7 @@
               <li><span>03</span><div><b>短い合図で知らせる</b><small>新しい投稿や興味分野を、自由入力なしで共有。</small></div></li>
             </ul>
           </div>
-          <div class="public-discovery-scene" data-reveal aria-label="魚から投稿へつながる新機能のイメージ">
+          <div class="public-discovery-scene" data-reveal data-parallax-scene aria-label="魚から投稿へつながる新機能のイメージ">
             <span class="public-discovery-current" aria-hidden="true"></span>
             <button class="public-discovery-fish" type="button" tabindex="-1" aria-hidden="true">
               <img src="./assets/fish-watercolor.png" alt="" />
@@ -195,7 +205,7 @@
         </section>
 
         <section id="publicBottle" class="public-section public-experience">
-          <div class="public-experience-visual" data-reveal aria-hidden="true">
+          <div class="public-experience-visual" data-reveal data-parallax-scene aria-hidden="true">
             <div class="public-orbit orbit-one"></div>
             <div class="public-orbit orbit-two"></div>
             <img class="public-experience-bottle" src="./assets/message-bottle.png" alt="" />
@@ -235,7 +245,7 @@
         </section>
 
         <section id="publicSafety" class="public-safety">
-          <div class="public-safety-water" aria-hidden="true"></div>
+          <div class="public-safety-water" data-parallax-scene aria-hidden="true"></div>
           <div class="public-section public-safety-inner">
             <div class="public-safety-copy" data-reveal>
               <p class="public-section-label">SAFE BY DESIGN</p>
@@ -274,7 +284,7 @@
           </div>
         </section>
 
-        <section class="public-final-cta" data-reveal>
+        <section class="public-final-cta" data-reveal data-parallax-scene>
           <div class="public-final-ripple" aria-hidden="true"></div>
           <p>YOUR FIRST RIPPLE</p>
           <h2><span class="public-heading-line">あなたの小さな疑問から、</span><span class="public-heading-line">湖に波紋を。</span></h2>
