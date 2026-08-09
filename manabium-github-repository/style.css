@@ -6010,7 +6010,7 @@ textarea {
 
 .swimming-fish {
   animation-name: fish-roam;
-  animation-timing-function: cubic-bezier(0.42, 0, 0.4, 1);
+  animation-timing-function: cubic-bezier(0.44, 0.02, 0.56, 0.98);
 }
 
 .fish-motion {
@@ -6018,12 +6018,13 @@ textarea {
   width: 100%;
   transform-origin: 50% 55%;
   animation: fish-body-float var(--body-duration, 3.8s) ease-in-out infinite alternate;
+  animation-delay: var(--body-delay, 0s);
   will-change: transform;
 }
 
 .swimming-fish .fish-asset {
   animation-name: fish-natural-turn;
-  animation-timing-function: ease-in-out;
+  animation-timing-function: steps(1, end);
 }
 
 .swimming-fish:hover .fish-motion,
@@ -6038,19 +6039,105 @@ textarea {
 }
 
 .floating-bottle::before {
+  display: none;
+}
+
+.reply-lily {
   position: absolute;
-  right: 9%;
-  bottom: 5%;
-  left: 9%;
-  height: 9px;
+  z-index: 9;
+  top: 3.5%;
+  right: 2.4%;
+  display: grid;
+  width: clamp(116px, 13vw, 160px);
+  min-height: 96px;
+  padding: 0;
+  place-items: center;
+  color: #355e65;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  filter: drop-shadow(0 11px 14px rgba(48, 83, 86, 0.14));
+  transform-origin: 54% 60%;
+}
+
+.reply-lily[hidden] {
+  display: none;
+}
+
+.reply-lily::before,
+.reply-lily::after {
+  position: absolute;
+  z-index: -1;
+  right: 5%;
+  bottom: 14%;
+  left: 5%;
+  height: 28%;
   content: "";
-  border: 1px solid rgba(244, 255, 252, 0.66);
+  border: 1px solid rgba(238, 253, 249, 0.55);
   border-radius: 50%;
   opacity: 0;
-  transform: scale(0.55);
-  animation: bottle-water-ring 3.2s ease-out infinite;
-  animation-delay: var(--delay);
+  animation: reply-lily-ripple 6.8s ease-out infinite;
   pointer-events: none;
+}
+
+.reply-lily::after {
+  animation-delay: 3.4s;
+}
+
+.reply-lily-art {
+  display: block;
+  width: 100%;
+  transform-origin: 52% 62%;
+  animation: reply-lily-float 7.5s ease-in-out infinite alternate;
+}
+
+.reply-lily-art img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.reply-lily-count {
+  position: absolute;
+  top: 12%;
+  right: 12%;
+  display: grid;
+  min-width: 26px;
+  height: 26px;
+  padding-inline: 7px;
+  place-items: center;
+  color: #fffdfa;
+  background: #cf8585;
+  border: 2px solid rgba(255, 253, 249, 0.92);
+  border-radius: 999px;
+  box-shadow: 0 5px 13px rgba(84, 75, 78, 0.18);
+  font-size: 0.68rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.reply-lily-label {
+  position: absolute;
+  right: 9%;
+  bottom: 9%;
+  color: #315b62;
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.9),
+    0 0 10px rgba(246, 255, 252, 0.96);
+}
+
+.reply-lily:hover,
+.reply-lily:focus-visible {
+  filter: drop-shadow(0 13px 16px rgba(48, 83, 86, 0.2));
+}
+
+.reply-lily:focus-visible {
+  outline: 3px solid rgba(63, 116, 119, 0.3);
+  outline-offset: 4px;
+  border-radius: 44%;
 }
 
 .lake-tap-ripple {
@@ -6110,34 +6197,41 @@ textarea {
 }
 
 @keyframes fish-roam {
-  0%, 5% { transform: translate3d(0, 0, 0); }
-  18% { transform: translate3d(var(--route-x-one), var(--route-y-one), 0) rotate(-2deg); }
-  37% { transform: translate3d(var(--route-x-two), var(--route-y-two), 0) rotate(2.4deg); }
-  47%, 53% { transform: translate3d(var(--route-x-three), var(--route-y-three), 0) rotate(-1.4deg); }
-  69% { transform: translate3d(var(--route-x-two), var(--return-y-two), 0) rotate(2deg); }
-  86% { transform: translate3d(var(--route-x-one), var(--return-y-one), 0) rotate(-2.2deg); }
-  97%, 100% { transform: translate3d(0, 0, 0); }
+  0%, 4% { transform: translate3d(0, 0, 0) rotate(0deg); }
+  18% { transform: translate3d(var(--route-x-one), var(--route-y-one), 0) rotate(-0.5deg); }
+  34% { transform: translate3d(var(--route-x-two), var(--route-y-two), 0) rotate(0.65deg); }
+  46%, 54% { transform: translate3d(var(--route-x-three), var(--route-y-three), 0) rotate(0deg); }
+  69% { transform: translate3d(var(--route-x-two), var(--return-y-two), 0) rotate(-0.6deg); }
+  85% { transform: translate3d(var(--route-x-one), var(--return-y-one), 0) rotate(0.5deg); }
+  98%, 100% { transform: translate3d(0, 0, 0) rotate(0deg); }
 }
 
 @keyframes fish-natural-turn {
-  0%, 46% { transform: scaleX(1); }
-  49% { transform: scaleX(0.14); }
-  52%, 96% { transform: scaleX(-1); }
-  98.5% { transform: scaleX(-0.14); }
+  0%, 49.99% { transform: scaleX(1); }
+  50%, 99.99% { transform: scaleX(-1); }
   100% { transform: scaleX(1); }
 }
 
 @keyframes fish-body-float {
-  0% { transform: translate3d(0, -4px, 0) rotate(-2deg); }
-  100% { transform: translate3d(0, 6px, 0) rotate(2.2deg); }
+  0% { transform: translate3d(0, -2px, 0) rotate(-0.6deg); }
+  100% { transform: translate3d(0, 3px, 0) rotate(0.7deg); }
 }
 
 @keyframes bottle-drift {
-  0%, 100% { transform: translate3d(0, 2px, 0) rotate(var(--rotation)); }
-  22% { transform: translate3d(var(--bottle-x-one), var(--bottle-y-one), 0) rotate(calc(var(--rotation) + var(--bottle-sway))); }
-  48% { transform: translate3d(var(--bottle-x-two), var(--bottle-y-two), 0) rotate(calc(var(--rotation) - var(--bottle-sway))); }
-  73% { transform: translate3d(var(--bottle-x-three), var(--bottle-y-three), 0) rotate(calc(var(--rotation) + 4deg)); }
-  88% { transform: translate3d(4px, -6px, 0) rotate(calc(var(--rotation) - 3deg)); }
+  0%, 100% { transform: translate3d(0, 1px, 0) rotate(var(--rotation)); }
+  34% { transform: translate3d(var(--bottle-x-one), var(--bottle-y-one), 0) rotate(calc(var(--rotation) + var(--bottle-sway))); }
+  68% { transform: translate3d(var(--bottle-x-two), var(--bottle-y-two), 0) rotate(calc(var(--rotation) - var(--bottle-sway))); }
+}
+
+@keyframes reply-lily-float {
+  0% { transform: translate3d(-1px, 1px, 0) rotate(-0.7deg); }
+  100% { transform: translate3d(2px, -2px, 0) rotate(0.8deg); }
+}
+
+@keyframes reply-lily-ripple {
+  0%, 48% { opacity: 0; transform: scale(0.76); }
+  55% { opacity: 0.48; }
+  100% { opacity: 0; transform: scale(1.32); }
 }
 
 @keyframes bottle-water-ring {
@@ -6177,6 +6271,28 @@ textarea {
   .bubble-ten {
     display: none;
   }
+
+  .reply-lily {
+    top: 2%;
+    right: -1%;
+    width: 112px;
+    min-height: 82px;
+  }
+
+  .reply-lily-count {
+    top: 10%;
+    right: 9%;
+    min-width: 23px;
+    height: 23px;
+    padding-inline: 6px;
+    font-size: 0.61rem;
+  }
+
+  .reply-lily-label {
+    right: 6%;
+    bottom: 7%;
+    font-size: 0.55rem;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -6190,6 +6306,10 @@ textarea {
   .swimming-fish .fish-asset,
   .fish-motion,
   .floating-bottle,
+  .reply-lily,
+  .reply-lily-art,
+  .reply-lily::before,
+  .reply-lily::after,
   .lake-tap-ripple,
   .lake-tap-ripple::after {
     animation: none !important;

@@ -27,7 +27,7 @@ const PROFILE_PUBLIC_FIELDS_WITHOUT_INTERESTS = "user_id,nickname,grade,major,fi
 const POST_FIELDS = "id,user_id,title,body,category,post_type,field_tags,like_count,created_at,updated_at";
 const POST_FIELDS_WITHOUT_TAGS = "id,user_id,title,body,category,post_type,like_count,created_at,updated_at";
 const MAX_LAKE_FISH = 12;
-const MAX_LAKE_POSTS = 5;
+const MAX_LAKE_POSTS = 4;
 const AQUARIUM_PRESENCE_TTL_SECONDS = 90;
 const AQUARIUM_HEARTBEAT_INTERVAL_MS = 25000;
 const AQUARIUM_IDLE_TIMEOUT_MS = 5 * 60 * 1000;
@@ -563,6 +563,7 @@ function bindStaticEvents() {
     else renderAquarium();
     showToast("湖を更新しました。", "success");
   });
+  $("#replyLily").addEventListener("click", openLatestUnreadReply);
   $("#closeFishDrawer").addEventListener("click", () => {
     $("#fishDrawer").hidden = true;
     state.selectedFishPresence = null;
@@ -1519,6 +1520,11 @@ function renderLake() {
     const row = Math.floor(index / columns);
     const motionSeed = seed + (index + 1) * 7919;
     const horizontalDirection = column === columns - 1 || column % 2 === 1 ? -1 : 1;
+    const routeDistance = phoneLayout ? 34 + (motionSeed % 20) : 72 + (motionSeed % 54);
+    const routeHeight = -22 + ((motionSeed * 3) % 45);
+    const duration = 27 + (seed % 11);
+    const bodyDuration = 5.2 + ((seed % 7) * 0.24);
+    const timelineSeconds = Date.now() / 1000;
     const similarity = profileSimilarity(profile);
     const isMe = presenceItem.user_id === state.user?.id;
     const status = AQUARIUM_STATUS[presenceItem.status] ?? AQUARIUM_STATUS.social;
@@ -1537,17 +1543,18 @@ function renderLake() {
     button.setAttribute("aria-label", `${profile.nickname}さん、${status.label}。プロフィールを見る`);
     button.style.setProperty("--top", `${phoneLayout ? 18 + row * 19 : 17 + row * 25}%`);
     button.style.setProperty("--static-left", `${phoneLayout ? 6 + column * 30 : 7 + column * 22}%`);
-    button.style.setProperty("--route-x-one", `${horizontalDirection * (phoneLayout ? 8 + (motionSeed % 7) : 18 + (motionSeed % 13))}px`);
-    button.style.setProperty("--route-y-one", `${-10 + (motionSeed % 19)}px`);
-    button.style.setProperty("--route-x-two", `${horizontalDirection * (phoneLayout ? 17 + (motionSeed % 8) : 34 + (motionSeed % 17))}px`);
-    button.style.setProperty("--route-y-two", `${-18 + ((motionSeed * 3) % 33)}px`);
-    button.style.setProperty("--route-x-three", `${horizontalDirection * (phoneLayout ? 25 + (motionSeed % 8) : 50 + (motionSeed % 19))}px`);
-    button.style.setProperty("--route-y-three", `${-16 + ((motionSeed * 7) % 31)}px`);
-    button.style.setProperty("--return-y-one", `${-9 + ((motionSeed * 5) % 17)}px`);
-    button.style.setProperty("--return-y-two", `${-15 + ((motionSeed * 11) % 29)}px`);
-    button.style.setProperty("--delay", `${-(seed % 13)}s`);
-    button.style.setProperty("--duration", `${16 + (seed % 10)}s`);
-    button.style.setProperty("--body-duration", `${2.7 + ((seed % 7) * 0.16)}s`);
+    button.style.setProperty("--route-x-one", `${Math.round(horizontalDirection * routeDistance * 0.34)}px`);
+    button.style.setProperty("--route-y-one", `${Math.round(routeHeight * 0.36)}px`);
+    button.style.setProperty("--route-x-two", `${Math.round(horizontalDirection * routeDistance * 0.7)}px`);
+    button.style.setProperty("--route-y-two", `${Math.round(routeHeight * 0.76)}px`);
+    button.style.setProperty("--route-x-three", `${horizontalDirection * routeDistance}px`);
+    button.style.setProperty("--route-y-three", `${routeHeight}px`);
+    button.style.setProperty("--return-y-one", `${Math.round(routeHeight * 0.3)}px`);
+    button.style.setProperty("--return-y-two", `${Math.round(routeHeight * 0.68)}px`);
+    button.style.setProperty("--delay", `${-((timelineSeconds + seed * 0.17) % duration)}s`);
+    button.style.setProperty("--duration", `${duration}s`);
+    button.style.setProperty("--body-duration", `${bodyDuration}s`);
+    button.style.setProperty("--body-delay", `${-((timelineSeconds + seed * 0.11) % bodyDuration)}s`);
     button.style.setProperty("--fish-filter", fish.filter);
     button.innerHTML = `
       ${recentReaction ? `<span class="fish-reaction-bubble">${escapeHTML(recentReaction.profile?.nickname ?? "仲間")}：${escapeHTML(AQUARIUM_REACTIONS[recentReaction.message_code] ?? "")}</span>` : ""}
@@ -1631,8 +1638,10 @@ function renderBottles() {
   if (!layer) return;
   layer.replaceChildren();
   const phoneLayout = window.matchMedia("(max-width: 760px)").matches;
-  visibleLakePosts().forEach((post, index) => {
+  const timelineSeconds = Date.now() / 1000;
+  visibleLakePosts().slice(0, phoneLayout ? 3 : MAX_LAKE_POSTS).forEach((post, index) => {
     const seed = Math.abs(hashNumber(post.id));
+    const duration = 18 + ((seed % 7) * 1.15);
     const button = document.createElement("button");
     button.type = "button";
     button.className = "floating-bottle";
@@ -1641,15 +1650,13 @@ function renderBottles() {
     button.style.left = `${phoneLayout ? 8 + ((seed + index * 19) % 64) : 8 + ((seed + index * 19) % 76)}%`;
     button.style.top = `${17 + ((seed + index * 11) % 60)}%`;
     button.style.setProperty("--rotation", `${-14 + (seed % 29)}deg`);
-    button.style.setProperty("--delay", `${-(seed % 7)}s`);
-    button.style.setProperty("--bottle-duration", `${6.2 + ((seed % 8) * 0.48)}s`);
-    button.style.setProperty("--bottle-x-one", `${8 + (seed % 14)}px`);
-    button.style.setProperty("--bottle-x-two", `${-12 + ((seed * 3) % 18)}px`);
-    button.style.setProperty("--bottle-x-three", `${-7 - (seed % 12)}px`);
-    button.style.setProperty("--bottle-y-one", `${-10 - (seed % 10)}px`);
-    button.style.setProperty("--bottle-y-two", `${-20 - (seed % 14)}px`);
-    button.style.setProperty("--bottle-y-three", `${-8 - (seed % 13)}px`);
-    button.style.setProperty("--bottle-sway", `${6 + (seed % 7)}deg`);
+    button.style.setProperty("--delay", `${-((timelineSeconds + seed * 0.13) % duration)}s`);
+    button.style.setProperty("--bottle-duration", `${duration}s`);
+    button.style.setProperty("--bottle-x-one", `${5 + (seed % 7)}px`);
+    button.style.setProperty("--bottle-x-two", `${-4 - (seed % 6)}px`);
+    button.style.setProperty("--bottle-y-one", `${-5 - (seed % 6)}px`);
+    button.style.setProperty("--bottle-y-two", `${-9 - (seed % 7)}px`);
+    button.style.setProperty("--bottle-sway", `${1.8 + ((seed % 5) * 0.35)}deg`);
     button.addEventListener("click", () => {
       createLakeRipple(button);
       openPost(post.id);
@@ -1657,54 +1664,56 @@ function renderBottles() {
     layer.append(button);
   });
 
-  const latestReplyByPost = new Map();
-  state.replies.forEach((reply) => {
-    if (reply.recipient_user_id !== state.user?.id || reply.sender_user_id === state.user?.id || latestReplyByPost.has(reply.post_id)) return;
-    latestReplyByPost.set(reply.post_id, reply);
-  });
+  renderReplyLily();
+}
 
-  [...latestReplyByPost.values()].slice(0, 3).forEach((reply, index) => {
-    const post = state.posts.find((item) => item.id === reply.post_id);
-    const seed = Math.abs(hashNumber(reply.id));
-    const button = document.createElement("button");
-    button.type = "button";
-    button.className = "floating-bottle reply-bottle";
-    button.setAttribute("aria-label", `「${post?.title ?? "あなたの投稿"}」への返信を読む`);
-    button.style.left = `${phoneLayout ? 10 + ((seed + index * 27) % 60) : 14 + ((seed + index * 27) % 66)}%`;
-    button.style.top = `${22 + ((seed + index * 13) % 52)}%`;
-    button.style.setProperty("--rotation", `${-10 + (seed % 21)}deg`);
-    button.style.setProperty("--delay", `${-(seed % 7)}s`);
-    button.style.setProperty("--bottle-duration", `${6.6 + ((seed % 7) * 0.5)}s`);
-    button.style.setProperty("--bottle-x-one", `${9 + (seed % 13)}px`);
-    button.style.setProperty("--bottle-x-two", `${-10 + ((seed * 5) % 17)}px`);
-    button.style.setProperty("--bottle-x-three", `${-8 - (seed % 11)}px`);
-    button.style.setProperty("--bottle-y-one", `${-12 - (seed % 9)}px`);
-    button.style.setProperty("--bottle-y-two", `${-22 - (seed % 13)}px`);
-    button.style.setProperty("--bottle-y-three", `${-9 - (seed % 12)}px`);
-    button.style.setProperty("--bottle-sway", `${7 + (seed % 7)}deg`);
-    button.addEventListener("click", () => {
-      createLakeRipple(button);
-      openReplyBottle(reply);
-    });
-    layer.append(button);
-  });
+function unreadRepliesForCurrentUser() {
+  return state.replies
+    .filter((reply) => (
+      reply.recipient_user_id === state.user?.id
+      && reply.sender_user_id !== state.user?.id
+      && !reply.is_read
+    ))
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+}
+
+function renderReplyLily() {
+  const button = $("#replyLily");
+  if (!button) return;
+  const unreadReplies = unreadRepliesForCurrentUser();
+  const count = unreadReplies.length;
+  button.hidden = count === 0;
+  $("#replyLilyCount").textContent = count > 99 ? "99+" : String(count);
+  button.setAttribute("aria-label", `届いた返事が${count}件あります。最新の返事を読む`);
+}
+
+async function openLatestUnreadReply() {
+  const reply = unreadRepliesForCurrentUser()[0];
+  if (!reply) {
+    renderReplyLily();
+    return;
+  }
+  createLakeRipple($("#replyLily"));
+  await openReplyBottle(reply);
 }
 
 async function openReplyBottle(reply) {
   openPost(reply.post_id);
-  if (reply.is_read || reply.recipient_user_id !== state.user?.id) return;
+  const unreadThreadReplies = unreadRepliesForCurrentUser().filter((item) => item.post_id === reply.post_id);
+  if (!unreadThreadReplies.length) return;
 
   try {
     if (IS_PREVIEW_MODE) {
-      reply.is_read = true;
+      unreadThreadReplies.forEach((item) => { item.is_read = true; });
       renderBottles();
       return;
     }
     const { error } = await supabase
       .from("post_replies")
       .update({ is_read: true })
-      .eq("id", reply.id)
-      .eq("recipient_user_id", state.user.id);
+      .eq("post_id", reply.post_id)
+      .eq("recipient_user_id", state.user.id)
+      .eq("is_read", false);
     if (error) throw error;
     await loadReplies();
   } catch (error) {
