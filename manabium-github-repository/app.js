@@ -42,14 +42,23 @@ const AQUARIUM_STATUS = {
 const AQUARIUM_REACTIONS = {
   hello: "こんにちは",
   starting: "湖に来ました",
+  new_bottle: "新しいボトルを流しました。よかったら見てね！",
+  question_bottle: "質問のボトルを流しました。知っていたら教えてください！",
+  info_bottle: "情報のボトルを流しました。よかったら見てください！",
+  share_interest_1: "興味分野を共有しました",
+  share_interest_2: "興味分野を共有しました",
+  share_interest_3: "興味分野を共有しました",
   good_work: "またね",
   taking_break: "少し離れます",
   together: "よろしくね",
   same_field: "同じ分野です",
   support: "応援しています",
   interesting: "その分野、気になります",
+  view_bottles: "ボトルも見てみたいです",
   good_work_direct: "また話そう",
 };
+
+const BOTTLE_ANNOUNCEMENT_CODES = new Set(["new_bottle", "question_bottle", "info_bottle"]);
 
 const FISH = {
   coral: { filter: "hue-rotate(0deg) saturate(.9)" },
@@ -101,6 +110,7 @@ const state = {
   selectedCategory: "all",
   postSearchQuery: "",
   postOwnership: "all",
+  postAuthorUserId: null,
   selectedPostId: null,
   editingReplyId: null,
   replyingToReplyId: null,
@@ -135,6 +145,17 @@ function escapeHTML(value) {
 function parseInterests(value) {
   const source = Array.isArray(value) ? value : String(value ?? "").split(/[、,，]/);
   return [...new Set(source.map((item) => String(item).trim()).filter(Boolean))].slice(0, 8);
+}
+
+function reactionText(messageCode, profile = null) {
+  const slotMatch = String(messageCode ?? "").match(/^share_interest_([1-3])$/);
+  if (slotMatch) {
+    const interests = parseInterests(profile?.interests);
+    const fallback = String(profile?.major ?? "").trim();
+    const interest = interests[Number(slotMatch[1]) - 1] || (Number(slotMatch[1]) === 1 ? fallback : "");
+    return interest ? `${interest}に興味があります` : AQUARIUM_REACTIONS[messageCode];
+  }
+  return AQUARIUM_REACTIONS[messageCode] ?? "湖から合図が届きました";
 }
 
 function parseFieldTags(value) {
@@ -412,6 +433,7 @@ function readableError(error) {
   if (lower.includes("target is observing only")) return "「見るだけ」の魚には個別リアクションを送れません。";
   if (lower.includes("target is not receiving reactions")) return "相手はリアクション受信をオフにしています。";
   if (lower.includes("reaction is muted")) return "ミュート設定により送信できません。";
+  if (lower.includes("invalid aquarium-wide message") || lower.includes("invalid direct reaction")) return "新しい定型文を使うためのSupabase追加SQLがまだ反映されていません。";
   if (lower.includes("target is not active") || lower.includes("not active in the aquarium")) return "相手が湖を離れたため送信できませんでした。";
   if (lower.includes("duplicate key") || error?.code === "23505") return "同じ操作が重複しました。画面を更新してください。";
   if (lower.includes("failed to fetch") || lower.includes("network")) return "通信できませんでした。接続を確認して、もう一度お試しください。";
@@ -454,6 +476,8 @@ function initializePublicHomepage() {
 
   const updateHeader = () => {
     publicHeader.classList.toggle("is-scrolled", window.scrollY > 28);
+    const scrollable = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
+    publicHeader.style.setProperty("--public-scroll-progress", String(Math.min(1, window.scrollY / scrollable)));
   };
   updateHeader();
   window.addEventListener("scroll", updateHeader, { passive: true });
@@ -488,6 +512,24 @@ function initializePublicHomepage() {
         animationFrame = 0;
       });
     });
+  }
+
+  const sceneSignal = $("#publicSceneSignal", publicSite);
+  if (sceneSignal && !reduceMotion) {
+    const messages = [
+      "新しいボトルを流しました！",
+      "情報・AIに興味があります",
+      "その人のボトルも読めます",
+    ];
+    let messageIndex = 0;
+    window.setInterval(() => {
+      sceneSignal.classList.remove("is-changing");
+      window.requestAnimationFrame(() => {
+        messageIndex = (messageIndex + 1) % messages.length;
+        sceneSignal.textContent = messages[messageIndex];
+        sceneSignal.classList.add("is-changing");
+      });
+    }, 4200);
   }
 }
 
@@ -643,6 +685,20 @@ function bindStaticEvents() {
       void sendAquariumReaction(button.dataset.directReaction, state.selectedFishPresence.user_id);
     }
   });
+  $("#drawerBottlePreview").addEventListener("click", (event) => {
+    const button = event.target.closest("[data-drawer-post-id]");
+    if (button) {
+      $("#fishDrawer").hidden = true;
+      openPost(button.dataset.drawerPostId);
+    }
+  });
+  $("#drawerViewBottlesButton").addEventListener("click", () => {
+    if (state.selectedFishPresence) openAuthorBottles(state.selectedFishPresence.user_id);
+  });
+  $("#aquariumBroadcastLayer").addEventListener("click", (event) => {
+    const button = event.target.closest("[data-author-bottles]");
+    if (button) openAuthorBottles(button.dataset.authorBottles);
+  });
   $("#muteFishButton").addEventListener("click", toggleSelectedFishMute);
   $("#mutedUsersList").addEventListener("click", (event) => {
     const button = event.target.closest("[data-unmute-user]");
@@ -674,10 +730,15 @@ function bindStaticEvents() {
   $("#postOwnershipFilters").addEventListener("click", (event) => {
     const button = event.target.closest("[data-ownership]");
     if (!button) return;
+    state.postAuthorUserId = null;
     state.postOwnership = button.dataset.ownership;
     $$(".ownership-chip", $("#postOwnershipFilters")).forEach((chip) => {
       chip.classList.toggle("active", chip === button);
     });
+    renderPosts();
+  });
+  $("#clearPostAuthorFilterButton").addEventListener("click", () => {
+    state.postAuthorUserId = null;
     renderPosts();
   });
   $("#postList").addEventListener("click", handlePostListClick);
@@ -880,6 +941,7 @@ function cleanupSignedInState() {
   state.selectedCategory = "all";
   state.postSearchQuery = "";
   state.postOwnership = "all";
+  state.postAuthorUserId = null;
   state.editingReplyId = null;
   state.replyingToReplyId = null;
   state.likedPostIds.clear();
@@ -1456,6 +1518,7 @@ async function loadPosts() {
   }));
   renderPosts();
   renderBottles();
+  renderAquariumControls();
 
   if (state.selectedPostId && $("#postDialog").open) {
     openPost(state.selectedPostId, false);
@@ -1618,7 +1681,7 @@ function renderLake() {
     button.style.setProperty("--body-delay", `${-((timelineSeconds + seed * 0.11) % bodyDuration)}s`);
     button.style.setProperty("--fish-filter", fish.filter);
     button.innerHTML = `
-      ${recentReaction ? `<span class="fish-reaction-bubble">${escapeHTML(recentReaction.profile?.nickname ?? "仲間")}：${escapeHTML(AQUARIUM_REACTIONS[recentReaction.message_code] ?? "")}</span>` : ""}
+      ${recentReaction ? `<span class="fish-reaction-bubble">${escapeHTML(recentReaction.profile?.nickname ?? "仲間")}：${escapeHTML(reactionText(recentReaction.message_code, recentReaction.profile))}</span>` : ""}
       <span class="fish-motion"><img class="fish-asset" src="${FISH_ASSET_URL}" alt="" /></span>
       <span class="fish-label"><strong>${escapeHTML(profile.nickname)}${isMe ? "（あなた）" : ""}</strong><small><span class="status-orb ${status.className}"></span>${status.label}</small></span>`;
     button.addEventListener("click", () => {
@@ -1641,6 +1704,20 @@ function renderAquariumControls() {
   $$("#aquariumQuickMessages [data-global-reaction]").forEach((button) => {
     button.disabled = !state.aquariumPresenceJoined;
   });
+  const hasOwnBottle = state.posts.some((post) => post.user_id === state.user?.id);
+  $$('[data-global-reaction]', $("#aquariumQuickMessages")).forEach((button) => {
+    if (!BOTTLE_ANNOUNCEMENT_CODES.has(button.dataset.globalReaction)) return;
+    button.disabled = !state.aquariumPresenceJoined || !hasOwnBottle;
+    button.title = hasOwnBottle ? "あなたの公開ボトルへ湖の仲間を案内します" : "ボトルを投稿すると使えます";
+  });
+  const shareableInterests = parseInterests(state.profile?.interests);
+  if (!shareableInterests.length && state.profile?.major) shareableInterests.push(state.profile.major);
+  $("#interestMessageLabel").hidden = shareableInterests.length === 0;
+  $$('[data-interest-slot]', $("#aquariumQuickMessages")).forEach((button) => {
+    const interest = shareableInterests[Number(button.dataset.interestSlot)];
+    button.hidden = !interest;
+    if (interest) button.textContent = `${interest}に興味あり`;
+  });
 
   const connection = $("#presenceConnectionStatus");
   if (!state.aquariumAvailable) connection.innerHTML = "<span></span>追加SQLの実行を待っています";
@@ -1662,10 +1739,17 @@ function renderAquariumBroadcasts() {
     ))
     .slice(0, 3)
     .forEach((reaction, index) => {
-      const message = document.createElement("p");
+      const opensBottles = BOTTLE_ANNOUNCEMENT_CODES.has(reaction.message_code);
+      const message = document.createElement(opensBottles ? "button" : "p");
       message.className = "aquarium-broadcast-bubble";
       message.style.setProperty("--bubble-index", String(index));
-      message.innerHTML = `<strong>${escapeHTML(reaction.profile?.nickname ?? "湖の仲間")}</strong><span>${escapeHTML(AQUARIUM_REACTIONS[reaction.message_code] ?? "")}</span>`;
+      if (opensBottles) {
+        message.type = "button";
+        message.classList.add("is-bottle-notice");
+        message.dataset.authorBottles = reaction.sender_user_id;
+        message.setAttribute("aria-label", `${reaction.profile?.nickname ?? "湖の仲間"}さんのボトルを見る`);
+      }
+      message.innerHTML = `<strong>${escapeHTML(reaction.profile?.nickname ?? "湖の仲間")}</strong><span>${escapeHTML(reactionText(reaction.message_code, reaction.profile))}</span>${opensBottles ? '<i class="ph ph-arrow-right" aria-hidden="true"></i>' : ""}`;
       layer.append(message);
     });
 }
@@ -1782,6 +1866,107 @@ async function openReplyBottle(reply) {
   }
 }
 
+function postsByAuthor(userId) {
+  return state.posts
+    .filter((post) => post.user_id === userId)
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+}
+
+async function loadAuthorPosts(userId) {
+  if (!userId || IS_PREVIEW_MODE) return postsByAuthor(userId);
+
+  let { data: posts, error } = await supabase
+    .from("posts")
+    .select(POST_FIELDS)
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(100);
+  if (error && isMissingPostFieldTagsColumn(error)) {
+    state.postFieldTagsColumnAvailable = false;
+    ({ data: posts, error } = await supabase
+      .from("posts")
+      .select(POST_FIELDS_WITHOUT_TAGS)
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(100));
+  }
+  if (error) throw error;
+
+  const knownProfile = authorProfile(userId);
+  const profiles = knownProfile ? null : await fetchProfiles([userId]);
+  const profile = knownProfile ?? profiles?.get(userId) ?? null;
+  const authorPosts = (posts ?? []).map((post) => ({
+    ...normalizePost(post),
+    profile,
+  }));
+  const authorPostIds = new Set(authorPosts.map((post) => post.id));
+  state.posts = [
+    ...state.posts.filter((post) => post.user_id !== userId && !authorPostIds.has(post.id)),
+    ...authorPosts,
+  ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  return authorPosts;
+}
+
+function authorProfile(userId) {
+  return state.aquariumPresence.find((presence) => presence.user_id === userId)?.profile
+    ?? state.posts.find((post) => post.user_id === userId)?.profile
+    ?? (userId === state.user?.id ? state.profile : null);
+}
+
+function renderFishDrawerBottles(userId) {
+  const posts = postsByAuthor(userId);
+  const preview = $("#drawerBottlePreview");
+  $("#drawerBottleCount").textContent = String(posts.length);
+  $("#drawerViewBottlesButton").hidden = posts.length === 0;
+  preview.replaceChildren();
+
+  if (!posts.length) {
+    preview.innerHTML = '<p class="drawer-bottle-empty"><i class="ph ph-bottle" aria-hidden="true"></i><span>この魚が流した公開ボトルは、まだありません。</span></p>';
+    return;
+  }
+
+  posts.slice(0, 2).forEach((post) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.dataset.drawerPostId = post.id;
+    button.className = "drawer-bottle-card";
+    button.innerHTML = `
+      <span><small>${escapeHTML(post.category)}</small><time>${escapeHTML(formatRelativeDate(post.created_at))}</time></span>
+      <strong>${escapeHTML(post.title)}</strong>
+      <i class="ph ph-arrow-up-right" aria-hidden="true"></i>`;
+    preview.append(button);
+  });
+}
+
+async function openAuthorBottles(userId) {
+  if (!userId) return;
+  const profile = authorProfile(userId);
+  state.postAuthorUserId = userId;
+  state.postOwnership = "all";
+  state.selectedCategory = "all";
+  state.postSearchQuery = "";
+  $("#postSearchInput").value = "";
+  $("#clearPostSearchButton").hidden = true;
+  $$(".category-chip", $("#categoryFilters")).forEach((chip) => {
+    chip.classList.toggle("active", chip.dataset.category === "all");
+  });
+  $$(".ownership-chip", $("#postOwnershipFilters")).forEach((chip) => {
+    chip.classList.toggle("active", chip.dataset.ownership === "all");
+  });
+  $("#fishDrawer").hidden = true;
+  state.selectedFishPresence = null;
+  showPage("board");
+  renderPosts();
+  showToast(`${profile?.nickname ?? "この仲間"}さんのボトルを表示しています。`, "success");
+  window.setTimeout(() => $("#boardTitle")?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
+  try {
+    await loadAuthorPosts(userId);
+    if (state.postAuthorUserId === userId) renderPosts();
+  } catch (error) {
+    showToast(readableError(error), "error");
+  }
+}
+
 function openFishDrawer(presence) {
   const profile = presence.profile ?? { nickname: "湖の仲間", grade: "—", major: "—", fish_type: "aqua", interests: [] };
   const fish = FISH[profile.fish_type] ?? FISH.aqua;
@@ -1804,6 +1989,14 @@ function openFishDrawer(presence) {
   matchBadge.hidden = isMe || profileSimilarity(profile) < 22;
   $("#drawerStatus").innerHTML = `<span class="status-orb ${status.className}"></span>${status.label}`;
   $("#drawerElapsed").textContent = `湖に来て ${formatShortDuration(Date.now() - new Date(presence.joined_at).getTime())}`;
+  renderFishDrawerBottles(presence.user_id);
+  void loadAuthorPosts(presence.user_id)
+    .then(() => {
+      if (state.selectedFishPresence?.user_id === presence.user_id && !$("#fishDrawer").hidden) {
+        renderFishDrawerBottles(presence.user_id);
+      }
+    })
+    .catch((error) => console.error("Failed to load member bottles", error));
 
   const reactionSection = $("#drawerReactionSection");
   const hint = $("#drawerReactionHint");
@@ -1819,6 +2012,7 @@ function openFishDrawer(presence) {
 function renderPosts() {
   const searchTerms = normalizeSearchText(state.postSearchQuery).split(" ").filter(Boolean);
   const visiblePosts = state.posts.filter((post) => {
+    if (state.postAuthorUserId && post.user_id !== state.postAuthorUserId) return false;
     if (state.selectedCategory !== "all" && post.category !== state.selectedCategory) return false;
     const isOwn = post.user_id === state.user?.id;
     if (state.postOwnership === "mine" && !isOwn) return false;
@@ -1828,11 +2022,17 @@ function renderPosts() {
   });
   const list = $("#postList");
   const summary = $("#postResultsSummary");
-  const hasFilters = state.selectedCategory !== "all" || state.postOwnership !== "all" || searchTerms.length > 0;
+  const author = state.postAuthorUserId ? authorProfile(state.postAuthorUserId) : null;
+  const authorFilter = $("#postAuthorFilter");
+  authorFilter.hidden = !state.postAuthorUserId;
+  if (state.postAuthorUserId) $("#postAuthorFilterName").textContent = author?.nickname ?? "仲間";
+  const hasFilters = Boolean(state.postAuthorUserId) || state.selectedCategory !== "all" || state.postOwnership !== "all" || searchTerms.length > 0;
   list.replaceChildren();
   $("#postEmpty").hidden = visiblePosts.length > 0;
   summary.textContent = hasFilters
-    ? `${visiblePosts.length}件のボトルが見つかりました`
+    ? state.postAuthorUserId
+      ? `${author?.nickname ?? "仲間"}さんのボトルが${visiblePosts.length}件見つかりました`
+      : `${visiblePosts.length}件のボトルが見つかりました`
     : `${visiblePosts.length}件のボトルが流れています`;
   $("#postEmptyTitle").textContent = state.posts.length ? "条件に合うボトルがありません" : "まだボトルがありません";
   $("#postEmptyMessage").textContent = state.posts.length
@@ -1927,6 +2127,7 @@ async function submitPost(event) {
       closeDialog("composerDialog");
       renderPosts();
       renderBottles();
+      renderAquariumControls();
       renderMyPage();
       showToast("ボトルを湖へ流しました。", "success");
       return;

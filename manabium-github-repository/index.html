@@ -117,11 +117,11 @@
                 <img class="public-scene-fish scene-fish-one" src="./assets/fish-watercolor.png" alt="" />
                 <img class="public-scene-fish scene-fish-two" src="./assets/fish-watercolor.png" alt="" />
                 <img class="public-scene-bottle" src="./assets/message-bottle.png" alt="" />
-                <div class="public-scene-signal">一緒に頑張ろう</div>
+                <div id="publicSceneSignal" class="public-scene-signal">新しいボトルを流しました！</div>
               </div>
               <div class="public-lake-card-foot">
-                <span><b>魚</b> 今ここにいる仲間</span>
-                <span><b>ボトル</b> 時間を越えて届く相談</span>
+                <span><b>魚</b> 今ここにいる、近い分野の仲間</span>
+                <span><b>タップ</b> プロフィールから、その人のボトルへ</span>
               </div>
             </aside>
           </div>
@@ -163,6 +163,36 @@
               <p>勉強会、コミュニティ、インターン。知らなかった機会と出会える。</p>
               <small>「こんなイベントがあるよ」</small>
             </article>
+          </div>
+        </section>
+
+        <section id="publicDiscovery" class="public-section public-discovery" aria-labelledby="publicDiscoveryTitle">
+          <div class="public-discovery-copy" data-reveal>
+            <p class="public-section-label">FROM A FISH TO A STORY</p>
+            <h2 id="publicDiscoveryTitle">近い分野の魚から、<br />その人の経験へ。</h2>
+            <p>
+              湖がにぎわってきたら、専攻や興味が近い仲間を優先して表示します。魚をタップするとプロフィールだけでなく、その人が流した公開ボトルも続けて読めます。
+            </p>
+            <ul class="public-discovery-points">
+              <li><span>01</span><div><b>近い分野の魚に出会う</b><small>人数が多いときだけ、専攻・興味の近さを反映。</small></div></li>
+              <li><span>02</span><div><b>魚からボトルを読む</b><small>プロフィールと、その人の相談・情報をひと続きに。</small></div></li>
+              <li><span>03</span><div><b>短い合図で知らせる</b><small>新しい投稿や興味分野を、自由入力なしで共有。</small></div></li>
+            </ul>
+          </div>
+          <div class="public-discovery-scene" data-reveal aria-label="魚から投稿へつながる新機能のイメージ">
+            <span class="public-discovery-current" aria-hidden="true"></span>
+            <button class="public-discovery-fish" type="button" tabindex="-1" aria-hidden="true">
+              <img src="./assets/fish-watercolor.png" alt="" />
+              <span><b>あおい</b><small>情報・AI</small></span>
+            </button>
+            <div class="public-discovery-profile">
+              <span class="public-discovery-match"><i class="ph ph-sparkle" aria-hidden="true"></i> 興味が近い仲間</span>
+              <strong>あおいさんのボトル</strong>
+              <article><small>研究</small><b>機械学習の研究室選びについて</b></article>
+              <article><small>イベント</small><b>女子学生向けAI勉強会があります</b></article>
+              <button type="button" tabindex="-1">この人のボトルをすべて見る <i class="ph ph-arrow-right"></i></button>
+            </div>
+            <p class="public-discovery-signal"><i class="ph ph-megaphone-simple"></i> 新しいボトルを流しました！</p>
           </div>
         </section>
 
@@ -576,8 +606,16 @@
               <span>湖のみんなへ</span>
               <button type="button" data-global-reaction="hello">こんにちは</button>
               <button type="button" data-global-reaction="starting">湖に来ました</button>
+              <button class="quick-message-featured" type="button" data-global-reaction="new_bottle"><i class="ph ph-envelope-simple-open" aria-hidden="true"></i> 新しいボトルを流しました</button>
+              <button class="quick-message-featured" type="button" data-global-reaction="question_bottle"><i class="ph ph-question" aria-hidden="true"></i> 質問ボトルを流しました</button>
+              <button class="quick-message-featured" type="button" data-global-reaction="info_bottle"><i class="ph ph-info" aria-hidden="true"></i> 情報ボトルを流しました</button>
               <button type="button" data-global-reaction="good_work">またね</button>
               <button type="button" data-global-reaction="taking_break">少し離れます</button>
+              <span class="quick-message-divider" aria-hidden="true"></span>
+              <span id="interestMessageLabel">興味を伝える</span>
+              <button type="button" data-global-reaction="share_interest_1" data-interest-slot="0" hidden></button>
+              <button type="button" data-global-reaction="share_interest_2" data-interest-slot="1" hidden></button>
+              <button type="button" data-global-reaction="share_interest_3" data-interest-slot="2" hidden></button>
             </div>
             <div class="lake-community-guide" aria-label="湖の使い方">
               <p><i class="ph ph-fish-simple" aria-hidden="true"></i><span><strong>魚は、今この湖にいる仲間</strong><small>タップするとプロフィールと定型リアクションを確認できます</small></span></p>
@@ -596,6 +634,16 @@
               <p id="drawerBio" class="drawer-bio" hidden></p>
               <p id="drawerStatus" class="drawer-status"><span class="status-orb status-social"></span>交流OK</p>
               <p id="drawerElapsed" class="drawer-elapsed"></p>
+              <section id="drawerBottleSection" class="drawer-bottle-section" aria-labelledby="drawerBottleTitle">
+                <div class="drawer-bottle-heading">
+                  <p><span>PUBLIC BOTTLES</span><strong id="drawerBottleTitle">この人のボトル</strong></p>
+                  <span id="drawerBottleCount" class="drawer-bottle-count">0</span>
+                </div>
+                <div id="drawerBottlePreview" class="drawer-bottle-preview"></div>
+                <button id="drawerViewBottlesButton" class="drawer-view-bottles" type="button">
+                  すべて見る <i class="ph ph-arrow-right" aria-hidden="true"></i>
+                </button>
+              </section>
               <div id="drawerReactionSection" class="drawer-reaction-section">
                 <p>定型リアクションを送る</p>
                 <div id="drawerReactionButtons" class="drawer-reaction-buttons">
@@ -603,6 +651,7 @@
                   <button type="button" data-direct-reaction="same_field">同じ分野です</button>
                   <button type="button" data-direct-reaction="support">応援しています</button>
                   <button type="button" data-direct-reaction="interesting">その分野、気になります</button>
+                  <button type="button" data-direct-reaction="view_bottles">ボトルも見てみたいです</button>
                   <button type="button" data-direct-reaction="good_work_direct">また話そう</button>
                 </div>
                 <p id="drawerReactionHint" class="drawer-reaction-hint"></p>
@@ -639,6 +688,10 @@
               <button class="ownership-chip" type="button" data-ownership="mine">自分</button>
             </div>
           </section>
+          <div id="postAuthorFilter" class="post-author-filter" hidden>
+            <span><i class="ph ph-fish-simple" aria-hidden="true"></i><strong id="postAuthorFilterName">仲間</strong>さんのボトルを表示中</span>
+            <button id="clearPostAuthorFilterButton" type="button"><i class="ph ph-x" aria-hidden="true"></i> 絞り込みを解除</button>
+          </div>
 
           <div id="categoryFilters" class="category-filters" role="group" aria-label="カテゴリーで絞り込む">
             <button class="category-chip active" type="button" data-category="all">すべて</button>

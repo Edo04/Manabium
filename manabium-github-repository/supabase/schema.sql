@@ -160,8 +160,10 @@ create table if not exists public.aquarium_reactions (
   sender_user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
   target_user_id uuid references auth.users(id) on delete cascade,
   message_code text not null check (message_code in (
-    'hello', 'starting', 'good_work', 'taking_break',
-    'together', 'same_field', 'support', 'interesting', 'good_work_direct'
+    'hello', 'starting', 'new_bottle', 'question_bottle', 'info_bottle',
+    'share_interest_1', 'share_interest_2', 'share_interest_3',
+    'good_work', 'taking_break',
+    'together', 'same_field', 'support', 'interesting', 'view_bottles', 'good_work_direct'
   )),
   created_at timestamptz not null default now(),
   constraint aquarium_reaction_not_self check (
@@ -420,7 +422,11 @@ begin
   if sender_status is null then raise exception 'You are not active in the aquarium'; end if;
 
   if new.target_user_id is null then
-    if new.message_code not in ('hello', 'starting', 'good_work', 'taking_break') then
+    if new.message_code not in (
+      'hello', 'starting', 'new_bottle', 'question_bottle', 'info_bottle',
+      'share_interest_1', 'share_interest_2', 'share_interest_3',
+      'good_work', 'taking_break'
+    ) then
       raise exception 'Invalid aquarium-wide message';
     end if;
     if exists (
@@ -432,7 +438,7 @@ begin
     end if;
   else
     if new.target_user_id = auth.uid() then raise exception 'Cannot react to yourself'; end if;
-    if new.message_code not in ('together', 'same_field', 'support', 'interesting', 'good_work_direct') then
+    if new.message_code not in ('together', 'same_field', 'support', 'interesting', 'view_bottles', 'good_work_direct') then
       raise exception 'Invalid direct reaction';
     end if;
 
