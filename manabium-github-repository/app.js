@@ -478,13 +478,36 @@ function initializePublicHomepage() {
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   publicSite.classList.toggle("public-motion-ready", !reduceMotion);
 
+  let scrollFrame = 0;
   const updateHeader = () => {
     publicHeader.classList.toggle("is-scrolled", window.scrollY > 28);
     const scrollable = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
     publicHeader.style.setProperty("--public-scroll-progress", String(Math.min(1, window.scrollY / scrollable)));
+    publicSite.style.setProperty("--public-hero-shift", reduceMotion ? "0px" : `${Math.min(48, window.scrollY * 0.065).toFixed(1)}px`);
+    scrollFrame = 0;
   };
   updateHeader();
-  window.addEventListener("scroll", updateHeader, { passive: true });
+  window.addEventListener("scroll", () => {
+    if (scrollFrame) return;
+    scrollFrame = window.requestAnimationFrame(updateHeader);
+  }, { passive: true });
+
+  const publicNavLinks = $$('a[href^="#"]', publicHeader)
+    .filter((link) => link.getAttribute("href") !== "#publicTop");
+  const publicNavSections = publicNavLinks
+    .map((link) => document.querySelector(link.getAttribute("href")))
+    .filter(Boolean);
+  if ("IntersectionObserver" in window && publicNavSections.length) {
+    const navObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        publicNavLinks.forEach((link) => {
+          link.classList.toggle("is-current", link.getAttribute("href") === `#${entry.target.id}`);
+        });
+      });
+    }, { rootMargin: "-38% 0px -54%", threshold: 0 });
+    publicNavSections.forEach((section) => navObserver.observe(section));
+  }
 
   const revealTargets = $$('[data-reveal]', publicSite);
   if (reduceMotion || !("IntersectionObserver" in window)) {
