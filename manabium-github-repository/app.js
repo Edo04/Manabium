@@ -435,6 +435,62 @@ function setAuthMode(mode) {
   $("#signupTab").setAttribute("aria-selected", String(!isLogin));
 }
 
+function openAuthDialog(mode = "signup") {
+  setAuthMode(mode === "login" ? "login" : "signup");
+  openDialog("authDialog");
+  window.setTimeout(() => {
+    const inputId = mode === "login" ? "loginEmail" : "signupEmail";
+    document.getElementById(inputId)?.focus({ preventScroll: true });
+  }, 80);
+}
+
+function initializePublicHomepage() {
+  const publicSite = $("#authView");
+  const publicHeader = $("#publicHeader");
+  if (!publicSite || !publicHeader) return;
+
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  publicSite.classList.toggle("public-motion-ready", !reduceMotion);
+
+  const updateHeader = () => {
+    publicHeader.classList.toggle("is-scrolled", window.scrollY > 28);
+  };
+  updateHeader();
+  window.addEventListener("scroll", updateHeader, { passive: true });
+
+  const revealTargets = $$('[data-reveal]', publicSite);
+  if (reduceMotion || !("IntersectionObserver" in window)) {
+    revealTargets.forEach((target) => target.classList.add("is-visible"));
+  } else {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          entry.target.classList.add("is-visible");
+          observer.unobserve(entry.target);
+        });
+      },
+      { rootMargin: "0px 0px -9%", threshold: 0.12 },
+    );
+    revealTargets.forEach((target) => observer.observe(target));
+  }
+
+  const supportsFinePointer = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+  if (!reduceMotion && supportsFinePointer) {
+    let animationFrame = 0;
+    publicSite.addEventListener("pointermove", (event) => {
+      if (animationFrame) return;
+      animationFrame = window.requestAnimationFrame(() => {
+        const x = (event.clientX / window.innerWidth - 0.5) * 2;
+        const y = (event.clientY / window.innerHeight - 0.5) * 2;
+        publicSite.style.setProperty("--public-pointer-x", x.toFixed(3));
+        publicSite.style.setProperty("--public-pointer-y", y.toFixed(3));
+        animationFrame = 0;
+      });
+    });
+  }
+}
+
 function togglePasswordVisibility(button) {
   const input = document.getElementById(button.dataset.passwordToggle);
   if (!input) return;
@@ -453,6 +509,7 @@ function showOnly(viewName) {
   $("#authView").hidden = viewName !== "auth";
   $("#onboardingView").hidden = viewName !== "onboarding";
   $("#appView").hidden = viewName !== "app";
+  if (viewName !== "auth") closeDialog("authDialog");
 }
 
 function routeFromLocation() {
@@ -536,6 +593,10 @@ function showPage(pageName, updateHash = true) {
 function bindStaticEvents() {
   $("#loginTab").addEventListener("click", () => setAuthMode("login"));
   $("#signupTab").addEventListener("click", () => setAuthMode("signup"));
+  $$('[data-auth-open]').forEach((button) => {
+    button.addEventListener("click", () => openAuthDialog(button.dataset.authOpen));
+  });
+  initializePublicHomepage();
   $$('[data-password-toggle]').forEach((button) => {
     button.addEventListener("click", () => togglePasswordVisibility(button));
   });

@@ -8,6 +8,13 @@
       content="理工系女子が湖でゆるくつながり、授業・研究・進路の相談を安心して共有できるコミュニティ Manabium"
     />
     <meta name="theme-color" content="#dff7f5" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Manabium | 理工系女子が集まる湖" />
+    <meta
+      property="og:description"
+      content="授業、研究、進路の迷いを、同じ理工系の誰かへ。理工系女子のための静かなコミュニティ。"
+    />
+    <meta name="twitter:card" content="summary_large_image" />
     <title>Manabium | 理工系女子が集まる湖</title>
     <link rel="icon" href="./assets/manabium-icon.png" type="image/png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -29,59 +36,253 @@
 
     <div id="toastRegion" class="toast-region" aria-live="polite" aria-atomic="true"></div>
 
-    <main id="authView" class="auth-shell">
-      <section class="welcome-panel" aria-labelledby="welcomeTitle">
-        <a class="brand brand-large" href="#" aria-label="Manabium トップ">
-          <img class="brand-mark" src="./assets/manabium-icon.png" alt="" />
+    <main id="authView" class="public-site">
+      <a class="public-skip-link" href="#publicMain">本文へ移動</a>
+
+      <header id="publicHeader" class="public-header">
+        <a class="public-brand" href="#publicTop" aria-label="Manabium ホーム">
+          <img src="./assets/manabium-icon.png" alt="" />
           <span>Manabium</span>
         </a>
-        <div class="welcome-copy">
-          <p class="eyebrow">STEM GIRLS COMMUNITY</p>
-          <h1 id="welcomeTitle">学びの時間を、<br />ひとりにしない。</h1>
-          <p>同じ理工系の仲間の気配を感じられる、静かなコミュニティの湖。</p>
+        <nav class="public-nav" aria-label="ホームページ内の案内">
+          <a href="#publicAbout">湖について</a>
+          <a href="#publicBottle">ボトル</a>
+          <a href="#publicSafety">安心のしくみ</a>
+        </nav>
+        <div class="public-header-actions">
+          <button class="public-login" type="button" data-auth-open="login">ログイン</button>
+          <button class="public-button public-button-small" type="button" data-auth-open="signup">
+            湖へ入る
+          </button>
         </div>
-        <div class="mini-lake" aria-hidden="true">
-          <img class="mini-fish fish-a" src="./assets/fish-watercolor.png" alt="" />
-          <img class="mini-fish fish-b" src="./assets/fish-watercolor.png" alt="" />
-          <img class="mini-fish fish-c" src="./assets/fish-watercolor.png" alt="" />
-          <span class="mini-bubble bubble-a"></span>
-          <span class="mini-bubble bubble-b"></span>
-          <span class="water-line"></span>
-        </div>
-        <ul class="welcome-points" aria-label="Manabiumの特徴">
-          <li><span aria-hidden="true">◌</span> ニックネームで安心して参加</li>
-          <li><span aria-hidden="true">◌</span> 今ここにいる仲間を湖で感じる</li>
-          <li><span aria-hidden="true">◌</span> 定型の合図とボトルでゆるく交流</li>
-        </ul>
-      </section>
+      </header>
 
-      <section class="auth-panel" aria-labelledby="authHeading">
+      <div id="publicMain">
+        <section id="publicTop" class="public-hero" aria-labelledby="publicHeroTitle">
+          <div class="public-hero-water" aria-hidden="true">
+            <span class="public-light-ray ray-one"></span>
+            <span class="public-light-ray ray-two"></span>
+            <span class="public-bubble public-bubble-one"></span>
+            <span class="public-bubble public-bubble-two"></span>
+            <span class="public-bubble public-bubble-three"></span>
+            <img
+              class="public-swimmer public-swimmer-one"
+              src="./assets/fish-watercolor.png"
+              alt=""
+            />
+            <img
+              class="public-swimmer public-swimmer-two"
+              src="./assets/fish-watercolor.png"
+              alt=""
+            />
+            <img class="public-floating-bottle" src="./assets/message-bottle.png" alt="" />
+          </div>
+
+          <div class="public-hero-inner">
+            <div class="public-hero-copy" data-reveal>
+              <p class="public-kicker"><span></span>理工系女子のためのコミュニティ</p>
+              <h1 id="publicHeroTitle">
+                迷ったとき、<br />
+                <em>同じ分野の誰か</em>がいる。
+              </h1>
+              <p class="public-lead">
+                授業、研究、進路の小さな疑問を、ひとりで抱え込まないために。<br />
+                Manabiumは、理工系を学ぶ女性たちが静かにつながる湖です。
+              </p>
+              <div class="public-hero-actions">
+                <button class="public-button" type="button" data-auth-open="signup">
+                  <span>無料で湖へ入る</span>
+                  <i class="ph ph-arrow-right" aria-hidden="true"></i>
+                </button>
+                <a class="public-text-link" href="#publicAbout">
+                  Manabiumを知る
+                  <i class="ph ph-arrow-down" aria-hidden="true"></i>
+                </a>
+              </div>
+              <ul class="public-trust-list" aria-label="登録について">
+                <li><i class="ph ph-check-circle" aria-hidden="true"></i>本名・学校名は不要</li>
+                <li><i class="ph ph-check-circle" aria-hidden="true"></i>個別DMなし</li>
+                <li><i class="ph ph-check-circle" aria-hidden="true"></i>無料で参加</li>
+              </ul>
+            </div>
+
+            <aside class="public-lake-card" data-reveal aria-label="Manabiumの湖のイメージ">
+              <div class="public-lake-card-head">
+                <span><i></i>湖につながっています</span>
+                <small>LIVE COMMUNITY</small>
+              </div>
+              <div class="public-lake-card-scene" aria-hidden="true">
+                <span class="public-scene-ripple ripple-one"></span>
+                <span class="public-scene-ripple ripple-two"></span>
+                <img class="public-scene-fish scene-fish-one" src="./assets/fish-watercolor.png" alt="" />
+                <img class="public-scene-fish scene-fish-two" src="./assets/fish-watercolor.png" alt="" />
+                <img class="public-scene-bottle" src="./assets/message-bottle.png" alt="" />
+                <div class="public-scene-signal">一緒に頑張ろう</div>
+              </div>
+              <div class="public-lake-card-foot">
+                <span><b>魚</b> 今ここにいる仲間</span>
+                <span><b>ボトル</b> 時間を越えて届く相談</span>
+              </div>
+            </aside>
+          </div>
+
+          <a class="public-scroll-cue" href="#publicAbout" aria-label="次のセクションへ">
+            <span>SCROLL</span><i></i>
+          </a>
+        </section>
+
+        <section class="public-quiet-band" aria-label="Manabiumの考え方">
+          <p data-reveal>周りに同じ立場の人が少なくても、<strong>ひとりで進まなくていい。</strong></p>
+        </section>
+
+        <section id="publicAbout" class="public-section public-about">
+          <div class="public-section-heading" data-reveal>
+            <p class="public-section-label">WHEN YOU NEED SOMEONE</p>
+            <h2>誰に聞けばいいか分からない瞬間を、<br />湖につなぐ。</h2>
+            <p>答えだけではなく、「自分と近い誰かがいた」という安心も持ち帰れる場所を目指しています。</p>
+          </div>
+          <div class="public-need-grid">
+            <article class="public-need-card need-study" data-reveal>
+              <span class="public-card-number">01</span>
+              <i class="ph ph-function" aria-hidden="true"></i>
+              <h3>授業・研究</h3>
+              <p>レポート、研究室、探究活動。ちょっと聞きたい疑問を近い分野の仲間へ。</p>
+              <small>「この分野、どこから学んだ？」</small>
+            </article>
+            <article class="public-need-card need-career" data-reveal>
+              <span class="public-card-number">02</span>
+              <i class="ph ph-compass" aria-hidden="true"></i>
+              <h3>進路・キャリア</h3>
+              <p>学部選び、就活、働き方。理工系女性の実体験を匿名で分かち合う。</p>
+              <small>「女性の先輩の話を聞きたい」</small>
+            </article>
+            <article class="public-need-card need-event" data-reveal>
+              <span class="public-card-number">03</span>
+              <i class="ph ph-sparkle" aria-hidden="true"></i>
+              <h3>イベント・つながり</h3>
+              <p>勉強会、コミュニティ、インターン。知らなかった機会と出会える。</p>
+              <small>「こんなイベントがあるよ」</small>
+            </article>
+          </div>
+        </section>
+
+        <section id="publicBottle" class="public-section public-experience">
+          <div class="public-experience-visual" data-reveal aria-hidden="true">
+            <div class="public-orbit orbit-one"></div>
+            <div class="public-orbit orbit-two"></div>
+            <img class="public-experience-bottle" src="./assets/message-bottle.png" alt="" />
+            <img class="public-experience-lily" src="./assets/reply-lily.png" alt="" />
+            <span class="public-experience-note note-question">研究室選び、何を見ましたか？</span>
+            <span class="public-experience-note note-reply">新しい返信が届きました</span>
+          </div>
+          <div class="public-experience-copy" data-reveal>
+            <p class="public-section-label">THE BOTTLE</p>
+            <h2>言葉はボトルに。<br />返事は睡蓮の便りに。</h2>
+            <p>
+              今すぐ同じ時間にいなくても、相談や情報は湖に残ります。カテゴリと分野で探せて、返信は会話の流れごと確認できます。
+            </p>
+            <ol class="public-step-list">
+              <li><span>1</span><div><b>相談を流す</b><small>ニックネームで、授業・研究・進路の疑問を投稿。</small></div></li>
+              <li><span>2</span><div><b>近い話題に出会う</b><small>カテゴリや分野から、自分に合うボトルを見つける。</small></div></li>
+              <li><span>3</span><div><b>返信が便りになる</b><small>誰かの経験が、次に進むための小さな手がかりに。</small></div></li>
+            </ol>
+          </div>
+        </section>
+
+        <section class="public-section public-difference">
+          <div class="public-difference-copy" data-reveal>
+            <p class="public-section-label">A QUIET FIRST STEP</p>
+            <h2>大きなコミュニティへ入る前の、<br />小さな入口でありたい。</h2>
+            <p>
+              SlackやDiscordの代わりではありません。参加先をまだ知らない人や、いきなり会話へ入るのが不安な人が、興味の近い誰かと出会うための入口です。
+            </p>
+          </div>
+          <div class="public-difference-route" data-reveal aria-label="Manabiumから広がるつながり">
+            <div><i class="ph ph-drop" aria-hidden="true"></i><span><b>Manabium</b><small>匿名で小さく相談</small></span></div>
+            <i class="ph ph-arrow-right route-arrow" aria-hidden="true"></i>
+            <div><i class="ph ph-users-three" aria-hidden="true"></i><span><b>興味の近い仲間</b><small>情報と経験に出会う</small></span></div>
+            <i class="ph ph-arrow-right route-arrow" aria-hidden="true"></i>
+            <div><i class="ph ph-signpost" aria-hidden="true"></i><span><b>次の居場所</b><small>イベントや既存コミュニティへ</small></span></div>
+          </div>
+        </section>
+
+        <section id="publicSafety" class="public-safety">
+          <div class="public-safety-water" aria-hidden="true"></div>
+          <div class="public-section public-safety-inner">
+            <div class="public-safety-copy" data-reveal>
+              <p class="public-section-label">SAFE BY DESIGN</p>
+              <h2>つながるために、<br />近づきすぎない設計。</h2>
+              <p>
+                本名や学校名を出さず、いきなり個別に連絡されない。安心して最初の一言を置ける距離感を大切にしています。
+              </p>
+              <button class="public-button public-button-light" type="button" data-auth-open="signup">
+                安心して湖へ入る
+                <i class="ph ph-arrow-right" aria-hidden="true"></i>
+              </button>
+            </div>
+            <div class="public-safety-grid">
+              <article data-reveal><i class="ph ph-user-circle-minus" aria-hidden="true"></i><h3>個人を特定しない</h3><p>表示名はニックネーム。正確な学校名・住所・連絡先は公開しません。</p></article>
+              <article data-reveal><i class="ph ph-chat-slash" aria-hidden="true"></i><h3>自由なDMなし</h3><p>湖では定型リアクション、相談は公開されたボトルの返信で行います。</p></article>
+              <article data-reveal><i class="ph ph-eye-slash" aria-hidden="true"></i><h3>距離を選べる</h3><p>魚として参加せずに見る、相手の表示やリアクションをミュートする選択肢があります。</p></article>
+              <article data-reveal><i class="ph ph-heart" aria-hidden="true"></i><h3>尊重から始める</h3><p>登録時にコミュニティルールへ同意。安心を損なう使い方を前提にしません。</p></article>
+            </div>
+          </div>
+        </section>
+
+        <section class="public-section public-beta">
+          <div class="public-beta-card" data-reveal>
+            <div class="public-beta-copy">
+              <p class="public-section-label">GROWING WITH YOU</p>
+              <h2>この湖は、まだ育っている途中です。</h2>
+              <p>
+                情報系を学ぶ大学2年生の2人が、同世代の声を聞きながら開発しています。今の使い心地を一緒に確かめてくれる方を募集しています。
+              </p>
+              <div class="public-beta-actions">
+                <button class="public-button" type="button" data-auth-open="signup">テスト参加する</button>
+                <button class="public-login" type="button" data-auth-open="login">すでに登録済みの方</button>
+              </div>
+            </div>
+            <img src="./assets/manabium-icon.png" alt="Manabiumの湖のシンボル" />
+          </div>
+        </section>
+
+        <section class="public-final-cta" data-reveal>
+          <div class="public-final-ripple" aria-hidden="true"></div>
+          <p>YOUR FIRST RIPPLE</p>
+          <h2>あなたの小さな疑問から、<br />湖に波紋を。</h2>
+          <button class="public-button" type="button" data-auth-open="signup">
+            無料でManabiumを始める
+            <i class="ph ph-arrow-right" aria-hidden="true"></i>
+          </button>
+          <small>メールアドレスだけで登録できます</small>
+        </section>
+      </div>
+
+      <footer class="public-footer">
+        <a class="public-brand" href="#publicTop">
+          <img src="./assets/manabium-icon.png" alt="" />
+          <span>Manabium</span>
+        </a>
+        <p>理工系女子が、静かにつながるコミュニティの湖。</p>
+        <button type="button" data-auth-open="login">ログイン</button>
+        <small>© 2026 Manabium</small>
+      </footer>
+
+      <dialog id="authDialog" class="auth-modal" aria-labelledby="authHeading">
+        <button class="auth-modal-close" type="button" data-close-dialog="authDialog" aria-label="閉じる">
+          <i class="ph ph-x" aria-hidden="true"></i>
+        </button>
         <div class="auth-card">
-          <p class="mobile-brand">Manabium</p>
+          <div class="auth-modal-brand">
+            <img src="./assets/manabium-icon.png" alt="" />
+            <span>Manabium</span>
+          </div>
           <h2 id="authHeading">湖へようこそ</h2>
           <p class="subtle">メールアドレスとパスワードで始められます。</p>
 
           <div class="segmented" role="tablist" aria-label="認証方法">
-            <button
-              id="loginTab"
-              class="segment active"
-              type="button"
-              role="tab"
-              aria-selected="true"
-              aria-controls="loginForm"
-            >
-              ログイン
-            </button>
-            <button
-              id="signupTab"
-              class="segment"
-              type="button"
-              role="tab"
-              aria-selected="false"
-              aria-controls="signupForm"
-            >
-              新規登録
-            </button>
+            <button id="loginTab" class="segment active" type="button" role="tab" aria-selected="true" aria-controls="loginForm">ログイン</button>
+            <button id="signupTab" class="segment" type="button" role="tab" aria-selected="false" aria-controls="signupForm">新規登録</button>
           </div>
 
           <form id="loginForm" class="auth-form" novalidate>
@@ -89,45 +290,18 @@
               <span>メールアドレス</span>
               <span class="auth-input-wrap">
                 <i class="ph ph-envelope-simple" aria-hidden="true"></i>
-                <input
-                  id="loginEmail"
-                  name="email"
-                  type="email"
-                  autocomplete="email"
-                  inputmode="email"
-                  placeholder="you@example.com"
-                  required
-                />
+                <input id="loginEmail" name="email" type="email" autocomplete="email" inputmode="email" placeholder="you@example.com" required />
               </span>
             </label>
             <label>
               <span>パスワード</span>
               <span class="auth-input-wrap">
                 <i class="ph ph-lock-key" aria-hidden="true"></i>
-                <input
-                  id="loginPassword"
-                  name="password"
-                  type="password"
-                  autocomplete="current-password"
-                  minlength="8"
-                  placeholder="8文字以上"
-                  required
-                />
-                <button
-                  class="password-toggle"
-                  type="button"
-                  data-password-toggle="loginPassword"
-                  aria-label="パスワードを表示"
-                  aria-pressed="false"
-                >
-                  <i class="ph ph-eye" aria-hidden="true"></i>
-                </button>
+                <input id="loginPassword" name="password" type="password" autocomplete="current-password" minlength="8" placeholder="8文字以上" required />
+                <button class="password-toggle" type="button" data-password-toggle="loginPassword" aria-label="パスワードを表示" aria-pressed="false"><i class="ph ph-eye" aria-hidden="true"></i></button>
               </span>
             </label>
-            <button class="button button-primary button-wide" type="submit">
-              <span class="button-label">ログインする</span>
-              <span class="spinner" aria-hidden="true"></span>
-            </button>
+            <button class="button button-primary button-wide" type="submit"><span class="button-label">ログインする</span><span class="spinner" aria-hidden="true"></span></button>
           </form>
 
           <form id="signupForm" class="auth-form" hidden novalidate>
@@ -135,80 +309,35 @@
               <span>メールアドレス</span>
               <span class="auth-input-wrap">
                 <i class="ph ph-envelope-simple" aria-hidden="true"></i>
-                <input
-                  id="signupEmail"
-                  name="email"
-                  type="email"
-                  autocomplete="email"
-                  inputmode="email"
-                  placeholder="you@example.com"
-                  required
-                />
+                <input id="signupEmail" name="email" type="email" autocomplete="email" inputmode="email" placeholder="you@example.com" required />
               </span>
             </label>
             <label>
               <span>パスワード</span>
               <span class="auth-input-wrap">
                 <i class="ph ph-lock-key" aria-hidden="true"></i>
-                <input
-                  id="signupPassword"
-                  name="password"
-                  type="password"
-                  autocomplete="new-password"
-                  minlength="8"
-                  placeholder="8文字以上"
-                  required
-                />
-                <button
-                  class="password-toggle"
-                  type="button"
-                  data-password-toggle="signupPassword"
-                  aria-label="パスワードを表示"
-                  aria-pressed="false"
-                >
-                  <i class="ph ph-eye" aria-hidden="true"></i>
-                </button>
+                <input id="signupPassword" name="password" type="password" autocomplete="new-password" minlength="8" placeholder="8文字以上" required />
+                <button class="password-toggle" type="button" data-password-toggle="signupPassword" aria-label="パスワードを表示" aria-pressed="false"><i class="ph ph-eye" aria-hidden="true"></i></button>
               </span>
             </label>
             <label>
               <span>パスワード（確認）</span>
               <span class="auth-input-wrap">
                 <i class="ph ph-lock-key" aria-hidden="true"></i>
-                <input
-                  id="signupPasswordConfirm"
-                  name="passwordConfirm"
-                  type="password"
-                  autocomplete="new-password"
-                  minlength="8"
-                  placeholder="同じパスワードを入力"
-                  required
-                />
-                <button
-                  class="password-toggle"
-                  type="button"
-                  data-password-toggle="signupPasswordConfirm"
-                  aria-label="パスワードを表示"
-                  aria-pressed="false"
-                >
-                  <i class="ph ph-eye" aria-hidden="true"></i>
-                </button>
+                <input id="signupPasswordConfirm" name="passwordConfirm" type="password" autocomplete="new-password" minlength="8" placeholder="同じパスワードを入力" required />
+                <button class="password-toggle" type="button" data-password-toggle="signupPasswordConfirm" aria-label="パスワードを表示" aria-pressed="false"><i class="ph ph-eye" aria-hidden="true"></i></button>
               </span>
             </label>
             <label class="check-row">
               <input id="communityAgreement" type="checkbox" required />
               <span>相手を尊重し、個人を特定できる情報を書かないことに同意します</span>
             </label>
-            <button class="button button-primary button-wide" type="submit">
-              <span class="button-label">アカウントを作る</span>
-              <span class="spinner" aria-hidden="true"></span>
-            </button>
+            <button class="button button-primary button-wide" type="submit"><span class="button-label">アカウントを作る</span><span class="spinner" aria-hidden="true"></span></button>
           </form>
 
-          <p class="auth-note">
-            登録後に確認メールが届く場合があります。表示名は次の画面で設定します。
-          </p>
+          <p class="auth-note">登録後に確認メールが届く場合があります。表示名は次の画面で設定します。</p>
         </div>
-      </section>
+      </dialog>
     </main>
 
     <main id="onboardingView" class="onboarding-shell" hidden>
