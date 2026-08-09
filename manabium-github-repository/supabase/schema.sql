@@ -432,7 +432,7 @@ begin
     if exists (
       select 1 from public.aquarium_reactions r
       where r.sender_user_id = auth.uid()
-        and r.created_at > now() - interval '8 seconds'
+        and r.created_at > now() - interval '4 seconds'
     ) then
       raise exception 'Reaction cooldown';
     end if;
@@ -465,14 +465,14 @@ begin
       select 1 from public.aquarium_reactions r
       where r.sender_user_id = auth.uid()
         and r.target_user_id = new.target_user_id
-        and r.created_at > now() - interval '20 seconds'
+        and r.created_at > now() - interval '10 seconds'
     ) then
       raise exception 'Reaction target cooldown';
     end if;
     if exists (
       select 1 from public.aquarium_reactions r
       where r.sender_user_id = auth.uid()
-        and r.created_at > now() - interval '5 seconds'
+        and r.created_at > now() - interval '3 seconds'
     ) then
       raise exception 'Reaction cooldown';
     end if;

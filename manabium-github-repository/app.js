@@ -32,6 +32,9 @@ const AQUARIUM_PRESENCE_TTL_SECONDS = 90;
 const AQUARIUM_HEARTBEAT_INTERVAL_MS = 25000;
 const AQUARIUM_IDLE_TIMEOUT_MS = 5 * 60 * 1000;
 const AQUARIUM_REACTION_VISIBLE_MS = 7000;
+const AQUARIUM_GLOBAL_REACTION_COOLDOWN_MS = 4000;
+const AQUARIUM_DIRECT_REACTION_COOLDOWN_MS = 3000;
+const AQUARIUM_SAME_TARGET_COOLDOWN_MS = 10000;
 
 const AQUARIUM_STATUS = {
   social: { label: "交流OK", className: "status-social" },
@@ -120,6 +123,7 @@ const state = {
   reactionExpiryTimerId: null,
   lastAquariumReactionAt: 0,
   lastAquariumReactionTargetAt: new Map(),
+  lastAnnouncedAquariumReactionId: null,
   interestsColumnAvailable: true,
   bioColumnAvailable: true,
   postFieldTagsColumnAvailable: true,
@@ -695,10 +699,6 @@ function bindStaticEvents() {
   $("#drawerViewBottlesButton").addEventListener("click", () => {
     if (state.selectedFishPresence) openAuthorBottles(state.selectedFishPresence.user_id);
   });
-  $("#aquariumBroadcastLayer").addEventListener("click", (event) => {
-    const button = event.target.closest("[data-author-bottles]");
-    if (button) openAuthorBottles(button.dataset.authorBottles);
-  });
   $("#muteFishButton").addEventListener("click", toggleSelectedFishMute);
   $("#mutedUsersList").addEventListener("click", (event) => {
     const button = event.target.closest("[data-unmute-user]");
@@ -936,6 +936,7 @@ function cleanupSignedInState() {
   state.aquariumIdle = false;
   state.lastAquariumReactionAt = 0;
   state.lastAquariumReactionTargetAt.clear();
+  state.lastAnnouncedAquariumReactionId = null;
   state.realtimeReloadKinds.clear();
   state.selectedPostId = null;
   state.selectedCategory = "all";
@@ -1381,15 +1382,15 @@ async function sendAquariumReaction(messageCode, targetUserId = null) {
     return;
   }
   const now = Date.now();
-  if (!targetUserId && now - state.lastAquariumReactionAt < 8000) {
+  if (!targetUserId && now - state.lastAquariumReactionAt < AQUARIUM_GLOBAL_REACTION_COOLDOWN_MS) {
     showToast("連続送信を防いでいます。少し待ってから送ってください。", "info");
     return;
   }
-  if (targetUserId && now - state.lastAquariumReactionAt < 5000) {
+  if (targetUserId && now - state.lastAquariumReactionAt < AQUARIUM_DIRECT_REACTION_COOLDOWN_MS) {
     showToast("連続送信を防いでいます。少し待ってから送ってください。", "info");
     return;
   }
-  if (targetUserId && now - (state.lastAquariumReactionTargetAt.get(targetUserId) ?? 0) < 20000) {
+  if (targetUserId && now - (state.lastAquariumReactionTargetAt.get(targetUserId) ?? 0) < AQUARIUM_SAME_TARGET_COOLDOWN_MS) {
     showToast("同じ相手への連続送信を防いでいます。少し待ってから送ってください。", "info");
     return;
   }
@@ -1418,7 +1419,7 @@ async function sendAquariumReaction(messageCode, targetUserId = null) {
     if (targetUserId) state.lastAquariumReactionTargetAt.set(targetUserId, state.lastAquariumReactionAt);
     state.aquariumReactions = [reaction, ...state.aquariumReactions.filter((item) => item.id !== reaction.id)];
     renderAquarium();
-    showToast("湖に合図を送りました。", "success");
+    // 送信結果は魚の吹き出しで伝え、湖の景色を覆う成功トーストは出さない。
   } catch (error) {
     showToast(readableError(error), "error");
   }
@@ -1652,11 +1653,29 @@ function renderLake() {
     const similarity = profileSimilarity(profile);
     const isMe = presenceItem.user_id === state.user?.id;
     const status = AQUARIUM_STATUS[presenceItem.status] ?? AQUARIUM_STATUS.social;
-    const recentReaction = state.aquariumPreferences.receive_reactions && state.aquariumReactions.find((reaction) => (
-      reaction.target_user_id === presenceItem.user_id
-      && !state.mutedUserIds.has(reaction.sender_user_id)
-      && Date.now() - new Date(reaction.created_at).getTime() <= AQUARIUM_REACTION_VISIBLE_MS
-    ));
+    const recentReaction = state.aquariumPreferences.receive_reactions && state.aquariumReactions.find((reaction) => {
+      const isFishSpeaking = !reaction.target_user_id && reaction.sender_user_id === presenceItem.user_id;
+      const isReactionToFish = reaction.target_user_id === presenceItem.user_id;
+      return (isFishSpeaking || isReactionToFish)
+        && !state.mutedUserIds.has(reaction.sender_user_id)
+        && Date.now() - new Date(reaction.created_at).getTime() <= AQUARIUM_REACTION_VISIBLE_MS;
+    });
+    const fishIsSpeaking = Boolean(
+      recentReaction
+      && !recentReaction.target_user_id
+      && recentReaction.sender_user_id === presenceItem.user_id
+    );
+    const opensBottles = fishIsSpeaking && BOTTLE_ANNOUNCEMENT_CODES.has(recentReaction?.message_code);
+    const mobileBubblePosition = phoneLayout && row === 0
+      ? ` is-top-row${column === columns - 1 ? " is-side-left" : ""}`
+      : "";
+    const reactionBubble = recentReaction
+      ? `<span class="fish-reaction-bubble ${fishIsSpeaking ? "is-fish-voice" : "is-direct-reaction"}${opensBottles ? " is-bottle-notice" : ""}${mobileBubblePosition}"${opensBottles ? ' data-fish-bottle-notice="true"' : ""}>
+          ${fishIsSpeaking ? "" : `<small>${escapeHTML(recentReaction.profile?.nickname ?? "仲間")}から</small>`}
+          <span>${escapeHTML(reactionText(recentReaction.message_code, recentReaction.profile))}</span>
+          ${opensBottles ? '<i class="ph ph-arrow-right" aria-hidden="true"></i>' : ""}
+        </span>`
+      : "";
     const button = document.createElement("button");
     button.type = "button";
     button.className = "swimming-fish";
@@ -1664,7 +1683,7 @@ function renderLake() {
     button.classList.toggle("is-me", isMe);
     button.classList.toggle("is-similar", !isMe && similarity >= 22);
     button.classList.add(status.className);
-    button.setAttribute("aria-label", `${profile.nickname}さん、${status.label}。プロフィールを見る`);
+    button.setAttribute("aria-label", `${profile.nickname}さん、${status.label}。プロフィールを見る${opensBottles ? "。ボトルのお知らせがあります" : ""}`);
     button.style.setProperty("--top", `${phoneLayout ? 18 + row * 19 : 17 + row * 25}%`);
     button.style.setProperty("--static-left", `${phoneLayout ? 6 + column * 30 : 7 + column * 22}%`);
     button.style.setProperty("--route-x-one", `${Math.round(horizontalDirection * routeDistance * 0.34)}px`);
@@ -1681,11 +1700,15 @@ function renderLake() {
     button.style.setProperty("--body-delay", `${-((timelineSeconds + seed * 0.11) % bodyDuration)}s`);
     button.style.setProperty("--fish-filter", fish.filter);
     button.innerHTML = `
-      ${recentReaction ? `<span class="fish-reaction-bubble">${escapeHTML(recentReaction.profile?.nickname ?? "仲間")}：${escapeHTML(reactionText(recentReaction.message_code, recentReaction.profile))}</span>` : ""}
+      ${reactionBubble}
       <span class="fish-motion"><img class="fish-asset" src="${FISH_ASSET_URL}" alt="" /></span>
       <span class="fish-label"><strong>${escapeHTML(profile.nickname)}${isMe ? "（あなた）" : ""}</strong><small><span class="status-orb ${status.className}"></span>${status.label}</small></span>`;
-    button.addEventListener("click", () => {
+    button.addEventListener("click", (event) => {
       createLakeRipple(button);
+      if (event.target.closest("[data-fish-bottle-notice]")) {
+        void openAuthorBottles(presenceItem.user_id);
+        return;
+      }
       openFishDrawer(presenceItem);
     });
     layer.append(button);
@@ -1728,30 +1751,23 @@ function renderAquariumControls() {
 
 function renderAquariumBroadcasts() {
   const layer = $("#aquariumBroadcastLayer");
-  layer.replaceChildren();
-  if (!state.aquariumPreferences.receive_reactions) return;
+  if (!state.aquariumPreferences.receive_reactions) {
+    layer.textContent = "";
+    return;
+  }
   const cutoff = Date.now() - AQUARIUM_REACTION_VISIBLE_MS;
-  state.aquariumReactions
-    .filter((reaction) => (
+  const latestReaction = state.aquariumReactions.find((reaction) => (
       !reaction.target_user_id
       && new Date(reaction.created_at).getTime() >= cutoff
       && !state.mutedUserIds.has(reaction.sender_user_id)
-    ))
-    .slice(0, 3)
-    .forEach((reaction, index) => {
-      const opensBottles = BOTTLE_ANNOUNCEMENT_CODES.has(reaction.message_code);
-      const message = document.createElement(opensBottles ? "button" : "p");
-      message.className = "aquarium-broadcast-bubble";
-      message.style.setProperty("--bubble-index", String(index));
-      if (opensBottles) {
-        message.type = "button";
-        message.classList.add("is-bottle-notice");
-        message.dataset.authorBottles = reaction.sender_user_id;
-        message.setAttribute("aria-label", `${reaction.profile?.nickname ?? "湖の仲間"}さんのボトルを見る`);
-      }
-      message.innerHTML = `<strong>${escapeHTML(reaction.profile?.nickname ?? "湖の仲間")}</strong><span>${escapeHTML(reactionText(reaction.message_code, reaction.profile))}</span>${opensBottles ? '<i class="ph ph-arrow-right" aria-hidden="true"></i>' : ""}`;
-      layer.append(message);
-    });
+    ));
+  if (!latestReaction) {
+    layer.textContent = "";
+    return;
+  }
+  if (state.lastAnnouncedAquariumReactionId === latestReaction.id) return;
+  state.lastAnnouncedAquariumReactionId = latestReaction.id;
+  layer.textContent = `${latestReaction.profile?.nickname ?? "湖の仲間"}：${reactionText(latestReaction.message_code, latestReaction.profile)}`;
 }
 
 function renderMutedUsers() {

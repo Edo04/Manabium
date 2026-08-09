@@ -1,35 +1,9 @@
--- Manabium: 魚からボトルへつながる定型リアクションを追加
+-- Manabium: 湖の定型リアクションの送信間隔を短縮
 -- Supabase Dashboard > SQL Editor > New query に全文を貼り付けて Run してください。
--- 既存の投稿・返信・presence・リアクションは削除しません。
+-- 既存データは削除しません。何度実行しても同じ設定になります。
 
 begin;
 
--- 以前の定型文チェック制約を安全に差し替えます。
-do $$
-declare
-  constraint_name text;
-begin
-  for constraint_name in
-    select c.conname
-    from pg_constraint c
-    where c.conrelid = 'public.aquarium_reactions'::regclass
-      and c.contype = 'c'
-      and pg_get_constraintdef(c.oid) ilike '%message_code%'
-  loop
-    execute format('alter table public.aquarium_reactions drop constraint %I', constraint_name);
-  end loop;
-end $$;
-
-alter table public.aquarium_reactions
-  add constraint aquarium_reactions_message_code_check
-  check (message_code in (
-    'hello', 'starting', 'new_bottle', 'question_bottle', 'info_bottle',
-    'share_interest_1', 'share_interest_2', 'share_interest_3',
-    'good_work', 'taking_break',
-    'together', 'same_field', 'support', 'interesting', 'view_bottles', 'good_work_direct'
-  ));
-
--- 在室確認、送信者固定、ミュート、受信設定、クールダウンは従来どおりDB側で検証します。
 create or replace function public.validate_aquarium_reaction()
 returns trigger
 language plpgsql

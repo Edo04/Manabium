@@ -1983,11 +1983,13 @@ textarea:focus {
 .fish-reaction-bubble {
   position: absolute;
   z-index: 12;
-  bottom: calc(100% + 2px);
-  left: 50%;
+  bottom: calc(100% + 5px);
+  left: 56%;
+  display: grid;
   width: max-content;
-  max-width: 172px;
-  padding: 7px 10px;
+  max-width: min(190px, 42vw);
+  padding: 8px 11px;
+  gap: 1px;
   color: #3d6269;
   background: rgba(255, 253, 249, 0.96);
   border: 1px solid rgba(77, 114, 119, 0.12);
@@ -1996,44 +1998,63 @@ textarea:focus {
   font-size: 0.62rem;
   font-weight: 700;
   line-height: 1.45;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
   transform: translateX(-50%);
   animation: reaction-pop 280ms ease-out both;
 }
 
-.aquarium-broadcast-layer {
+.fish-reaction-bubble::after {
   position: absolute;
-  z-index: 11;
-  top: 18px;
-  left: 50%;
-  display: grid;
-  width: min(360px, calc(100% - 36px));
-  gap: 7px;
-  transform: translateX(-50%);
-  pointer-events: none;
+  bottom: -7px;
+  left: 31%;
+  width: 13px;
+  height: 13px;
+  content: "";
+  background: inherit;
+  border-right: 1px solid rgba(77, 114, 119, 0.12);
+  border-bottom: 1px solid rgba(77, 114, 119, 0.12);
+  transform: rotate(45deg);
 }
 
-.aquarium-broadcast-bubble {
-  position: relative;
-  display: flex;
-  padding: 9px 12px;
-  margin: 0;
-  justify-self: center;
-  gap: 7px;
-  color: #42666d;
-  background: rgba(255, 253, 249, 0.92);
-  border: 1px solid rgba(255, 255, 255, 0.72);
-  border-radius: 999px;
-  box-shadow: 0 8px 22px rgba(42, 73, 78, 0.11);
-  font-size: 0.68rem;
-  animation: reaction-pop 280ms ease-out both;
-  animation-delay: calc(var(--bubble-index) * 70ms);
+.fish-reaction-bubble small {
+  color: #8a999b;
+  font-size: 0.5rem;
+  font-weight: 700;
 }
 
-.aquarium-broadcast-bubble strong { color: #2f5961; }
+.fish-reaction-bubble > span { position: relative; z-index: 1; }
+
+.fish-reaction-bubble.is-fish-voice {
+  color: #315b63;
+  border-radius: 16px 16px 16px 5px;
+  box-shadow: 0 10px 27px rgba(42, 73, 78, 0.16);
+}
+
+.fish-reaction-bubble.is-direct-reaction {
+  color: #6f5f64;
+  background: rgba(255, 247, 243, 0.97);
+}
+
+.fish-reaction-bubble.is-bottle-notice {
+  padding-right: 28px;
+  color: #76575e;
+  background: linear-gradient(120deg, rgba(255, 248, 242, 0.98), rgba(238, 248, 244, 0.98));
+}
+
+.fish-reaction-bubble.is-bottle-notice > i {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  right: 9px;
+  font-size: 0.72rem;
+  transform: translateY(-50%);
+}
 
 @keyframes reaction-pop {
-  from { opacity: 0; transform: translateY(7px) scale(0.96); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+  from { opacity: 0; translate: 0 7px; scale: 0.96; }
+  to { opacity: 1; translate: 0 0; scale: 1; }
 }
 
 #aquariumPage .lake-empty {
@@ -2228,8 +2249,31 @@ textarea:focus {
   #aquariumPage .fish-label { bottom: -18px; max-width: 110px; }
   #aquariumPage .fish-label strong { max-width: 96px; font-size: 0.59rem; }
   .fish-reaction-bubble { max-width: 142px; padding: 6px 8px; font-size: 0.57rem; }
-  .aquarium-broadcast-layer { top: 12px; }
-  .aquarium-broadcast-bubble { max-width: 100%; font-size: 0.61rem; }
+  .fish-reaction-bubble.is-top-row {
+    top: 9px;
+    bottom: auto;
+    left: calc(100% - 1px);
+    transform: none;
+  }
+  .fish-reaction-bubble.is-top-row::after {
+    top: 13px;
+    bottom: auto;
+    left: -7px;
+    border: 0;
+    border-bottom: 1px solid rgba(77, 114, 119, 0.12);
+    border-left: 1px solid rgba(77, 114, 119, 0.12);
+  }
+  .fish-reaction-bubble.is-top-row.is-side-left {
+    right: calc(100% - 1px);
+    left: auto;
+  }
+  .fish-reaction-bubble.is-top-row.is-side-left::after {
+    right: -7px;
+    left: auto;
+    border: 0;
+    border-top: 1px solid rgba(77, 114, 119, 0.12);
+    border-right: 1px solid rgba(77, 114, 119, 0.12);
+  }
   .aquarium-quick-messages { padding: 11px; justify-content: flex-start; overflow-x: auto; flex-wrap: nowrap; scrollbar-width: none; }
   .aquarium-quick-messages::-webkit-scrollbar { display: none; }
   .aquarium-quick-messages > span,
@@ -2279,7 +2323,6 @@ textarea:focus {
 
 @media (prefers-reduced-motion: reduce) {
   .fish-reaction-bubble,
-  .aquarium-broadcast-bubble,
   .status-choice {
     animation: none !important;
     transition: none !important;
@@ -8619,41 +8662,9 @@ textarea {
   background: rgba(68, 105, 111, 0.14);
 }
 
-.aquarium-broadcast-layer { pointer-events: none; }
-
-button.aquarium-broadcast-bubble {
-  appearance: none;
-  cursor: pointer;
-  pointer-events: auto;
-  font-family: inherit;
-}
-
-.aquarium-broadcast-bubble.is-bottle-notice {
-  color: #735b61;
-  background: linear-gradient(110deg, rgba(255, 249, 244, 0.96), rgba(237, 247, 244, 0.96));
-  border-color: rgba(255, 255, 255, 0.9);
-  box-shadow: 0 10px 28px rgba(48, 77, 82, 0.16);
-}
-
-.aquarium-broadcast-bubble.is-bottle-notice::after {
-  position: absolute;
-  inset: -5px;
-  content: "";
-  border: 1px solid rgba(255, 255, 255, 0.42);
-  border-radius: 999px;
-  animation: bottle-notice-ring 2.8s ease-out infinite;
-  pointer-events: none;
-}
-
 @keyframes fish-drawer-arrive {
   from { opacity: 0; transform: translate3d(0, 22px, 0) scale(0.97); }
   to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
-}
-
-@keyframes bottle-notice-ring {
-  0%, 38% { opacity: 0; transform: scale(0.96); }
-  50% { opacity: 0.68; }
-  100% { opacity: 0; transform: scale(1.08); }
 }
 
 /* Public homepage: close-field discovery story */
@@ -8907,7 +8918,6 @@ button.aquarium-broadcast-bubble {
 
 @media (prefers-reduced-motion: reduce) {
   .fish-drawer:not([hidden]),
-  .aquarium-broadcast-bubble.is-bottle-notice::after,
   .public-discovery-current,
   .public-discovery-fish,
   .public-discovery-profile,
