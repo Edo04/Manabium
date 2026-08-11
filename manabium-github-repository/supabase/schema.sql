@@ -59,6 +59,7 @@ create table if not exists public.posts (
   category text not null check (category in ('授業', '研究', '就活', 'イベント')),
   post_type text not null check (post_type in ('相談', '情報共有')),
   field_tags text[] not null default '{}'::text[],
+  external_url text,
   like_count integer not null default 0 check (like_count >= 0),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -67,6 +68,10 @@ create table if not exists public.posts (
 -- 投稿内容を興味・専攻の近い利用者へ優先表示するための関連分野タグです。
 alter table public.posts
   add column if not exists field_tags text[] not null default '{}'::text[];
+
+-- イベント・インターン・参考資料の公式ページへ、ボトルから直接移動するための任意URLです。
+alter table public.posts
+  add column if not exists external_url text;
 
 do $$
 begin
@@ -77,6 +82,21 @@ begin
   ) then
     alter table public.posts
       add constraint posts_field_tags_limit check (cardinality(field_tags) <= 5);
+  end if;
+end $$;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'posts_external_url_format'
+      and conrelid = 'public.posts'::regclass
+  ) then
+    alter table public.posts
+      add constraint posts_external_url_format check (
+        external_url is null
+        or (char_length(external_url) <= 500 and external_url ~* '^https?://')
+      );
   end if;
 end $$;
 
@@ -703,7 +723,7 @@ grant insert (user_id, nickname, grade, major, interests, fish_type, bio) on tab
 grant update (nickname, grade, major, interests, fish_type, bio) on table public.profiles to authenticated;
 
 grant select, insert, delete on table public.posts to authenticated;
-grant update (title, body, category, post_type, field_tags) on table public.posts to authenticated;
+grant update (title, body, category, post_type, field_tags, external_url) on table public.posts to authenticated;
 
 grant select, insert, delete on table public.post_likes to authenticated;
 grant select, delete on table public.post_replies to authenticated;

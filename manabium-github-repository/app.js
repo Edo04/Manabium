@@ -24,8 +24,7 @@ const PROFILE_FIELDS_WITHOUT_BIO = "user_id,nickname,grade,major,interests,fish_
 const PROFILE_PUBLIC_FIELDS_WITHOUT_BIO = "user_id,nickname,grade,major,interests,fish_type";
 const PROFILE_FIELDS_WITHOUT_INTERESTS = "user_id,nickname,grade,major,fish_type,created_at,updated_at";
 const PROFILE_PUBLIC_FIELDS_WITHOUT_INTERESTS = "user_id,nickname,grade,major,fish_type";
-const POST_FIELDS = "id,user_id,title,body,category,post_type,field_tags,like_count,created_at,updated_at";
-const POST_FIELDS_WITHOUT_TAGS = "id,user_id,title,body,category,post_type,like_count,created_at,updated_at";
+const POST_BASE_FIELDS = "id,user_id,title,body,category,post_type,like_count,created_at,updated_at";
 const MAX_LAKE_FISH = 12;
 const MAX_LAKE_POSTS = 4;
 const AQUARIUM_PRESENCE_TTL_SECONDS = 90;
@@ -127,6 +126,7 @@ const state = {
   interestsColumnAvailable: true,
   bioColumnAvailable: true,
   postFieldTagsColumnAvailable: true,
+  postExternalUrlColumnAvailable: true,
   threadedRepliesAvailable: true,
   routeVersion: 0,
   realtimeReloadTimer: null,
@@ -177,6 +177,7 @@ function searchablePostText(post) {
     post.body,
     post.category,
     post.post_type,
+    post.external_url,
     ...parseFieldTags(post.field_tags),
     post.profile?.nickname,
     post.profile?.major,
@@ -222,6 +223,48 @@ function renderTextWithLinks(container, value) {
   if (cursor < text.length) container.append(document.createTextNode(text.slice(cursor)));
 }
 
+function validateExternalUrlInput(input) {
+  const rawValue = input.value.trim();
+  const normalizedUrl = normalizeExternalUrl(rawValue);
+  input.setCustomValidity(rawValue && !normalizedUrl ? "http:// または https:// から始まるURLを入力してください。" : "");
+  return normalizedUrl;
+}
+
+function renderPostExternalLink(container, value) {
+  const href = normalizeExternalUrl(value);
+  container.replaceChildren();
+  container.hidden = !href;
+  if (!href) return;
+
+  const url = new URL(href);
+  const link = document.createElement("a");
+  link.className = "post-primary-link";
+  link.href = href;
+  link.target = "_blank";
+  link.rel = "noopener noreferrer";
+  link.referrerPolicy = "no-referrer";
+  link.setAttribute("aria-label", `${url.hostname}の公式・参考サイトを新しいタブで開く`);
+
+  const icon = document.createElement("span");
+  icon.className = "post-primary-link-icon";
+  icon.setAttribute("aria-hidden", "true");
+  icon.innerHTML = '<i class="ph ph-link-simple"></i>';
+
+  const copy = document.createElement("span");
+  copy.className = "post-primary-link-copy";
+  const label = document.createElement("strong");
+  label.textContent = "公式・参考サイトを見る";
+  const host = document.createElement("small");
+  host.textContent = url.hostname.replace(/^www\./, "");
+  copy.append(label, host);
+
+  const arrow = document.createElement("i");
+  arrow.className = "ph ph-arrow-up-right";
+  arrow.setAttribute("aria-hidden", "true");
+  link.append(icon, copy, arrow);
+  container.append(link);
+}
+
 function setBottleGuideCompact(compact) {
   const guide = $("#bottleGuideToggle");
   if (!guide) return;
@@ -262,8 +305,24 @@ function normalizeProfile(profile) {
   return profile ? { ...profile, interests: parseInterests(profile.interests) } : profile;
 }
 
+function normalizeExternalUrl(value) {
+  const rawValue = String(value ?? "").trim();
+  if (!rawValue) return "";
+  try {
+    const url = new URL(rawValue);
+    if (!["http:", "https:"].includes(url.protocol)) return "";
+    return url.href;
+  } catch {
+    return "";
+  }
+}
+
 function normalizePost(post) {
-  return post ? { ...post, field_tags: parseFieldTags(post.field_tags) } : post;
+  return post ? {
+    ...post,
+    field_tags: parseFieldTags(post.field_tags),
+    external_url: normalizeExternalUrl(post.external_url),
+  } : post;
 }
 
 function isMissingInterestsColumn(error) {
@@ -286,6 +345,31 @@ function isMissingAquariumSchema(error) {
 function isMissingPostFieldTagsColumn(error) {
   const message = String(error?.message ?? "").toLowerCase();
   return message.includes("field_tags") && (message.includes("schema cache") || message.includes("column"));
+}
+
+function isMissingPostExternalUrlColumn(error) {
+  const message = String(error?.message ?? "").toLowerCase();
+  return message.includes("external_url") && (message.includes("schema cache") || message.includes("column"));
+}
+
+function postSelectFields() {
+  return [
+    POST_BASE_FIELDS,
+    state.postFieldTagsColumnAvailable ? "field_tags" : "",
+    state.postExternalUrlColumnAvailable ? "external_url" : "",
+  ].filter(Boolean).join(",");
+}
+
+function disableUnavailablePostColumn(error) {
+  if (isMissingPostExternalUrlColumn(error) && state.postExternalUrlColumnAvailable) {
+    state.postExternalUrlColumnAvailable = false;
+    return true;
+  }
+  if (isMissingPostFieldTagsColumn(error) && state.postFieldTagsColumnAvailable) {
+    state.postFieldTagsColumnAvailable = false;
+    return true;
+  }
+  return false;
 }
 
 function isSchoolGrade(grade) {
@@ -879,6 +963,7 @@ function bindStaticEvents() {
     showToast("湖を更新しました。", "success");
   });
   $("#replyLily").addEventListener("click", openLatestUnreadReply);
+  $("#replyInboxButton").addEventListener("click", openLatestUnreadReply);
   $("#closeFishDrawer").addEventListener("click", () => {
     $("#fishDrawer").hidden = true;
     state.selectedFishPresence = null;
@@ -916,6 +1001,7 @@ function bindStaticEvents() {
 
   $("#openComposerButton").addEventListener("click", openComposer);
   $("#postForm").addEventListener("submit", submitPost);
+  $("#postExternalUrl").addEventListener("input", (event) => validateExternalUrlInput(event.currentTarget));
   $("#postBody").addEventListener("input", () => {
     $("#postCharacterCount").textContent = String($("#postBody").value.length);
   });
@@ -966,6 +1052,7 @@ function bindStaticEvents() {
   $("#editPostButton").addEventListener("click", openPostEditor);
   $("#deletePostButton").addEventListener("click", openPostDeleteConfirmation);
   $("#editPostForm").addEventListener("submit", saveEditedPost);
+  $("#editPostExternalUrl").addEventListener("input", (event) => validateExternalUrlInput(event.currentTarget));
   $("#editPostBody").addEventListener("input", () => {
     $("#editPostCharacterCount").textContent = String($("#editPostBody").value.length);
   });
@@ -1697,21 +1784,19 @@ function closeAquariumIntro() {
   closeDialog("aquariumIntroDialog");
 }
 
-async function loadPosts() {
-  let { data: posts, error: postsError } = await supabase
-    .from("posts")
-    .select(POST_FIELDS)
-    .order("created_at", { ascending: false })
-    .limit(60);
-  if (postsError && isMissingPostFieldTagsColumn(postsError)) {
-    state.postFieldTagsColumnAvailable = false;
-    ({ data: posts, error: postsError } = await supabase
-      .from("posts")
-      .select(POST_FIELDS_WITHOUT_TAGS)
-      .order("created_at", { ascending: false })
-      .limit(60));
+async function fetchPostRows({ userId = null, limit = 60 } = {}) {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    let query = supabase.from("posts").select(postSelectFields());
+    if (userId) query = query.eq("user_id", userId);
+    const { data, error } = await query.order("created_at", { ascending: false }).limit(limit);
+    if (!error) return data ?? [];
+    if (!disableUnavailablePostColumn(error)) throw error;
   }
-  if (postsError) throw postsError;
+  throw new Error("ボトルのデータ構成を確認できませんでした。");
+}
+
+async function loadPosts() {
+  const posts = await fetchPostRows({ limit: 60 });
 
   const profiles = await fetchProfiles((posts ?? []).map((post) => post.user_id));
   const { data: myLikes, error: likesError } = await supabase
@@ -2047,13 +2132,18 @@ function unreadRepliesForCurrentUser() {
 }
 
 function renderReplyLily() {
-  const button = $("#replyLily");
-  if (!button) return;
+  const lilyButton = $("#replyLily");
+  const inboxButton = $("#replyInboxButton");
+  if (!lilyButton || !inboxButton) return;
   const unreadReplies = unreadRepliesForCurrentUser();
   const count = unreadReplies.length;
-  button.hidden = count === 0;
+  lilyButton.hidden = count === 0;
+  inboxButton.hidden = count === 0;
   $("#replyLilyCount").textContent = count > 99 ? "99+" : String(count);
-  button.setAttribute("aria-label", `届いた返事が${count}件あります。最新の返事を読む`);
+  $("#replyInboxCount").textContent = count > 99 ? "99+" : String(count);
+  const ariaLabel = `届いた返事が${count}件あります。最新の返事を読む`;
+  lilyButton.setAttribute("aria-label", ariaLabel);
+  inboxButton.setAttribute("aria-label", ariaLabel);
 }
 
 async function openLatestUnreadReply() {
@@ -2099,22 +2189,7 @@ function postsByAuthor(userId) {
 async function loadAuthorPosts(userId) {
   if (!userId || IS_PREVIEW_MODE) return postsByAuthor(userId);
 
-  let { data: posts, error } = await supabase
-    .from("posts")
-    .select(POST_FIELDS)
-    .eq("user_id", userId)
-    .order("created_at", { ascending: false })
-    .limit(100);
-  if (error && isMissingPostFieldTagsColumn(error)) {
-    state.postFieldTagsColumnAvailable = false;
-    ({ data: posts, error } = await supabase
-      .from("posts")
-      .select(POST_FIELDS_WITHOUT_TAGS)
-      .eq("user_id", userId)
-      .order("created_at", { ascending: false })
-      .limit(100));
-  }
-  if (error) throw error;
+  const posts = await fetchPostRows({ userId, limit: 100 });
 
   const knownProfile = authorProfile(userId);
   const profiles = knownProfile ? null : await fetchProfiles([userId]);
@@ -2274,6 +2349,7 @@ function renderPosts() {
     const author = isOwn ? "あなた" : post.profile?.nickname ?? "湖の仲間";
     const excerpt = post.body.length > 130 ? `${post.body.slice(0, 130)}…` : post.body;
     const fieldTags = parseFieldTags(post.field_tags);
+    const hasExternalLink = Boolean(normalizeExternalUrl(post.external_url));
     const fieldTagsMarkup = fieldTags.length
       ? `<div class="post-field-tags" aria-label="関連分野">${fieldTags.map((tag) => `<button class="post-field-tag" type="button" data-search-tag="${escapeHTML(tag)}">${escapeHTML(tag)}</button>`).join("")}</div>`
       : "";
@@ -2282,6 +2358,7 @@ function renderPosts() {
         <span class="post-badges">
           <span class="post-badge">${escapeHTML(post.category)}</span>
           <span class="post-badge type">${escapeHTML(post.post_type)}</span>
+          ${hasExternalLink ? '<span class="post-badge link"><i class="ph ph-link-simple" aria-hidden="true"></i> 公式リンクあり</span>' : ""}
           ${isOwn ? '<span class="post-badge owner"><i class="ph ph-user" aria-hidden="true"></i> 自分のボトル</span>' : ""}
         </span>
         <h2>${escapeHTML(post.title)}</h2>
@@ -2319,13 +2396,35 @@ async function handlePostListClick(event) {
 }
 
 function openComposer() {
+  $("#postExternalUrl").setCustomValidity("");
   openDialog("composerDialog");
   window.setTimeout(() => $("#postTitle").focus(), 50);
+}
+
+function availablePostMutationPayload(payload) {
+  const nextPayload = { ...payload };
+  if (!state.postFieldTagsColumnAvailable) delete nextPayload.field_tags;
+  if (!state.postExternalUrlColumnAvailable) delete nextPayload.external_url;
+  return nextPayload;
+}
+
+async function persistPostMutation(payload, postId = null) {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const nextPayload = availablePostMutationPayload(payload);
+    const query = postId
+      ? supabase.from("posts").update(nextPayload).eq("id", postId).eq("user_id", state.user.id)
+      : supabase.from("posts").insert(nextPayload);
+    const { error } = await query;
+    if (!error) return;
+    if (!disableUnavailablePostColumn(error)) throw error;
+  }
+  throw new Error("ボトルの保存に必要なデータ構成を確認できませんでした。");
 }
 
 async function submitPost(event) {
   event.preventDefault();
   const form = event.currentTarget;
+  const externalUrl = validateExternalUrlInput($("#postExternalUrl"));
   if (!form.reportValidity()) return;
   const button = $("#submitPostButton");
   setButtonLoading(button, true);
@@ -2339,6 +2438,7 @@ async function submitPost(event) {
         category: $("#postCategory").value,
         post_type: $("#postType").value,
         field_tags: parseFieldTags($("#postFields").value),
+        external_url: externalUrl,
         like_count: 0,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -2362,24 +2462,21 @@ async function submitPost(event) {
       body: $("#postBody").value.trim(),
       category: $("#postCategory").value,
       post_type: $("#postType").value,
+      field_tags: parseFieldTags($("#postFields").value),
+      external_url: externalUrl || null,
     };
-    if (state.postFieldTagsColumnAvailable) payload.field_tags = parseFieldTags($("#postFields").value);
-    let { error } = await supabase.from("posts").insert(payload);
-    if (error && isMissingPostFieldTagsColumn(error)) {
-      state.postFieldTagsColumnAvailable = false;
-      delete payload.field_tags;
-      ({ error } = await supabase.from("posts").insert(payload));
-    }
-    if (error) throw error;
+    await persistPostMutation(payload);
     form.reset();
     $("#postCharacterCount").textContent = "0";
     closeDialog("composerDialog");
     await Promise.all([loadPosts(), loadMyData()]);
     showToast(
-      state.postFieldTagsColumnAvailable
-        ? "ボトルを湖へ流しました。"
-        : "ボトルを流しました。関連分野の保存にはSupabaseの追加SQLが必要です。",
-      state.postFieldTagsColumnAvailable ? "success" : "info",
+      externalUrl && !state.postExternalUrlColumnAvailable
+        ? "ボトルを流しました。公式リンクの保存にはSupabaseの追加SQLが必要です。"
+        : !state.postFieldTagsColumnAvailable
+          ? "ボトルを流しました。関連分野の保存にはSupabaseの追加SQLが必要です。"
+          : "ボトルを湖へ流しました。",
+      state.postFieldTagsColumnAvailable && (!externalUrl || state.postExternalUrlColumnAvailable) ? "success" : "info",
     );
   } catch (error) {
     showToast(readableError(error), "error");
@@ -2404,6 +2501,7 @@ function openPost(postId, show = true) {
   $("#detailFieldTags").innerHTML = detailFieldTags.map((tag) => `<button class="post-field-tag" type="button" data-search-tag="${escapeHTML(tag)}">${escapeHTML(tag)}</button>`).join("");
   $("#detailFieldTags").hidden = detailFieldTags.length === 0;
   renderTextWithLinks($("#detailBody"), post.body);
+  renderPostExternalLink($("#detailExternalLink"), post.external_url);
   const liked = state.likedPostIds.has(post.id);
   const likeButton = $("#detailLikeButton");
   likeButton.classList.toggle("liked", liked);
@@ -2429,6 +2527,8 @@ function openPostEditor() {
   $("#editPostType").value = post.post_type;
   $("#editPostFields").value = parseFieldTags(post.field_tags).join("、");
   $("#editPostTitle").value = post.title;
+  $("#editPostExternalUrl").value = post.external_url ?? "";
+  $("#editPostExternalUrl").setCustomValidity("");
   $("#editPostBody").value = post.body;
   $("#editPostCharacterCount").textContent = String(post.body.length);
   closeDialog("postDialog");
@@ -2438,6 +2538,7 @@ function openPostEditor() {
 
 async function saveEditedPost(event) {
   event.preventDefault();
+  const externalUrl = validateExternalUrlInput($("#editPostExternalUrl"));
   if (!event.currentTarget.reportValidity()) return;
   const post = selectedOwnedPost();
   if (!post) {
@@ -2452,6 +2553,7 @@ async function saveEditedPost(event) {
     field_tags: parseFieldTags($("#editPostFields").value),
     title: $("#editPostTitle").value.trim(),
     body: $("#editPostBody").value.trim(),
+    external_url: externalUrl,
     updated_at: new Date().toISOString(),
   };
   const button = $("#saveEditedPostButton");
@@ -2476,31 +2578,20 @@ async function saveEditedPost(event) {
       post_type: updates.post_type,
       title: updates.title,
       body: updates.body,
+      field_tags: updates.field_tags,
+      external_url: updates.external_url || null,
     };
-    if (state.postFieldTagsColumnAvailable) payload.field_tags = updates.field_tags;
-    let { error } = await supabase
-      .from("posts")
-      .update(payload)
-      .eq("id", post.id)
-      .eq("user_id", state.user.id);
-    if (error && isMissingPostFieldTagsColumn(error)) {
-      state.postFieldTagsColumnAvailable = false;
-      delete payload.field_tags;
-      ({ error } = await supabase
-        .from("posts")
-        .update(payload)
-        .eq("id", post.id)
-        .eq("user_id", state.user.id));
-    }
-    if (error) throw error;
+    await persistPostMutation(payload, post.id);
     closeDialog("editPostDialog");
     await Promise.all([loadPosts(), loadMyData()]);
     openPost(post.id);
     showToast(
-      state.postFieldTagsColumnAvailable
-        ? "ボトルの内容を更新しました。"
-        : "内容を更新しました。関連分野の保存にはSupabaseの追加SQLが必要です。",
-      state.postFieldTagsColumnAvailable ? "success" : "info",
+      externalUrl && !state.postExternalUrlColumnAvailable
+        ? "内容を更新しました。公式リンクの保存にはSupabaseの追加SQLが必要です。"
+        : !state.postFieldTagsColumnAvailable
+          ? "内容を更新しました。関連分野の保存にはSupabaseの追加SQLが必要です。"
+          : "ボトルの内容を更新しました。",
+      state.postFieldTagsColumnAvailable && (!externalUrl || state.postExternalUrlColumnAvailable) ? "success" : "info",
     );
   } catch (error) {
     showToast(readableError(error), "error");
@@ -3112,6 +3203,7 @@ function bootstrapPreviewMode() {
       category: "イベント",
       post_type: "情報共有",
       field_tags: ["進路選び", "建築", "オープンキャンパス"],
+      external_url: "https://www.jst.go.jp/",
       like_count: 8,
       created_at: new Date(now - 3 * 3600000).toISOString(),
       updated_at: new Date(now - 3 * 3600000).toISOString(),

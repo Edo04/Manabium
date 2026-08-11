@@ -27,8 +27,8 @@
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.2/src/regular/style.css"
     />
-    <link rel="stylesheet" href="./style.css?v=20260809-home-motion-4" />
-    <script type="module" src="./app.js?v=20260809-home-motion-4"></script>
+    <link rel="stylesheet" href="./style.css?v=20260810-bottle-links-1" />
+    <script type="module" src="./app.js?v=20260810-bottle-links-1"></script>
   </head>
   <body>
     <div class="ambient ambient-one" aria-hidden="true"></div>
@@ -569,9 +569,16 @@
                 <p id="presenceConnectionStatus" class="presence-connection-status"><span></span>湖につながっています</p>
                 <h2 id="lakeTitle">今ここにいる仲間</h2>
               </div>
-              <button id="refreshLakeButton" class="icon-text-button" type="button">
-                <span aria-hidden="true">↻</span> 更新
-              </button>
+              <div class="lake-toolbar-actions">
+                <button id="replyInboxButton" class="reply-inbox-button" type="button" hidden>
+                  <span class="reply-inbox-plant" aria-hidden="true"><img src="./assets/reply-lily.png" alt="" /></span>
+                  <span class="reply-inbox-copy"><small>湖に届いた</small><strong><span id="replyInboxCount">0</span>件の返事</strong></span>
+                  <i class="ph ph-caret-right" aria-hidden="true"></i>
+                </button>
+                <button id="refreshLakeButton" class="icon-text-button" type="button">
+                  <span aria-hidden="true">↻</span> 更新
+                </button>
+              </div>
             </div>
             <div id="lakeSurface" class="lake-surface">
               <div class="lake-atmosphere" aria-hidden="true">
@@ -602,7 +609,7 @@
                   <img src="./assets/reply-lily.png" alt="" />
                 </span>
                 <span id="replyLilyCount" class="reply-lily-count">0</span>
-                <span class="reply-lily-label">届いた返事</span>
+                <span class="reply-lily-label">返事が届きました</span>
               </button>
               <div id="aquariumBroadcastLayer" class="sr-only" aria-live="polite"></div>
               <div id="lakeEmpty" class="lake-empty">
@@ -816,6 +823,14 @@
           <span>タイトル</span>
           <input id="postTitle" type="text" maxlength="80" placeholder="何についてのメッセージですか？" required />
         </label>
+        <label class="external-url-field">
+          <span>公式・参考リンク <small>（任意）</small></span>
+          <span class="url-input-wrap">
+            <i class="ph ph-link" aria-hidden="true"></i>
+            <input id="postExternalUrl" type="url" maxlength="500" inputmode="url" autocomplete="url" placeholder="https://example.com/event" />
+          </span>
+          <small>イベントやインターンの公式ページを添えると、ボトルから直接開けます。</small>
+        </label>
         <label>
           <span>本文</span>
           <textarea
@@ -848,6 +863,7 @@
         <p id="detailMeta" class="post-meta"></p>
         <div id="detailFieldTags" class="post-field-tags detail-field-tags" hidden></div>
         <div id="detailBody" class="detail-body"></div>
+        <div id="detailExternalLink" class="detail-external-link" hidden></div>
         <div class="detail-footer">
           <button id="detailLikeButton" class="like-button" type="button"></button>
           <div id="postOwnerActions" class="post-owner-actions" hidden>
@@ -919,6 +935,14 @@
         <label>
           <span>タイトル</span>
           <input id="editPostTitle" type="text" maxlength="80" required />
+        </label>
+        <label class="external-url-field">
+          <span>公式・参考リンク <small>（任意）</small></span>
+          <span class="url-input-wrap">
+            <i class="ph ph-link" aria-hidden="true"></i>
+            <input id="editPostExternalUrl" type="url" maxlength="500" inputmode="url" autocomplete="url" placeholder="https://example.com/event" />
+          </span>
+          <small>イベントやインターンの公式ページを添えると、ボトルから直接開けます。</small>
         </label>
         <label>
           <span>本文</span>

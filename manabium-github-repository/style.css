@@ -2329,6 +2329,301 @@ textarea:focus {
   }
 }
 
+/* Reply arrival: the plant is a lake signal, while the toolbar keeps the action easy to find. */
+.lake-toolbar > .lake-toolbar-actions {
+  display: flex !important;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.reply-inbox-button {
+  display: inline-flex;
+  min-height: 50px;
+  padding: 5px 12px 5px 7px;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  color: #315b62;
+  background: linear-gradient(135deg, rgba(247, 252, 249, 0.98), rgba(231, 242, 238, 0.96));
+  border: 1px solid rgba(74, 113, 116, 0.14);
+  border-radius: 17px;
+  box-shadow: 0 8px 22px rgba(45, 79, 83, 0.1);
+  text-align: left;
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+}
+
+.reply-inbox-button[hidden] {
+  display: none;
+}
+
+.reply-inbox-button:hover,
+.reply-inbox-button:focus-visible {
+  border-color: rgba(77, 123, 124, 0.28);
+  box-shadow: 0 11px 26px rgba(45, 79, 83, 0.15);
+  transform: translateY(-1px);
+}
+
+.reply-inbox-button:focus-visible {
+  outline: 3px solid rgba(78, 134, 133, 0.22);
+  outline-offset: 3px;
+}
+
+.reply-inbox-plant {
+  display: grid;
+  width: 48px;
+  height: 40px;
+  flex: 0 0 48px;
+  place-items: center;
+  overflow: hidden;
+}
+
+.reply-inbox-plant img {
+  display: block;
+  width: 58px;
+  max-width: none;
+  height: auto;
+}
+
+.reply-inbox-copy {
+  display: grid;
+  min-width: 78px;
+  gap: 1px;
+  line-height: 1.15;
+}
+
+.reply-inbox-copy small {
+  color: #769095;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.reply-inbox-copy strong {
+  font-size: 0.75rem;
+  font-weight: 850;
+  white-space: nowrap;
+}
+
+.reply-inbox-button > .ph {
+  color: #779195;
+  font-size: 0.82rem;
+}
+
+.reply-lily {
+  top: auto;
+  right: 4.5%;
+  bottom: 8%;
+  width: clamp(132px, 13vw, 164px);
+  min-height: 104px;
+}
+
+.reply-lily::before,
+.reply-lily::after {
+  animation-iteration-count: 2;
+}
+
+.reply-lily-art {
+  animation-iteration-count: 2;
+}
+
+.reply-lily-label {
+  right: 4%;
+  bottom: 0;
+  padding: 6px 9px;
+  color: #315b62;
+  background: rgba(251, 253, 249, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.78);
+  border-radius: 999px;
+  box-shadow: 0 6px 16px rgba(47, 78, 82, 0.1);
+  font-size: 0.61rem;
+  text-shadow: none;
+  white-space: nowrap;
+}
+
+/* Dedicated official/reference URL field and the primary link inside a bottle. */
+.url-input-wrap {
+  position: relative;
+  display: block;
+}
+
+.url-input-wrap > i {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  left: 15px;
+  color: #769095;
+  font-size: 1rem;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.composer-modal .url-input-wrap input {
+  width: 100%;
+  padding-left: 43px;
+}
+
+.post-badge.link {
+  align-items: center;
+  gap: 4px;
+  color: #426e72;
+  background: #e3f0ec;
+}
+
+.detail-external-link {
+  margin: -6px 0 26px;
+}
+
+.post-primary-link {
+  display: flex;
+  min-height: 66px;
+  padding: 11px 14px;
+  align-items: center;
+  gap: 12px;
+  color: #315b62;
+  background: linear-gradient(135deg, #e6f1ed, #f6f4eb);
+  border: 1px solid rgba(65, 108, 112, 0.14);
+  border-radius: 18px;
+  box-shadow: 0 9px 24px rgba(45, 77, 81, 0.08);
+  text-decoration: none;
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+}
+
+.post-primary-link:hover,
+.post-primary-link:focus-visible {
+  color: #284f56;
+  border-color: rgba(65, 108, 112, 0.28);
+  box-shadow: 0 13px 30px rgba(45, 77, 81, 0.13);
+  transform: translateY(-2px);
+}
+
+.post-primary-link:focus-visible {
+  outline: 3px solid rgba(72, 127, 129, 0.2);
+  outline-offset: 3px;
+}
+
+.post-primary-link-icon {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 40px;
+  place-items: center;
+  color: #4f8081;
+  background: rgba(255, 255, 255, 0.76);
+  border-radius: 13px;
+  font-size: 1.1rem;
+}
+
+.post-primary-link-copy {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+  gap: 3px;
+}
+
+.post-primary-link-copy strong {
+  font-size: 0.82rem;
+}
+
+.post-primary-link-copy small {
+  overflow: hidden;
+  color: #71878a;
+  font-size: 0.65rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.post-primary-link > .ph {
+  flex: 0 0 auto;
+  color: #6a878a;
+  font-size: 1rem;
+}
+
+@media (max-width: 760px) {
+  #appView[data-active-page="aquarium"] #aquariumPage .lake-toolbar {
+    align-items: center;
+    gap: 8px;
+  }
+
+  .lake-toolbar > .lake-toolbar-actions {
+    flex: 0 0 auto;
+    gap: 6px;
+  }
+
+  .reply-inbox-button {
+    min-height: 44px;
+    padding: 4px 8px 4px 4px;
+    gap: 5px;
+    border-radius: 14px;
+  }
+
+  .reply-inbox-plant {
+    width: 34px;
+    height: 34px;
+    flex-basis: 34px;
+  }
+
+  .reply-inbox-plant img {
+    width: 45px;
+  }
+
+  .reply-inbox-copy {
+    min-width: 0;
+  }
+
+  .reply-inbox-copy small,
+  .reply-inbox-button > .ph {
+    display: none;
+  }
+
+  .reply-inbox-copy strong {
+    font-size: 0.66rem;
+  }
+
+  .reply-lily {
+    top: auto;
+    right: 2%;
+    bottom: 5%;
+    width: 112px;
+    min-height: 88px;
+  }
+
+  .reply-lily-count {
+    top: 8%;
+    right: 7%;
+  }
+
+  .reply-lily-label {
+    right: 0;
+    bottom: -2px;
+    padding: 5px 7px;
+    font-size: 0.53rem;
+  }
+
+  .post-primary-link {
+    min-height: 62px;
+    padding: 10px 12px;
+    border-radius: 16px;
+  }
+}
+
+@media (max-width: 390px) {
+  .reply-inbox-plant {
+    display: none;
+  }
+
+  .reply-inbox-button {
+    padding-inline: 9px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reply-inbox-button,
+  .post-primary-link {
+    transition: none;
+  }
+}
+
 @media (max-width: 430px) {
   .onboarding-shell { padding: 18px 12px; }
   .onboarding-card { padding: 25px 18px; border-radius: 23px; }
@@ -9252,5 +9547,56 @@ textarea {
   .public-discovery-signal,
   .public-scene-signal.is-changing {
     animation: none !important;
+  }
+}
+
+/* Keep the reply inbox above legacy aquarium theme rules declared earlier in this file. */
+#appView[data-active-page="aquarium"] #aquariumPage .lake-toolbar > .lake-toolbar-actions {
+  display: flex !important;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+#appView[data-active-page="aquarium"] #aquariumPage .reply-lily {
+  top: auto;
+  right: 4.5%;
+  bottom: 8%;
+  width: clamp(132px, 13vw, 164px);
+  min-height: 104px;
+}
+
+#appView[data-active-page="aquarium"] #aquariumPage .reply-lily-art,
+#appView[data-active-page="aquarium"] #aquariumPage .reply-lily::before,
+#appView[data-active-page="aquarium"] #aquariumPage .reply-lily::after {
+  animation-iteration-count: 2;
+}
+
+#appView[data-active-page="aquarium"] #aquariumPage .reply-lily-label {
+  right: 4%;
+  bottom: 0;
+  padding: 6px 9px;
+  background: rgba(251, 253, 249, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.78);
+  border-radius: 999px;
+  box-shadow: 0 6px 16px rgba(47, 78, 82, 0.1);
+  font-size: 0.61rem;
+  text-shadow: none;
+  white-space: nowrap;
+}
+
+@media (max-width: 760px) {
+  #appView[data-active-page="aquarium"] #aquariumPage .reply-lily {
+    top: auto;
+    right: 2%;
+    bottom: 5%;
+    width: 112px;
+    min-height: 88px;
+  }
+
+  #appView[data-active-page="aquarium"] #aquariumPage .reply-lily-label {
+    right: 0;
+    bottom: -2px;
+    padding: 5px 7px;
+    font-size: 0.53rem;
   }
 }
