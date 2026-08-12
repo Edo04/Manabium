@@ -2,5 +2,9 @@
   "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "manabium",
   "pages_build_output_dir": ".",
-  "compatibility_date": "2026-08-07"
+  "compatibility_date": "2026-08-07",
+  "vars": {
+    "SUPABASE_URL": "https://xtzwpybdcvokamrhpbtc.supabase.co",
+    "SUPABASE_PUBLISHABLE_KEY": "sb_publishable_Vo6HQLzhxN_4Vd2pSM0KZQ_8uZVXwaU"
+  }
 }

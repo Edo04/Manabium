@@ -27,8 +27,8 @@
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.2/src/regular/style.css"
     />
-    <link rel="stylesheet" href="./style.css?v=20260811-bottle-preview-1" />
-    <script type="module" src="./app.js?v=20260811-bottle-preview-1"></script>
+    <link rel="stylesheet" href="./style.css?v=20260812-admin-analytics-1" />
+    <script type="module" src="./app.js?v=20260812-admin-analytics-1"></script>
   </head>
   <body>
     <div class="ambient ambient-one" aria-hidden="true"></div>
@@ -450,6 +450,11 @@
             />
           </label>
 
+          <label id="profileGraduationYearField">
+            <span>卒業予定年 <small>（任意・分析では集計値のみ使用）</small></span>
+            <input id="profileGraduationYear" name="graduationYear" type="number" min="2026" max="2100" inputmode="numeric" placeholder="例：2030" />
+          </label>
+
           <fieldset class="fish-picker">
             <legend>魚を選ぶ</legend>
             <label class="fish-choice">
@@ -507,6 +512,9 @@
           </button>
           <button class="nav-link" type="button" data-view="mypage">
             <i class="ph ph-user-circle" aria-hidden="true"></i><span class="nav-label">マイページ</span>
+          </button>
+          <button class="nav-link admin-only" type="button" data-view="admin" aria-label="運営室" hidden>
+            <i class="ph ph-chart-line-up" aria-hidden="true"></i><span class="nav-label">運営室</span>
           </button>
         </nav>
         <div class="header-actions">
@@ -770,6 +778,85 @@
             </section>
           </div>
         </section>
+
+        <section id="adminPage" class="page admin-page" data-page="admin" aria-labelledby="adminTitle" hidden>
+          <div class="page-intro admin-intro">
+            <div>
+              <p class="eyebrow">MANABIUM OPERATIONS</p>
+              <h1 id="adminTitle">運営室</h1>
+              <p>湖の健全性と成長を、個人を売らない数字で確かめます。</p>
+            </div>
+            <span class="admin-secure-badge"><i class="ph ph-lock-key" aria-hidden="true"></i> 管理者限定</span>
+          </div>
+
+          <form id="adminRangeForm" class="admin-range-form">
+            <label><span>開始日</span><input id="adminStartDate" type="date" required /></label>
+            <label><span>終了日</span><input id="adminEndDate" type="date" required /></label>
+            <label><span>集計単位</span><select id="adminGranularity"><option value="day">日次</option><option value="week">週次</option><option value="month">月次</option></select></label>
+            <button class="button button-primary" type="submit"><i class="ph ph-arrows-clockwise" aria-hidden="true"></i> 集計する</button>
+          </form>
+
+          <div id="adminLoading" class="admin-loading" hidden><span class="spinner" aria-hidden="true"></span> 集計しています</div>
+          <div id="adminDashboard" hidden>
+            <section class="admin-kpi-grid" aria-label="主要指標">
+              <article><span>ユーザー数</span><strong id="adminTotalUsers">0</strong><small>累計登録</small></article>
+              <article><span>新規登録</span><strong id="adminNewUsers">0</strong><small id="adminNewUsersCompare">前期間 —</small></article>
+              <article><span>DAU</span><strong id="adminDau">0</strong><small id="adminDauCompare">前期間 —</small></article>
+              <article><span>WAU</span><strong id="adminWau">0</strong><small id="adminWauCompare">前期間 —</small></article>
+              <article><span>MAU</span><strong id="adminMau">0</strong><small id="adminMauCompare">前期間 —</small></article>
+              <article><span>継続率</span><strong id="adminRetention">0%</strong><small id="adminRetentionCompare">前期間利用者の再訪</small></article>
+            </section>
+
+            <section class="admin-panel admin-trend-panel">
+              <div class="admin-panel-heading"><div><p class="eyebrow">ACTIVITY</p><h2>利用推移</h2></div><p id="adminRangeSummary"></p></div>
+              <div id="adminTrendChart" class="admin-trend-chart" aria-label="利用推移グラフ"></div>
+            </section>
+
+            <div class="admin-two-column">
+              <section class="admin-panel">
+                <div class="admin-panel-heading"><div><p class="eyebrow">BOTTLES</p><h2>ボトル利用</h2></div></div>
+                <div class="admin-mini-kpis"><div><strong id="adminPostCount">0</strong><span>投稿 <small id="adminPostCompare"></small></span></div><div><strong id="adminReplyCount">0</strong><span>回答 <small id="adminReplyCompare"></small></span></div><div><strong id="adminBottleViews">0</strong><span>詳細閲覧 <small id="adminBottleViewsCompare"></small></span></div><div><strong id="adminBottleUniques">0</strong><span>閲覧者 <small id="adminBottleUniquesCompare"></small></span></div></div>
+                <div id="adminCategoryTable" class="admin-table-wrap"></div>
+              </section>
+              <section class="admin-panel">
+                <div class="admin-panel-heading"><div><p class="eyebrow">TRAFFIC</p><h2>流入とページ閲覧</h2></div></div>
+                <div class="admin-mini-kpis"><div><strong id="adminPageViews">0</strong><span>ページビュー <small id="adminPageViewsCompare"></small></span></div><div><strong id="adminUniqueUsers">0</strong><span>ユニーク <small id="adminUniqueUsersCompare"></small></span></div><div><strong id="adminNewVisitors">0</strong><span>新規訪問 <small id="adminNewVisitorsCompare"></small></span></div><div><strong id="adminReturningVisitors">0</strong><span>再訪 <small id="adminReturningVisitorsCompare"></small></span></div></div>
+                <div id="adminSourceTable" class="admin-table-wrap"></div>
+              </section>
+            </div>
+
+            <section class="admin-panel">
+              <div class="admin-panel-heading"><div><p class="eyebrow">AUDIENCE</p><h2>利用者属性</h2></div><p>人数と直近30日のMAU</p></div>
+              <div id="adminDemographics" class="admin-demographic-grid"></div>
+            </section>
+
+            <section class="admin-panel">
+              <div class="admin-panel-heading"><div><p class="eyebrow">CONTENT SAFETY</p><h2>投稿・返信の管理</h2></div><p>非表示にしてもデータは削除しません</p></div>
+              <div class="admin-moderation-grid">
+                <section><h3>最近のボトル</h3><div id="adminPostModerationList" class="admin-action-list"></div></section>
+                <section><h3>最近の返信</h3><div id="adminReplyModerationList" class="admin-action-list"></div></section>
+              </div>
+            </section>
+
+            <section class="admin-panel">
+              <div class="admin-panel-heading"><div><p class="eyebrow">ENTERPRISE CONTENT</p><h2>企業・イベント掲載の効果</h2></div><p>CTR = 外部リンククリック ÷ 表示回数</p></div>
+              <div id="adminEnterpriseTable" class="admin-table-wrap"></div>
+              <div id="adminEnterpriseAudience" class="admin-enterprise-audience"></div>
+              <div class="admin-privacy-note"><i class="ph ph-shield-check" aria-hidden="true"></i><span><strong>企業向け属性は集計値だけ</strong>専攻・学年・卒業予定年は5人未満の組合せを表示しません。</span></div>
+            </section>
+
+            <div class="admin-two-column">
+              <section class="admin-panel">
+                <div class="admin-panel-heading"><div><p class="eyebrow">REPORTS</p><h2>通報対応</h2></div></div>
+                <div id="adminReportList" class="admin-action-list"></div>
+              </section>
+              <section class="admin-panel">
+                <div class="admin-panel-heading"><div><p class="eyebrow">MEMBERS</p><h2>利用者管理</h2></div><p>直近100件</p></div>
+                <div id="adminUserList" class="admin-action-list"></div>
+              </section>
+            </div>
+          </div>
+        </section>
       </main>
 
       <nav class="mobile-nav" aria-label="モバイルメニュー">
@@ -781,6 +868,9 @@
         </button>
         <button class="mobile-nav-link" type="button" data-view="mypage">
           <i class="ph ph-user-circle" aria-hidden="true"></i><span>マイページ</span>
+        </button>
+        <button class="mobile-nav-link admin-only" type="button" data-view="admin" hidden>
+          <i class="ph ph-chart-line-up" aria-hidden="true"></i><span>運営室</span>
         </button>
       </nav>
     </div>
@@ -885,6 +975,7 @@
               <i class="ph ph-trash" aria-hidden="true"></i> 削除
             </button>
           </div>
+          <button id="reportPostButton" class="button button-small button-ghost" type="button"><i class="ph ph-flag" aria-hidden="true"></i> 通報</button>
         </div>
         <section class="reply-section" aria-labelledby="replyTitle">
           <div class="reply-section-heading">
@@ -909,6 +1000,18 @@
           </form>
         </section>
       </article>
+    </dialog>
+
+    <dialog id="reportDialog" class="modal confirm-modal">
+      <form id="reportForm" method="dialog">
+        <span class="confirm-icon" aria-hidden="true"><i class="ph ph-flag"></i></span>
+        <p class="eyebrow">REPORT</p>
+        <h2>運営へ知らせる</h2>
+        <p>緊急時は個人情報を書かず、問題の内容だけを教えてください。</p>
+        <label><span>理由</span><select id="reportReason" required><option value="">選択してください</option><option>個人情報</option><option>嫌がらせ</option><option>宣伝・スパム</option><option>誤情報</option><option>不適切な内容</option><option>その他</option></select></label>
+        <label><span>補足 <small>任意</small></span><textarea id="reportDetail" rows="4" maxlength="1000"></textarea></label>
+        <div class="modal-actions"><button class="button button-ghost" type="button" data-close-dialog="reportDialog">キャンセル</button><button class="button button-primary" type="submit"><span class="button-label">運営へ送る</span><span class="spinner" aria-hidden="true"></span></button></div>
+      </form>
     </dialog>
 
     <dialog id="editPostDialog" class="modal composer-modal">
@@ -1025,6 +1128,10 @@
         <label>
           <span>ひとこと <small>（任意・80文字まで）</small></span>
           <input id="editBio" type="text" maxlength="80" placeholder="例：ロボットと宇宙が好きです" />
+        </label>
+        <label id="editGraduationYearField">
+          <span>卒業予定年 <small>（任意・分析では集計値のみ使用）</small></span>
+          <input id="editGraduationYear" type="number" min="2026" max="2100" inputmode="numeric" placeholder="例：2030" />
         </label>
         <fieldset class="compact-fish-picker">
           <legend>魚</legend>

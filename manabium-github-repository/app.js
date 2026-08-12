@@ -91,6 +91,11 @@ const state = {
   session: null,
   user: null,
   profile: null,
+  isAdmin: false,
+  adminData: null,
+  adminLoadedRange: "",
+  reportTarget: null,
+  analyticsImpressions: new Set(),
   aquariumPresence: [],
   aquariumReactions: [],
   aquariumPreferences: {
@@ -125,6 +130,7 @@ const state = {
   lastAnnouncedAquariumReactionId: null,
   interestsColumnAvailable: true,
   bioColumnAvailable: true,
+  analyticsProfileColumnsAvailable: true,
   postFieldTagsColumnAvailable: true,
   postExternalUrlColumnAvailable: true,
   postExternalSiteNameColumnAvailable: true,
@@ -247,6 +253,10 @@ function renderPostExternalLink(container, value, siteName = "") {
   link.referrerPolicy = "no-referrer";
   const displayName = normalizeExternalSiteName(siteName) || "公式・参考サイト";
   link.setAttribute("aria-label", `${displayName}を新しいタブで開く`);
+  link.addEventListener("click", () => {
+    const post = state.posts.find((item) => item.id === state.selectedPostId);
+    if (post) trackAnalyticsEvent("external_link_click", { page_key: "board", content_type: "bottle", content_id: post.id });
+  });
 
   const icon = document.createElement("span");
   icon.className = "post-primary-link-icon";
@@ -333,6 +343,106 @@ function normalizePost(post) {
   } : post;
 }
 
+function createClientUuid() {
+  if (crypto?.randomUUID) return crypto.randomUUID();
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (character) => {
+    const random = Math.random() * 16 | 0;
+    return (character === "x" ? random : (random & 3) | 8).toString(16);
+  });
+}
+
+  const analyticsContext = (() => {
+  let visitorId;
+  let isFirstVisit = false;
+  try {
+    visitorId = localStorage.getItem("manabium:visitor-id");
+    if (!visitorId) {
+      visitorId = createClientUuid();
+      localStorage.setItem("manabium:visitor-id", visitorId);
+      isFirstVisit = true;
+    }
+  } catch {
+    visitorId = createClientUuid();
+    isFirstVisit = true;
+  }
+  let visitCount = 0;
+  try {
+    visitCount = Number(localStorage.getItem("manabium:visit-count")) || 0;
+    localStorage.setItem("manabium:visit-count", String(visitCount + 1));
+  } catch {
+    visitCount = isFirstVisit ? 0 : 1;
+  }
+  let sessionId;
+  try {
+    sessionId = sessionStorage.getItem("manabium:analytics-session") || createClientUuid();
+    sessionStorage.setItem("manabium:analytics-session", sessionId);
+  } catch {
+    sessionId = createClientUuid();
+  }
+  const params = new URLSearchParams(location.search);
+  const currentOrigin = location.origin;
+  let referrerHost = "";
+  try {
+    const referrer = document.referrer ? new URL(document.referrer) : null;
+    referrerHost = referrer && referrer.origin !== currentOrigin ? referrer.hostname : "";
+  } catch { referrerHost = ""; }
+  return {
+    visitorId,
+    sessionId,
+    isFirstVisit,
+    visitCount,
+    landingPage: `${location.pathname}${location.search}${location.hash}`.slice(0, 160),
+    referrerHost,
+    utmSource: params.get("utm_source"),
+    utmMedium: params.get("utm_medium"),
+    utmCampaign: params.get("utm_campaign"),
+    utmContent: params.get("utm_content"),
+    utmTerm: params.get("utm_term"),
+  };
+})();
+
+async function trackAnalyticsEvent(eventType, attributes = {}) {
+  if (IS_PREVIEW_MODE || location.protocol === "file:") return;
+  try {
+    const headers = { "Content-Type": "application/json" };
+    if (state.session?.access_token) headers.Authorization = `Bearer ${state.session.access_token}`;
+    await fetch("/api/events", {
+      method: "POST",
+      headers,
+      keepalive: true,
+      body: JSON.stringify({
+        session_id: analyticsContext.sessionId,
+        visitor_id: analyticsContext.visitorId,
+        landing_page: analyticsContext.landingPage,
+        referrer_host: analyticsContext.referrerHost,
+        utm_source: analyticsContext.utmSource,
+        utm_medium: analyticsContext.utmMedium,
+        utm_campaign: analyticsContext.utmCampaign,
+        utm_content: analyticsContext.utmContent,
+        utm_term: analyticsContext.utmTerm,
+        is_first_visit: analyticsContext.isFirstVisit,
+        is_returning_visit: analyticsContext.visitCount > 0,
+        events: [{ client_event_id: createClientUuid(), event_type: eventType, ...attributes }],
+      }),
+    });
+    analyticsContext.isFirstVisit = false;
+  } catch (error) {
+    if (location.hostname === "localhost" || location.hostname === "127.0.0.1") console.debug("Analytics unavailable", error);
+  }
+}
+
+async function loadAdminRole() {
+  state.isAdmin = false;
+  if (!state.user || IS_PREVIEW_MODE) {
+    $$(".admin-only").forEach((element) => { element.hidden = true; });
+    return;
+  }
+  const { data, error } = await supabase.rpc("is_current_user_admin");
+  if (!error && data === true) state.isAdmin = true;
+  if (error && !/is_current_user_admin|schema cache|function/i.test(String(error.message ?? ""))) console.error("Admin role lookup failed", error);
+  $$(".admin-only").forEach((element) => { element.hidden = !state.isAdmin; });
+}
+
 function isMissingInterestsColumn(error) {
   const message = String(error?.message ?? "").toLowerCase();
   return message.includes("interests") && (message.includes("schema cache") || message.includes("column"));
@@ -416,6 +526,8 @@ function syncEducationFields(mode) {
   majorLabel.textContent = universityGrade ? "専攻分野" : "専攻・学びたい分野";
   majorInput.placeholder = universityGrade ? "例：情報工学" : "例：情報・建築・生命科学";
   interestsInput.required = schoolGrade;
+  const graduationField = $(`#${isEdit ? "editGraduationYearField" : "profileGraduationYearField"}`);
+  if (graduationField) graduationField.hidden = !isUniversityGrade(grade);
   interestsLabel.textContent = schoolGrade ? "興味のある分野" : "興味分野";
   interestsHint.textContent = schoolGrade
     ? "（1つ以上・カンマ区切り・最大8個）"
@@ -872,7 +984,7 @@ function routeFromLocation() {
   const hash = decodeURIComponent(location.hash.slice(1));
   if (hash.startsWith("post=")) return { page: "board", postId: hash.slice(5) };
   if (hash === "lake") return { page: "aquarium", postId: null };
-  if (hash === "board" || hash === "mypage" || hash === "aquarium") return { page: hash, postId: null };
+  if (["board", "mypage", "aquarium", "admin"].includes(hash)) return { page: hash, postId: null };
   return { page: "aquarium", postId: null };
 }
 
@@ -911,7 +1023,7 @@ async function enterAquariumPage() {
 
 function showPage(pageName, updateHash = true) {
   if (!state.session) return;
-  const allowed = ["aquarium", "board", "mypage"];
+  const allowed = state.isAdmin ? ["aquarium", "board", "mypage", "admin"] : ["aquarium", "board", "mypage"];
   const requestedPage = pageName === "home" ? "aquarium" : pageName;
   const nextPage = allowed.includes(requestedPage) ? requestedPage : "aquarium";
   const previousPage = $("#appView").dataset.activePage;
@@ -943,6 +1055,9 @@ function showPage(pageName, updateHash = true) {
     void enterAquariumPage();
     maybeShowAquariumIntro();
   }
+  if (nextPage === "admin") void loadAdminDashboard();
+  if (nextPage === "board") renderPosts();
+  trackAnalyticsEvent("page_view", { page_key: nextPage });
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
@@ -1070,6 +1185,16 @@ function bindStaticEvents() {
   $("#detailLikeButton").addEventListener("click", () => toggleLike(state.selectedPostId));
   $("#editPostButton").addEventListener("click", openPostEditor);
   $("#deletePostButton").addEventListener("click", openPostDeleteConfirmation);
+  $("#reportPostButton").addEventListener("click", openPostReport);
+  $("#reportForm").addEventListener("submit", submitReport);
+  $("#adminRangeForm").addEventListener("submit", (event) => {
+    event.preventDefault();
+    void loadAdminDashboard(true);
+  });
+  $("#adminReportList").addEventListener("click", handleAdminAction);
+  $("#adminUserList").addEventListener("click", handleAdminAction);
+  $("#adminPostModerationList").addEventListener("click", handleAdminAction);
+  $("#adminReplyModerationList").addEventListener("click", handleAdminAction);
   $("#editPostForm").addEventListener("submit", saveEditedPost);
   $("#editPostExternalUrl").addEventListener("input", (event) => validateExternalUrlInput(event.currentTarget));
   $("#editPostExternalSiteName").addEventListener("input", () => validateExternalUrlInput($("#editPostExternalUrl")));
@@ -1196,7 +1321,17 @@ async function fetchOwnProfile(userId) {
       .maybeSingle());
   }
   if (error) throw error;
-  return normalizeProfile(data);
+  let privateFields = {};
+  if (state.analyticsProfileColumnsAvailable) {
+    const { data: analyticsFields, error: analyticsError } = await supabase.rpc("get_my_profile_analytics_fields");
+    if (analyticsError) {
+      if (/get_my_profile_analytics_fields|schema cache|function/i.test(String(analyticsError.message ?? ""))) state.analyticsProfileColumnsAvailable = false;
+      else console.error("Private profile fields lookup failed", analyticsError);
+    } else {
+      privateFields = analyticsFields ?? {};
+    }
+  }
+  return normalizeProfile({ ...data, ...privateFields });
 }
 
 async function routeSession(session) {
@@ -1221,6 +1356,8 @@ async function routeSession(session) {
       return;
     }
 
+    await loadAdminRole();
+
     showOnly("app");
     renderProfileIdentity();
     await loadAll();
@@ -1238,6 +1375,11 @@ async function routeSession(session) {
 
 function cleanupSignedInState() {
   state.profile = null;
+  state.isAdmin = false;
+  state.adminData = null;
+  state.adminLoadedRange = "";
+  state.reportTarget = null;
+  $$(".admin-only").forEach((element) => { element.hidden = true; });
   state.posts = [];
   state.replies = [];
   state.myPosts = [];
@@ -1292,7 +1434,9 @@ async function saveInitialProfile(event) {
       interests: parseInterests($("#profileInterests").value),
       fish_type: $("input[name='fishType']:checked").value,
       bio: $("#profileBio").value.trim() || null,
+      graduation_year: isUniversityGrade(grade) ? Number($("#profileGraduationYear").value) || null : null,
     };
+    if (!state.analyticsProfileColumnsAvailable) delete profileFields.graduation_year;
     if (!state.interestsColumnAvailable) delete profileFields.interests;
     if (!state.bioColumnAvailable) delete profileFields.bio;
     const selectFields = availableProfileFields();
@@ -1322,7 +1466,8 @@ async function saveInitialProfile(event) {
       if (error) throw error;
     }
 
-    state.profile = normalizeProfile(data);
+    state.profile = normalizeProfile({ ...data, graduation_year: profileFields.graduation_year ?? null });
+    await loadAdminRole();
     showOnly("app");
     renderProfileIdentity();
     await loadAll();
@@ -2365,6 +2510,7 @@ function renderPosts() {
     return true;
   });
   const list = $("#postList");
+  const boardIsVisible = $("#appView").dataset.activePage === "board";
   const summary = $("#postResultsSummary");
   const author = state.postAuthorUserId ? authorProfile(state.postAuthorUserId) : null;
   const authorFilter = $("#postAuthorFilter");
@@ -2420,6 +2566,12 @@ function renderPosts() {
         </div>
       </div>`;
     list.append(card);
+  });
+  if (boardIsVisible) visiblePosts.slice(0, 30).forEach((post) => {
+    const impressionKey = `bottle:${post.id}`;
+    if (state.analyticsImpressions.has(impressionKey)) return;
+    state.analyticsImpressions.add(impressionKey);
+    trackAnalyticsEvent("content_impression", { page_key: "board", content_type: "bottle", content_id: post.id });
   });
 }
 
@@ -2564,10 +2716,45 @@ function openPost(postId, show = true) {
   likeButton.classList.toggle("liked", liked);
   likeButton.innerHTML = `<span aria-hidden="true">♡</span> ${Number(post.like_count) || 0} いいね`;
   $("#postOwnerActions").hidden = !isOwner;
+  $("#reportPostButton").hidden = isOwner;
   $("#replyForm").hidden = isOwner;
   $("#replyOwnerNotice").hidden = !isOwner;
   renderReplies(post.id);
+  if (show) trackAnalyticsEvent("content_detail_view", { page_key: "board", content_type: "bottle", content_id: post.id });
   if (show) openDialog("postDialog");
+}
+
+function openPostReport() {
+  const post = state.posts.find((item) => item.id === state.selectedPostId);
+  if (!post || post.user_id === state.user?.id) return;
+  state.reportTarget = { type: "post", id: post.id };
+  $("#reportForm").reset();
+  openDialog("reportDialog");
+}
+
+async function submitReport(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  if (!form.reportValidity() || !state.reportTarget) return;
+  const button = $("button[type='submit']", form);
+  setButtonLoading(button, true);
+  try {
+    const { error } = await supabase.from("content_reports").insert({
+      target_type: state.reportTarget.type,
+      target_id: state.reportTarget.id,
+      reason: $("#reportReason").value,
+      detail: $("#reportDetail").value.trim() || null,
+    });
+    if (error) throw error;
+    closeDialog("reportDialog");
+    state.reportTarget = null;
+    showToast("運営へ知らせました。確認までお待ちください。", "success");
+  } catch (error) {
+    const duplicate = String(error?.code ?? "") === "23505";
+    showToast(duplicate ? "この内容はすでに通報済みです。" : readableError(error), duplicate ? "info" : "error");
+  } finally {
+    setButtonLoading(button, false);
+  }
 }
 
 function selectedOwnedPost() {
@@ -2783,6 +2970,7 @@ function renderReplies(postId) {
         canReply ? `<button type="button" class="reply-action-button reply" data-reply-action="reply" data-reply-id="${escapeHTML(reply.id)}"><i class="ph ph-arrow-bend-up-left" aria-hidden="true"></i> 返信</button>` : "",
         isSender ? `<button type="button" class="reply-action-button" data-reply-action="edit" data-reply-id="${escapeHTML(reply.id)}"><i class="ph ph-pencil-simple" aria-hidden="true"></i> 編集</button>` : "",
         isSender ? `<button type="button" class="reply-action-button danger" data-reply-action="delete" data-reply-id="${escapeHTML(reply.id)}"><i class="ph ph-trash" aria-hidden="true"></i> 削除</button>` : "",
+        !isSender ? `<button type="button" class="reply-action-button" data-reply-action="report" data-reply-id="${escapeHTML(reply.id)}"><i class="ph ph-flag" aria-hidden="true"></i> 通報</button>` : "",
       ].filter(Boolean).join("");
       item.innerHTML = `
         ${parentReply ? `<p class="reply-context"><i class="ph ph-arrow-bend-down-right" aria-hidden="true"></i> ${escapeHTML(parentAuthor)}さんへの返信</p>` : ""}
@@ -2834,6 +3022,14 @@ function handleReplyListClick(event) {
     state.replyingToReplyId = reply.id;
     renderReplies(reply.post_id);
     window.setTimeout(() => $(`[data-nested-reply-body="${reply.id}"]`)?.focus(), 50);
+    return;
+  }
+
+  if (button.dataset.replyAction === "report") {
+    if (reply.sender_user_id === state.user?.id) return;
+    state.reportTarget = { type: "reply", id: reply.id };
+    $("#reportForm").reset();
+    openDialog("reportDialog");
     return;
   }
 
@@ -3125,6 +3321,7 @@ function openProfileEditor() {
   $("#editMajor").value = state.profile.major ?? "";
   $("#editInterests").value = parseInterests(state.profile.interests).join("、");
   $("#editBio").value = state.profile.bio ?? "";
+  $("#editGraduationYear").value = state.profile.graduation_year ?? "";
   syncEducationFields("edit");
   const radio = $(`input[name='editFishType'][value='${state.profile.fish_type}']`);
   if (radio) radio.checked = true;
@@ -3145,7 +3342,9 @@ async function saveEditedProfile(event) {
       interests: parseInterests($("#editInterests").value),
       fish_type: $("input[name='editFishType']:checked").value,
       bio: $("#editBio").value.trim() || null,
+      graduation_year: isUniversityGrade(grade) ? Number($("#editGraduationYear").value) || null : null,
     };
+    if (!state.analyticsProfileColumnsAvailable) delete updates.graduation_year;
     if (!state.interestsColumnAvailable) delete updates.interests;
     if (!state.bioColumnAvailable) delete updates.bio;
     if (IS_PREVIEW_MODE) {
@@ -3160,10 +3359,10 @@ async function saveEditedProfile(event) {
       .from("profiles")
       .update(updates)
       .eq("user_id", state.user.id)
-      .select()
+      .select(availableProfileFields())
       .single();
     if (error) throw error;
-    state.profile = normalizeProfile(data);
+    state.profile = normalizeProfile({ ...data, graduation_year: updates.graduation_year ?? null });
     renderProfileIdentity();
     closeDialog("editProfileDialog");
     await loadAquariumPresence();
@@ -3172,6 +3371,168 @@ async function saveEditedProfile(event) {
     showToast(readableError(error), "error");
   } finally {
     setButtonLoading(button, false);
+  }
+}
+
+function numberText(value) {
+  return new Intl.NumberFormat("ja-JP").format(Number(value) || 0);
+}
+
+function compareText(current, previous) {
+  const currentValue = Number(current) || 0;
+  const previousValue = Number(previous) || 0;
+  if (!previousValue) return currentValue ? "前期間は0" : "前期間と同じ";
+  const rate = Math.round(((currentValue - previousValue) / previousValue) * 100);
+  return `${rate >= 0 ? "+" : ""}${rate}% 前期間比`;
+}
+
+function renderAdminTable(container, headers, rows, emptyText = "まだデータがありません") {
+  if (!rows.length) {
+    container.innerHTML = `<p class="admin-empty">${escapeHTML(emptyText)}</p>`;
+    return;
+  }
+  container.innerHTML = `<table><thead><tr>${headers.map((header) => `<th>${escapeHTML(header)}</th>`).join("")}</tr></thead><tbody>${rows.join("")}</tbody></table>`;
+}
+
+function renderAdminDashboard(data) {
+  const headline = data.headline ?? {};
+  const bottles = data.bottles ?? {};
+  const traffic = data.traffic ?? {};
+  $("#adminTotalUsers").textContent = numberText(headline.total_users);
+  $("#adminNewUsers").textContent = numberText(headline.new_users);
+  $("#adminDau").textContent = numberText(headline.dau);
+  $("#adminWau").textContent = numberText(headline.wau);
+  $("#adminMau").textContent = numberText(headline.mau);
+  $("#adminRetention").textContent = `${Number(headline.retention_rate) || 0}%`;
+  $("#adminNewUsersCompare").textContent = compareText(headline.new_users, headline.previous_new_users);
+  $("#adminDauCompare").textContent = compareText(headline.dau, headline.previous_dau);
+  $("#adminWauCompare").textContent = compareText(headline.wau, headline.previous_wau);
+  $("#adminMauCompare").textContent = compareText(headline.mau, headline.previous_mau);
+  $("#adminRetentionCompare").textContent = compareText(headline.retention_rate, headline.previous_retention_rate);
+  $("#adminRangeSummary").textContent = `${data.range?.start ?? ""} 〜 ${data.range?.end ?? ""}`;
+
+  const series = data.series ?? [];
+  const chart = $("#adminTrendChart");
+  const maxValue = Math.max(1, ...series.map((row) => Number(row.unique_users) || 0));
+  chart.innerHTML = series.length ? series.map((row) => `
+    <div class="admin-trend-column" title="${escapeHTML(row.bucket)}: ${numberText(row.unique_users)}人 / ${numberText(row.page_views)}PV">
+      <span class="admin-trend-value">${numberText(row.unique_users)}</span>
+      <span class="admin-trend-bar" style="--bar-height:${Math.max(5, (Number(row.unique_users) || 0) / maxValue * 100)}%"></span>
+      <small>${escapeHTML(String(row.bucket).slice(5))}</small>
+    </div>`).join("") : '<p class="admin-empty">選択期間の利用データはまだありません。</p>';
+
+  $("#adminPostCount").textContent = numberText(bottles.posts);
+  $("#adminReplyCount").textContent = numberText(bottles.replies);
+  $("#adminBottleViews").textContent = numberText(bottles.views);
+  $("#adminBottleUniques").textContent = numberText(bottles.unique_viewers);
+  $("#adminPostCompare").textContent = compareText(bottles.posts, bottles.previous_posts);
+  $("#adminReplyCompare").textContent = compareText(bottles.replies, bottles.previous_replies);
+  $("#adminBottleViewsCompare").textContent = compareText(bottles.views, bottles.previous_views);
+  $("#adminBottleUniquesCompare").textContent = compareText(bottles.unique_viewers, bottles.previous_unique_viewers);
+  renderAdminTable($("#adminCategoryTable"), ["カテゴリ", "投稿", "回答", "閲覧", "閲覧者"], (data.categories ?? []).map((row) => `<tr><td>${escapeHTML(row.category)}</td><td>${numberText(row.posts)}<small>${compareText(row.posts, row.previous_posts)}</small></td><td>${numberText(row.replies)}<small>${compareText(row.replies, row.previous_replies)}</small></td><td>${numberText(row.views)}<small>${compareText(row.views, row.previous_views)}</small></td><td>${numberText(row.unique_viewers)}<small>${compareText(row.unique_viewers, row.previous_unique_viewers)}</small></td></tr>`));
+
+  $("#adminPageViews").textContent = numberText(traffic.page_views);
+  $("#adminUniqueUsers").textContent = numberText(traffic.unique_users);
+  $("#adminNewVisitors").textContent = numberText(traffic.new_visitors);
+  $("#adminReturningVisitors").textContent = numberText(traffic.returning_visitors);
+  $("#adminPageViewsCompare").textContent = compareText(traffic.page_views, traffic.previous_page_views);
+  $("#adminUniqueUsersCompare").textContent = compareText(traffic.unique_users, traffic.previous_unique_users);
+  $("#adminNewVisitorsCompare").textContent = compareText(traffic.new_visitors, traffic.previous_new_visitors);
+  $("#adminReturningVisitorsCompare").textContent = compareText(traffic.returning_visitors, traffic.previous_returning_visitors);
+  renderAdminTable($("#adminSourceTable"), ["流入元", "UTM medium", "campaign", "訪問", "新規", "再訪"], (data.sources ?? []).map((row) => `<tr><td>${escapeHTML(row.source)}</td><td>${escapeHTML(row.medium)}</td><td>${escapeHTML(row.campaign)}</td><td>${numberText(row.sessions)}</td><td>${numberText(row.new_visitors)}</td><td>${numberText(row.returning_visitors)}</td></tr>`));
+
+  const demographicGroups = Object.groupBy
+    ? Object.groupBy(data.demographics ?? [], (row) => row.dimension)
+    : (data.demographics ?? []).reduce((groups, row) => { (groups[row.dimension] ||= []).push(row); return groups; }, {});
+  $("#adminDemographics").innerHTML = Object.entries(demographicGroups).map(([dimension, rows]) => {
+    const total = rows.reduce((sum, row) => sum + (Number(row.user_count) || 0), 0);
+    return `<section><h3>${escapeHTML(dimension)}</h3><div>${rows.sort((a, b) => Number(b.user_count) - Number(a.user_count)).slice(0, 12).map((row) => {
+      const share = dimension === "在籍区分" && total ? `・${Math.round((Number(row.user_count) || 0) / total * 100)}%` : "";
+      return `<p><span>${escapeHTML(row.label)}</span><strong>${numberText(row.user_count)}人${share}<small>MAU ${numberText(row.mau)}・${compareText(row.mau, row.previous_mau)}</small></strong></p>`;
+    }).join("")}</div></section>`;
+  }).join("") || '<p class="admin-empty">属性データはまだありません。</p>';
+
+  renderAdminTable($("#adminEnterpriseTable"), ["企業・掲載", "種別", "表示", "閲覧者", "詳細", "クリック", "CTR"], (data.enterprise ?? []).map((row) => `<tr><td><strong>${escapeHTML(row.organization)}</strong><small>${escapeHTML(row.title)}</small></td><td>${escapeHTML(row.content_type)}</td><td>${numberText(row.impressions)}<small>${compareText(row.impressions, row.previous_impressions)}</small></td><td>${numberText(row.unique_viewers)}<small>${compareText(row.unique_viewers, row.previous_unique_viewers)}</small></td><td>${numberText(row.detail_views)}<small>${compareText(row.detail_views, row.previous_detail_views)}</small></td><td>${numberText(row.clicks)}<small>${compareText(row.clicks, row.previous_clicks)}</small></td><td>${Number(row.ctr) || 0}%<small>${compareText(row.ctr, row.previous_ctr)}</small></td></tr>`), "企業コンテンツを登録すると掲載効果がここに表示されます。");
+
+  const enterpriseTitles = new Map((data.enterprise ?? []).map((row) => [row.id, `${row.organization}｜${row.title}`]));
+  const enterpriseAudienceGroups = (data.enterprise_audience ?? []).reduce((groups, row) => {
+    (groups[row.content_id] ||= []).push(row);
+    return groups;
+  }, {});
+  $("#adminEnterpriseAudience").innerHTML = Object.entries(enterpriseAudienceGroups).map(([contentId, rows]) => {
+    const dimensions = rows.reduce((groups, row) => { (groups[row.dimension] ||= []).push(row); return groups; }, {});
+    return `<article><h3>${escapeHTML(enterpriseTitles.get(contentId) || "企業コンテンツ")}</h3><div>${Object.entries(dimensions).map(([dimension, values]) => `<section><strong>${escapeHTML(dimension)}</strong>${values.sort((a, b) => Number(b.users) - Number(a.users)).map((row) => `<p><span>${escapeHTML(row.label)}</span><b>${numberText(row.users)}人</b></p>`).join("")}</section>`).join("")}</div></article>`;
+  }).join("") || '<p class="admin-empty admin-enterprise-audience-empty">匿名化基準を満たす属性集計はまだありません。</p>';
+
+  $("#adminReportList").innerHTML = (data.reports ?? []).length ? data.reports.map((report) => `<article><div><span class="admin-status status-${escapeHTML(report.status)}">${escapeHTML(report.status)}</span><strong>${escapeHTML(report.reason)}</strong><p>${escapeHTML(report.detail || "補足なし")}</p><small>${escapeHTML(report.target_type)}・${formatDate(report.created_at)}</small></div><div class="admin-row-actions"><button type="button" data-admin-action="resolve-report" data-report-id="${escapeHTML(report.id)}" data-status="resolved">対応済み</button><button type="button" data-admin-action="resolve-report" data-report-id="${escapeHTML(report.id)}" data-status="dismissed">却下</button></div></article>`).join("") : '<p class="admin-empty">未確認の通報はありません。</p>';
+
+  $("#adminUserList").innerHTML = (data.users ?? []).map((user) => `<article><div><span class="admin-status ${user.status === "suspended" ? "status-open" : "status-resolved"}">${user.status === "suspended" ? "利用停止" : "利用中"}</span><strong>${escapeHTML(user.nickname || "未設定")}</strong><p>${escapeHTML([user.grade, user.major, user.graduation_year ? `${user.graduation_year}年卒` : ""].filter(Boolean).join("・") || "属性未設定")}</p><small>最終アクセス ${user.last_accessed_at ? formatDate(user.last_accessed_at) : "記録なし"}</small></div><div class="admin-row-actions"><button type="button" data-admin-action="set-user-status" data-user-id="${escapeHTML(user.user_id)}" data-status="${user.status === "suspended" ? "active" : "suspended"}">${user.status === "suspended" ? "解除" : "停止"}</button></div></article>`).join("") || '<p class="admin-empty">利用者データはまだありません。</p>';
+
+  $("#adminPostModerationList").innerHTML = (data.recent_posts ?? []).map((post) => `<article><div><span class="admin-status ${post.moderation_status === "hidden" ? "status-open" : "status-resolved"}">${post.moderation_status === "hidden" ? "非表示" : "公開中"}</span><strong>${escapeHTML(post.title)}</strong><p>${escapeHTML(post.body)}</p><small>${escapeHTML(post.category)}・${formatDate(post.created_at)}</small></div><div class="admin-row-actions"><button type="button" data-admin-action="moderate-content" data-target-type="post" data-target-id="${escapeHTML(post.id)}" data-status="${post.moderation_status === "hidden" ? "visible" : "hidden"}">${post.moderation_status === "hidden" ? "再公開" : "非表示"}</button></div></article>`).join("") || '<p class="admin-empty">ボトルはまだありません。</p>';
+  $("#adminReplyModerationList").innerHTML = (data.recent_replies ?? []).map((reply) => `<article><div><span class="admin-status ${reply.moderation_status === "hidden" ? "status-open" : "status-resolved"}">${reply.moderation_status === "hidden" ? "非表示" : "公開中"}</span><strong>返信</strong><p>${escapeHTML(reply.body)}</p><small>${formatDate(reply.created_at)}</small></div><div class="admin-row-actions"><button type="button" data-admin-action="moderate-content" data-target-type="reply" data-target-id="${escapeHTML(reply.id)}" data-status="${reply.moderation_status === "hidden" ? "visible" : "hidden"}">${reply.moderation_status === "hidden" ? "再公開" : "非表示"}</button></div></article>`).join("") || '<p class="admin-empty">返信はまだありません。</p>';
+}
+
+async function loadAdminDashboard(force = false) {
+  if (!state.isAdmin || !state.session?.access_token) {
+    if ($("#appView").dataset.activePage === "admin") showPage("aquarium");
+    return;
+  }
+  const endInput = $("#adminEndDate");
+  const startInput = $("#adminStartDate");
+  if (!endInput.value) endInput.value = new Date().toISOString().slice(0, 10);
+  if (!startInput.value) startInput.value = new Date(Date.now() - 29 * 86400000).toISOString().slice(0, 10);
+  const key = `${startInput.value}:${endInput.value}:${$("#adminGranularity").value}`;
+  if (!force && state.adminLoadedRange === key && state.adminData) return;
+  $("#adminLoading").hidden = false;
+  $("#adminDashboard").hidden = true;
+  try {
+    const params = new URLSearchParams({ start: startInput.value, end: endInput.value, granularity: $("#adminGranularity").value });
+    const response = await fetch(`/api/admin/dashboard?${params}`, { headers: { Authorization: `Bearer ${state.session.access_token}` } });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || "管理データを取得できませんでした。");
+    state.adminData = data;
+    state.adminLoadedRange = key;
+    renderAdminDashboard(data);
+    $("#adminDashboard").hidden = false;
+  } catch (error) {
+    showToast(readableError(error), "error");
+  } finally {
+    $("#adminLoading").hidden = true;
+  }
+}
+
+async function adminAction(payload) {
+  const response = await fetch("/api/admin/action", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${state.session.access_token}`, "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.error || "操作を完了できませんでした。");
+}
+
+async function handleAdminAction(event) {
+  const button = event.target.closest("[data-admin-action]");
+  if (!button || !state.isAdmin) return;
+  button.disabled = true;
+  try {
+    if (button.dataset.adminAction === "resolve-report") {
+      await adminAction({ action: "resolve_report", report_id: button.dataset.reportId, status: button.dataset.status });
+    } else if (button.dataset.adminAction === "moderate-content") {
+      const shouldHide = button.dataset.status === "hidden";
+      if (shouldHide && !window.confirm("この内容を一般利用者から非表示にしますか？")) return;
+      await adminAction({ action: "moderate_content", target_type: button.dataset.targetType, target_id: button.dataset.targetId, status: button.dataset.status, note: shouldHide ? "管理者による非表示" : null });
+    } else if (button.dataset.adminAction === "set-user-status") {
+      const shouldSuspend = button.dataset.status === "suspended";
+      if (shouldSuspend && !window.confirm("この利用者を停止しますか？")) return;
+      await adminAction({ action: "set_user_status", user_id: button.dataset.userId, status: button.dataset.status, reason: shouldSuspend ? "管理者による利用停止" : null });
+    }
+    await loadAdminDashboard(true);
+    showToast("運営データを更新しました。", "success");
+  } catch (error) {
+    showToast(readableError(error), "error");
+  } finally {
+    button.disabled = false;
   }
 }
 
@@ -3367,6 +3728,7 @@ function bootstrapPreviewMode() {
 
 async function initialize() {
   bindStaticEvents();
+  void trackAnalyticsEvent("page_view", { page_key: "public-home" });
   if (IS_PREVIEW_MODE) {
     bootstrapPreviewMode();
     return;
