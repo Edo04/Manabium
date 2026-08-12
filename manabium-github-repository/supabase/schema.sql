@@ -1523,3 +1523,5 @@ grant execute on function public.admin_set_user_status(uuid, text, text, timesta
 
 -- 管理者関数以外から原始ログ・企業別個票へアクセスする権限は付与しません。
 -- 企業向け集計は admin_analytics_dashboard 内で5人未満の属性セルを除外します。
+
+select pg_notify('pgrst', 'reload schema');
