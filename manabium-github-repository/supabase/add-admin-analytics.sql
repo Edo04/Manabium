@@ -5,6 +5,7 @@
 create extension if not exists pgcrypto;
 create schema if not exists private;
 revoke all on schema private from public, anon, authenticated;
+grant usage on schema private to authenticated, service_role;
 
 -- ============================================================
 -- 1. 管理権限・利用制限・通報
