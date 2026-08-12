@@ -60,6 +60,7 @@ create table if not exists public.posts (
   post_type text not null check (post_type in ('相談', '情報共有')),
   field_tags text[] not null default '{}'::text[],
   external_url text,
+  external_site_name text,
   like_count integer not null default 0 check (like_count >= 0),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
@@ -73,6 +74,9 @@ alter table public.posts
 alter table public.posts
   add column if not exists external_url text;
 
+alter table public.posts
+  add column if not exists external_site_name text;
+
 do $$
 begin
   if not exists (
@@ -82,6 +86,20 @@ begin
   ) then
     alter table public.posts
       add constraint posts_field_tags_limit check (cardinality(field_tags) <= 5);
+  end if;
+end $$;
+
+do $$
+begin
+  if not exists (
+    select 1 from pg_constraint
+    where conname = 'posts_external_site_name_length'
+      and conrelid = 'public.posts'::regclass
+  ) then
+    alter table public.posts
+      add constraint posts_external_site_name_length check (
+        external_site_name is null or char_length(external_site_name) <= 80
+      );
   end if;
 end $$;
 
@@ -723,7 +741,7 @@ grant insert (user_id, nickname, grade, major, interests, fish_type, bio) on tab
 grant update (nickname, grade, major, interests, fish_type, bio) on table public.profiles to authenticated;
 
 grant select, insert, delete on table public.posts to authenticated;
-grant update (title, body, category, post_type, field_tags, external_url) on table public.posts to authenticated;
+grant update (title, body, category, post_type, field_tags, external_url, external_site_name) on table public.posts to authenticated;
 
 grant select, insert, delete on table public.post_likes to authenticated;
 grant select, delete on table public.post_replies to authenticated;

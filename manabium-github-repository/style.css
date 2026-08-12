@@ -2329,6 +2329,171 @@ textarea:focus {
   }
 }
 
+/* A link attachment is separate from the message body, so event information scans quickly. */
+.link-attachment {
+  padding: 17px 18px 18px;
+  margin: 3px 0 5px;
+  background: linear-gradient(135deg, rgba(232, 242, 239, 0.8), rgba(248, 246, 239, 0.92));
+  border: 1px solid rgba(65, 105, 109, 0.14);
+  border-radius: 19px;
+}
+
+.link-attachment legend {
+  display: inline-flex;
+  padding: 0 7px;
+  align-items: center;
+  gap: 6px;
+  color: #365d64;
+  font-size: 0.78rem;
+  font-weight: 850;
+}
+
+.link-attachment legend i {
+  color: #638a89;
+  font-size: 1rem;
+}
+
+.link-attachment legend small {
+  padding: 3px 7px;
+  color: #788e91;
+  background: rgba(255, 255, 255, 0.72);
+  border-radius: 999px;
+  font-size: 0.55rem;
+}
+
+.link-attachment > p {
+  margin: -1px 0 13px;
+  color: #6d8588;
+  font-size: 0.68rem;
+  line-height: 1.6;
+}
+
+.link-attachment-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 0.86fr) minmax(0, 1.14fr);
+  gap: 11px;
+}
+
+.link-attachment-grid label {
+  margin: 0;
+}
+
+.link-attachment-grid label > span:first-child {
+  font-size: 0.68rem;
+}
+
+/* Bottle hover summary: available to mouse and keyboard without blocking the bottle click. */
+.bottle-hover-preview {
+  position: absolute;
+  z-index: 24;
+  top: 50%;
+  left: calc(100% + 14px);
+  display: grid;
+  width: min(286px, 35vw);
+  padding: 15px 16px;
+  gap: 7px;
+  color: #385b62;
+  background: rgba(253, 252, 248, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.92);
+  border-radius: 17px 17px 17px 5px;
+  box-shadow: 0 16px 40px rgba(35, 68, 74, 0.2);
+  opacity: 0;
+  text-align: left;
+  transform: translate3d(8px, -50%, 0) rotate(var(--inverse-rotation));
+  transition: opacity 170ms ease, transform 170ms ease;
+  visibility: hidden;
+  pointer-events: none;
+  backdrop-filter: blur(16px);
+}
+
+.bottle-hover-preview.opens-left {
+  right: calc(100% + 14px);
+  left: auto;
+  border-radius: 17px 17px 5px 17px;
+  transform: translate3d(-8px, -50%, 0) rotate(var(--inverse-rotation));
+}
+
+.floating-bottle:hover,
+.floating-bottle:focus-visible {
+  z-index: 23;
+  animation-play-state: paused;
+  outline: none;
+}
+
+.floating-bottle:hover .bottle-hover-preview,
+.floating-bottle:focus-visible .bottle-hover-preview {
+  opacity: 1;
+  transform: translate3d(0, -50%, 0) rotate(var(--inverse-rotation));
+  visibility: visible;
+}
+
+.bottle-hover-badges {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.bottle-hover-badges > span {
+  display: inline-flex;
+  min-height: 22px;
+  padding: 3px 7px;
+  align-items: center;
+  gap: 3px;
+  color: #55747a;
+  background: #e7f0ed;
+  border-radius: 999px;
+  font-size: 0.54rem;
+  font-weight: 800;
+}
+
+.bottle-hover-badges > .has-link {
+  color: #825f63;
+  background: #f7e9e4;
+}
+
+.bottle-hover-preview > strong {
+  color: #31555d;
+  font-family: var(--font-display);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.bottle-hover-excerpt {
+  display: -webkit-box;
+  overflow: hidden;
+  color: #617b80;
+  font-size: 0.66rem;
+  line-height: 1.7;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.bottle-hover-preview > small {
+  display: inline-flex;
+  padding-top: 3px;
+  align-items: center;
+  gap: 4px;
+  color: #7c9093;
+  font-size: 0.57rem;
+  font-weight: 700;
+}
+
+@media (max-width: 760px), (hover: none) {
+  .link-attachment-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .bottle-hover-preview {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bottle-hover-preview {
+    transition: none;
+  }
+}
+
 /* Reply arrival: the plant is a lake signal, while the toolbar keeps the action easy to find. */
 .lake-toolbar > .lake-toolbar-actions {
   display: flex !important;

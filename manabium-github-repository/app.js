@@ -127,6 +127,7 @@ const state = {
   bioColumnAvailable: true,
   postFieldTagsColumnAvailable: true,
   postExternalUrlColumnAvailable: true,
+  postExternalSiteNameColumnAvailable: true,
   threadedRepliesAvailable: true,
   routeVersion: 0,
   realtimeReloadTimer: null,
@@ -178,6 +179,7 @@ function searchablePostText(post) {
     post.category,
     post.post_type,
     post.external_url,
+    post.external_site_name,
     ...parseFieldTags(post.field_tags),
     post.profile?.nickname,
     post.profile?.major,
@@ -230,7 +232,7 @@ function validateExternalUrlInput(input) {
   return normalizedUrl;
 }
 
-function renderPostExternalLink(container, value) {
+function renderPostExternalLink(container, value, siteName = "") {
   const href = normalizeExternalUrl(value);
   container.replaceChildren();
   container.hidden = !href;
@@ -243,7 +245,8 @@ function renderPostExternalLink(container, value) {
   link.target = "_blank";
   link.rel = "noopener noreferrer";
   link.referrerPolicy = "no-referrer";
-  link.setAttribute("aria-label", `${url.hostname}の公式・参考サイトを新しいタブで開く`);
+  const displayName = normalizeExternalSiteName(siteName) || "公式・参考サイト";
+  link.setAttribute("aria-label", `${displayName}を新しいタブで開く`);
 
   const icon = document.createElement("span");
   icon.className = "post-primary-link-icon";
@@ -253,9 +256,9 @@ function renderPostExternalLink(container, value) {
   const copy = document.createElement("span");
   copy.className = "post-primary-link-copy";
   const label = document.createElement("strong");
-  label.textContent = "公式・参考サイトを見る";
+  label.textContent = displayName;
   const host = document.createElement("small");
-  host.textContent = url.hostname.replace(/^www\./, "");
+  host.textContent = `${url.hostname.replace(/^www\./, "")} を開く`;
   copy.append(label, host);
 
   const arrow = document.createElement("i");
@@ -317,11 +320,16 @@ function normalizeExternalUrl(value) {
   }
 }
 
+function normalizeExternalSiteName(value) {
+  return String(value ?? "").replace(/\s+/g, " ").trim().slice(0, 80);
+}
+
 function normalizePost(post) {
   return post ? {
     ...post,
     field_tags: parseFieldTags(post.field_tags),
     external_url: normalizeExternalUrl(post.external_url),
+    external_site_name: normalizeExternalSiteName(post.external_site_name),
   } : post;
 }
 
@@ -352,15 +360,25 @@ function isMissingPostExternalUrlColumn(error) {
   return message.includes("external_url") && (message.includes("schema cache") || message.includes("column"));
 }
 
+function isMissingPostExternalSiteNameColumn(error) {
+  const message = String(error?.message ?? "").toLowerCase();
+  return message.includes("external_site_name") && (message.includes("schema cache") || message.includes("column"));
+}
+
 function postSelectFields() {
   return [
     POST_BASE_FIELDS,
     state.postFieldTagsColumnAvailable ? "field_tags" : "",
     state.postExternalUrlColumnAvailable ? "external_url" : "",
+    state.postExternalSiteNameColumnAvailable ? "external_site_name" : "",
   ].filter(Boolean).join(",");
 }
 
 function disableUnavailablePostColumn(error) {
+  if (isMissingPostExternalSiteNameColumn(error) && state.postExternalSiteNameColumnAvailable) {
+    state.postExternalSiteNameColumnAvailable = false;
+    return true;
+  }
   if (isMissingPostExternalUrlColumn(error) && state.postExternalUrlColumnAvailable) {
     state.postExternalUrlColumnAvailable = false;
     return true;
@@ -1002,6 +1020,7 @@ function bindStaticEvents() {
   $("#openComposerButton").addEventListener("click", openComposer);
   $("#postForm").addEventListener("submit", submitPost);
   $("#postExternalUrl").addEventListener("input", (event) => validateExternalUrlInput(event.currentTarget));
+  $("#postExternalSiteName").addEventListener("input", () => validateExternalUrlInput($("#postExternalUrl")));
   $("#postBody").addEventListener("input", () => {
     $("#postCharacterCount").textContent = String($("#postBody").value.length);
   });
@@ -1053,6 +1072,7 @@ function bindStaticEvents() {
   $("#deletePostButton").addEventListener("click", openPostDeleteConfirmation);
   $("#editPostForm").addEventListener("submit", saveEditedPost);
   $("#editPostExternalUrl").addEventListener("input", (event) => validateExternalUrlInput(event.currentTarget));
+  $("#editPostExternalSiteName").addEventListener("input", () => validateExternalUrlInput($("#editPostExternalUrl")));
   $("#editPostBody").addEventListener("input", () => {
     $("#editPostCharacterCount").textContent = String($("#editPostBody").value.length);
   });
@@ -1785,7 +1805,7 @@ function closeAquariumIntro() {
 }
 
 async function fetchPostRows({ userId = null, limit = 60 } = {}) {
-  for (let attempt = 0; attempt < 3; attempt += 1) {
+  for (let attempt = 0; attempt < 4; attempt += 1) {
     let query = supabase.from("posts").select(postSelectFields());
     if (userId) query = query.eq("user_id", userId);
     const { data, error } = await query.order("created_at", { ascending: false }).limit(limit);
@@ -2087,6 +2107,11 @@ function renderAquarium() {
   renderMutedUsers();
 }
 
+function bottlePreviewExcerpt(post) {
+  const text = String(post.body ?? "").replace(/\s+/g, " ").trim();
+  return text.length > 86 ? `${text.slice(0, 86)}…` : text;
+}
+
 function renderBottles() {
   const layer = $("#bottleLayer");
   if (!layer) return;
@@ -2101,9 +2126,12 @@ function renderBottles() {
     button.className = "floating-bottle";
     button.classList.toggle("is-similar", profileSimilarity(post.profile) >= 22 || postRelevance(post) >= 34);
     button.setAttribute("aria-label", `投稿「${post.title}」を読む`);
-    button.style.left = `${phoneLayout ? 8 + ((seed + index * 19) % 64) : 8 + ((seed + index * 19) % 76)}%`;
+    const left = phoneLayout ? 8 + ((seed + index * 19) % 64) : 8 + ((seed + index * 19) % 76);
+    button.style.left = `${left}%`;
     button.style.top = `${17 + ((seed + index * 11) % 60)}%`;
-    button.style.setProperty("--rotation", `${-14 + (seed % 29)}deg`);
+    const rotation = -14 + (seed % 29);
+    button.style.setProperty("--rotation", `${rotation}deg`);
+    button.style.setProperty("--inverse-rotation", `${-rotation}deg`);
     button.style.setProperty("--delay", `${-((timelineSeconds + seed * 0.13) % duration)}s`);
     button.style.setProperty("--bottle-duration", `${duration}s`);
     button.style.setProperty("--bottle-x-one", `${5 + (seed % 7)}px`);
@@ -2111,6 +2139,23 @@ function renderBottles() {
     button.style.setProperty("--bottle-y-one", `${-5 - (seed % 6)}px`);
     button.style.setProperty("--bottle-y-two", `${-9 - (seed % 7)}px`);
     button.style.setProperty("--bottle-sway", `${1.8 + ((seed % 5) * 0.35)}deg`);
+
+    const preview = document.createElement("span");
+    preview.id = `bottle-preview-${post.id}`;
+    preview.className = "bottle-hover-preview";
+    preview.classList.toggle("opens-left", left > 52);
+    preview.setAttribute("role", "tooltip");
+    preview.innerHTML = `
+      <span class="bottle-hover-badges">
+        <span>${escapeHTML(post.category)}</span>
+        <span>${escapeHTML(post.post_type)}</span>
+        ${normalizeExternalUrl(post.external_url) ? '<span class="has-link"><i class="ph ph-link-simple" aria-hidden="true"></i> リンクあり</span>' : ""}
+      </span>
+      <strong>${escapeHTML(post.title)}</strong>
+      <span class="bottle-hover-excerpt">${escapeHTML(bottlePreviewExcerpt(post))}</span>
+      <small><i class="ph ph-arrow-square-out" aria-hidden="true"></i> クリックしてボトルを読む</small>`;
+    button.setAttribute("aria-describedby", preview.id);
+    button.append(preview);
     button.addEventListener("click", () => {
       createLakeRipple(button);
       openPost(post.id);
@@ -2405,11 +2450,12 @@ function availablePostMutationPayload(payload) {
   const nextPayload = { ...payload };
   if (!state.postFieldTagsColumnAvailable) delete nextPayload.field_tags;
   if (!state.postExternalUrlColumnAvailable) delete nextPayload.external_url;
+  if (!state.postExternalSiteNameColumnAvailable) delete nextPayload.external_site_name;
   return nextPayload;
 }
 
 async function persistPostMutation(payload, postId = null) {
-  for (let attempt = 0; attempt < 3; attempt += 1) {
+  for (let attempt = 0; attempt < 4; attempt += 1) {
     const nextPayload = availablePostMutationPayload(payload);
     const query = postId
       ? supabase.from("posts").update(nextPayload).eq("id", postId).eq("user_id", state.user.id)
@@ -2424,7 +2470,12 @@ async function persistPostMutation(payload, postId = null) {
 async function submitPost(event) {
   event.preventDefault();
   const form = event.currentTarget;
-  const externalUrl = validateExternalUrlInput($("#postExternalUrl"));
+  const externalUrlInput = $("#postExternalUrl");
+  const externalUrl = validateExternalUrlInput(externalUrlInput);
+  const externalSiteName = normalizeExternalSiteName($("#postExternalSiteName").value);
+  if (externalSiteName && !externalUrl && !externalUrlInput.value.trim()) {
+    externalUrlInput.setCustomValidity("サイト名を入力した場合は、URLも入力してください。");
+  }
   if (!form.reportValidity()) return;
   const button = $("#submitPostButton");
   setButtonLoading(button, true);
@@ -2439,6 +2490,7 @@ async function submitPost(event) {
         post_type: $("#postType").value,
         field_tags: parseFieldTags($("#postFields").value),
         external_url: externalUrl,
+        external_site_name: externalUrl ? externalSiteName : "",
         like_count: 0,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
@@ -2464,6 +2516,7 @@ async function submitPost(event) {
       post_type: $("#postType").value,
       field_tags: parseFieldTags($("#postFields").value),
       external_url: externalUrl || null,
+      external_site_name: externalUrl ? (externalSiteName || null) : null,
     };
     await persistPostMutation(payload);
     form.reset();
@@ -2473,10 +2526,14 @@ async function submitPost(event) {
     showToast(
       externalUrl && !state.postExternalUrlColumnAvailable
         ? "ボトルを流しました。公式リンクの保存にはSupabaseの追加SQLが必要です。"
+        : externalUrl && externalSiteName && !state.postExternalSiteNameColumnAvailable
+          ? "ボトルを流しました。サイト名の保存にはSupabaseの追加SQLが必要です。"
         : !state.postFieldTagsColumnAvailable
           ? "ボトルを流しました。関連分野の保存にはSupabaseの追加SQLが必要です。"
           : "ボトルを湖へ流しました。",
-      state.postFieldTagsColumnAvailable && (!externalUrl || state.postExternalUrlColumnAvailable) ? "success" : "info",
+      state.postFieldTagsColumnAvailable
+        && (!externalUrl || state.postExternalUrlColumnAvailable)
+        && (!externalSiteName || state.postExternalSiteNameColumnAvailable) ? "success" : "info",
     );
   } catch (error) {
     showToast(readableError(error), "error");
@@ -2501,7 +2558,7 @@ function openPost(postId, show = true) {
   $("#detailFieldTags").innerHTML = detailFieldTags.map((tag) => `<button class="post-field-tag" type="button" data-search-tag="${escapeHTML(tag)}">${escapeHTML(tag)}</button>`).join("");
   $("#detailFieldTags").hidden = detailFieldTags.length === 0;
   renderTextWithLinks($("#detailBody"), post.body);
-  renderPostExternalLink($("#detailExternalLink"), post.external_url);
+  renderPostExternalLink($("#detailExternalLink"), post.external_url, post.external_site_name);
   const liked = state.likedPostIds.has(post.id);
   const likeButton = $("#detailLikeButton");
   likeButton.classList.toggle("liked", liked);
@@ -2528,6 +2585,7 @@ function openPostEditor() {
   $("#editPostFields").value = parseFieldTags(post.field_tags).join("、");
   $("#editPostTitle").value = post.title;
   $("#editPostExternalUrl").value = post.external_url ?? "";
+  $("#editPostExternalSiteName").value = post.external_site_name ?? "";
   $("#editPostExternalUrl").setCustomValidity("");
   $("#editPostBody").value = post.body;
   $("#editPostCharacterCount").textContent = String(post.body.length);
@@ -2538,7 +2596,12 @@ function openPostEditor() {
 
 async function saveEditedPost(event) {
   event.preventDefault();
-  const externalUrl = validateExternalUrlInput($("#editPostExternalUrl"));
+  const externalUrlInput = $("#editPostExternalUrl");
+  const externalUrl = validateExternalUrlInput(externalUrlInput);
+  const externalSiteName = normalizeExternalSiteName($("#editPostExternalSiteName").value);
+  if (externalSiteName && !externalUrl && !externalUrlInput.value.trim()) {
+    externalUrlInput.setCustomValidity("サイト名を入力した場合は、URLも入力してください。");
+  }
   if (!event.currentTarget.reportValidity()) return;
   const post = selectedOwnedPost();
   if (!post) {
@@ -2554,6 +2617,7 @@ async function saveEditedPost(event) {
     title: $("#editPostTitle").value.trim(),
     body: $("#editPostBody").value.trim(),
     external_url: externalUrl,
+    external_site_name: externalUrl ? externalSiteName : "",
     updated_at: new Date().toISOString(),
   };
   const button = $("#saveEditedPostButton");
@@ -2580,6 +2644,7 @@ async function saveEditedPost(event) {
       body: updates.body,
       field_tags: updates.field_tags,
       external_url: updates.external_url || null,
+      external_site_name: updates.external_url ? (updates.external_site_name || null) : null,
     };
     await persistPostMutation(payload, post.id);
     closeDialog("editPostDialog");
@@ -2588,10 +2653,14 @@ async function saveEditedPost(event) {
     showToast(
       externalUrl && !state.postExternalUrlColumnAvailable
         ? "内容を更新しました。公式リンクの保存にはSupabaseの追加SQLが必要です。"
+        : externalUrl && externalSiteName && !state.postExternalSiteNameColumnAvailable
+          ? "内容を更新しました。サイト名の保存にはSupabaseの追加SQLが必要です。"
         : !state.postFieldTagsColumnAvailable
           ? "内容を更新しました。関連分野の保存にはSupabaseの追加SQLが必要です。"
           : "ボトルの内容を更新しました。",
-      state.postFieldTagsColumnAvailable && (!externalUrl || state.postExternalUrlColumnAvailable) ? "success" : "info",
+      state.postFieldTagsColumnAvailable
+        && (!externalUrl || state.postExternalUrlColumnAvailable)
+        && (!externalSiteName || state.postExternalSiteNameColumnAvailable) ? "success" : "info",
     );
   } catch (error) {
     showToast(readableError(error), "error");
@@ -3204,6 +3273,7 @@ function bootstrapPreviewMode() {
       post_type: "情報共有",
       field_tags: ["進路選び", "建築", "オープンキャンパス"],
       external_url: "https://www.jst.go.jp/",
+      external_site_name: "JST 科学技術振興機構",
       like_count: 8,
       created_at: new Date(now - 3 * 3600000).toISOString(),
       updated_at: new Date(now - 3 * 3600000).toISOString(),
