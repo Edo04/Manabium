@@ -21,11 +21,11 @@ to authenticated
 using ((select auth.uid()) = user_id)
 with check ((select auth.uid()) = user_id);
 
-grant select on table public.profiles to authenticated;
+grant select (user_id, grade, major, interests, fish_type, bio, created_at, updated_at) on table public.profiles to authenticated;
 revoke insert on table public.profiles from authenticated;
-grant insert (user_id, nickname, grade, major, interests, fish_type) on table public.profiles to authenticated;
+grant insert (user_id, grade, major, interests, fish_type) on table public.profiles to authenticated;
 revoke update on table public.profiles from authenticated;
-grant update (nickname, grade, major, interests, fish_type) on table public.profiles to authenticated;
+grant update (grade, major, interests, fish_type) on table public.profiles to authenticated;
 
 commit;
 

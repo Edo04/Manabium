@@ -287,7 +287,7 @@ set search_path = ''
 as $$
 begin
   insert into public.profiles (user_id, nickname)
-  values (new.id, coalesce(new.raw_user_meta_data ->> 'nickname', ''))
+  values (new.id, '')
   on conflict (user_id) do nothing;
   return new;
 end;
@@ -539,7 +539,8 @@ alter table public.aquarium_preferences enable row level security;
 alter table public.aquarium_reactions enable row level security;
 alter table public.aquarium_mutes enable row level security;
 
--- プロフィール：ログイン利用者は公開項目を閲覧でき、変更できるのは自分だけ。
+-- プロフィール：ログイン利用者は公開属性を閲覧でき、変更できるのは自分だけ。
+-- nickname列は旧版とのデータ互換のため残しますが、現行UIでは公開・更新しません。
 drop policy if exists "Authenticated users can view community profiles" on public.profiles;
 create policy "Authenticated users can view community profiles"
 on public.profiles for select
@@ -735,9 +736,9 @@ revoke all on table public.aquarium_preferences from anon, authenticated;
 revoke all on table public.aquarium_reactions from anon, authenticated;
 revoke all on table public.aquarium_mutes from anon, authenticated;
 
-grant select on table public.profiles to authenticated;
-grant insert (user_id, nickname, grade, major, interests, fish_type, bio) on table public.profiles to authenticated;
-grant update (nickname, grade, major, interests, fish_type, bio) on table public.profiles to authenticated;
+grant select (user_id, grade, major, interests, fish_type, bio, created_at, updated_at) on table public.profiles to authenticated;
+grant insert (user_id, grade, major, interests, fish_type, bio) on table public.profiles to authenticated;
+grant update (grade, major, interests, fish_type, bio) on table public.profiles to authenticated;
 
 grant select, insert, delete on table public.posts to authenticated;
 grant update (title, body, category, post_type, field_tags, external_url, external_site_name) on table public.posts to authenticated;
@@ -1344,7 +1345,7 @@ begin
     group by 1, 2, 3 order by sessions desc limit 30
   ),
   user_rows as (
-    select p.user_id, p.nickname, p.grade, p.major, p.graduation_year, p.created_at, p.last_accessed_at,
+    select p.user_id, p.grade, p.major, p.graduation_year, p.created_at, p.last_accessed_at,
       coalesce(m.status, 'active') status
     from public.profiles p left join public.user_moderation m on m.user_id = p.user_id
     order by p.created_at desc limit 100
@@ -1504,7 +1505,7 @@ revoke all on table public.app_user_roles, public.user_moderation, public.conten
 grant select on table public.user_moderation to authenticated;
 -- 卒業予定年と最終アクセスは通常のプロフィール一覧から取得できないようにします。
 revoke select on table public.profiles from authenticated;
-grant select (user_id, nickname, grade, major, interests, fish_type, bio, created_at, updated_at) on table public.profiles to authenticated;
+grant select (user_id, grade, major, interests, fish_type, bio, created_at, updated_at) on table public.profiles to authenticated;
 grant select on table public.app_user_roles, public.admin_audit_logs to authenticated;
 grant select, insert, update, delete on table public.enterprise_organizations, public.enterprise_contents to authenticated;
 grant select, insert (target_type, target_id, reason, detail) on table public.content_reports to authenticated;

@@ -343,7 +343,7 @@ grant select, delete on table public.aquarium_mutes to authenticated;
 grant insert (owner_user_id, muted_user_id) on table public.aquarium_mutes to authenticated;
 
 -- 既存のプロフィール権限へbioを安全に追加します。
-grant select on table public.profiles to authenticated;
+grant select (user_id, grade, major, interests, fish_type, bio, created_at, updated_at) on table public.profiles to authenticated;
 grant insert (bio) on table public.profiles to authenticated;
 grant update (bio) on table public.profiles to authenticated;
 

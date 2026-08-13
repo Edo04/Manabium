@@ -18,12 +18,12 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
 
 const IS_PREVIEW_MODE = new URLSearchParams(location.search).get("preview") === "1";
 const FISH_ASSET_URL = "./assets/fish-watercolor.png";
-const PROFILE_FIELDS = "user_id,nickname,grade,major,interests,fish_type,bio,created_at,updated_at";
-const PROFILE_PUBLIC_FIELDS = "user_id,nickname,grade,major,interests,fish_type,bio";
-const PROFILE_FIELDS_WITHOUT_BIO = "user_id,nickname,grade,major,interests,fish_type,created_at,updated_at";
-const PROFILE_PUBLIC_FIELDS_WITHOUT_BIO = "user_id,nickname,grade,major,interests,fish_type";
-const PROFILE_FIELDS_WITHOUT_INTERESTS = "user_id,nickname,grade,major,fish_type,created_at,updated_at";
-const PROFILE_PUBLIC_FIELDS_WITHOUT_INTERESTS = "user_id,nickname,grade,major,fish_type";
+const PROFILE_FIELDS = "user_id,grade,major,interests,fish_type,bio,created_at,updated_at";
+const PROFILE_PUBLIC_FIELDS = "user_id,grade,major,interests,fish_type,bio";
+const PROFILE_FIELDS_WITHOUT_BIO = "user_id,grade,major,interests,fish_type,created_at,updated_at";
+const PROFILE_PUBLIC_FIELDS_WITHOUT_BIO = "user_id,grade,major,interests,fish_type";
+const PROFILE_FIELDS_WITHOUT_INTERESTS = "user_id,grade,major,fish_type,created_at,updated_at";
+const PROFILE_PUBLIC_FIELDS_WITHOUT_INTERESTS = "user_id,grade,major,fish_type";
 const POST_BASE_FIELDS = "id,user_id,title,body,category,post_type,like_count,created_at,updated_at";
 const MAX_LAKE_FISH = 12;
 const MAX_LAKE_POSTS = 4;
@@ -106,7 +106,6 @@ const state = {
   aquariumAvailable: true,
   aquariumPresenceJoined: false,
   mutedUserIds: new Set(),
-  mutedProfiles: new Map(),
   selectedFishPresence: null,
   lastAquariumActivityAt: Date.now(),
   aquariumIdle: false,
@@ -117,7 +116,6 @@ const state = {
   selectedCategory: "all",
   postSearchQuery: "",
   postOwnership: "all",
-  postAuthorUserId: null,
   selectedPostId: null,
   editingReplyId: null,
   replyingToReplyId: null,
@@ -158,6 +156,33 @@ function parseInterests(value) {
   return [...new Set(source.map((item) => String(item).trim()).filter(Boolean))].slice(0, 8);
 }
 
+const LAKE_NAME_COLORS = ["珊瑚色", "水色", "若草色", "月白", "藤色", "桃色", "琥珀色", "浅葱色"];
+const LAKE_NAME_MOTIFS = ["ひれ", "しずく", "さざ波", "こもれび", "水草", "小石", "みなも", "泡"];
+
+function lakeVisitName(presence) {
+  if (!presence || presence.user_id === state.user?.id) return "あなたの魚";
+  const visitKey = String(presence.joined_at ?? "").slice(0, 16);
+  const seed = Math.abs(hashNumber(`${presence.user_id}:${visitKey}`));
+  const color = LAKE_NAME_COLORS[seed % LAKE_NAME_COLORS.length];
+  const motif = LAKE_NAME_MOTIFS[Math.floor(seed / LAKE_NAME_COLORS.length) % LAKE_NAME_MOTIFS.length];
+  return `${color}の${motif}`;
+}
+
+function threadParticipantLabels(postId) {
+  const post = state.posts.find((item) => item.id === postId);
+  const participants = [...new Set(state.replies
+    .filter((reply) => reply.post_id === postId && reply.sender_user_id !== post?.user_id)
+    .map((reply) => reply.sender_user_id))].sort();
+  return new Map(participants.map((userId, index) => [userId, `魚${String.fromCharCode(65 + index)}`]));
+}
+
+function threadAuthorLabel(userId, postId, labels = threadParticipantLabels(postId)) {
+  if (userId === state.user?.id) return "あなた";
+  const post = state.posts.find((item) => item.id === postId);
+  if (post?.user_id === userId) return "投稿した魚";
+  return labels.get(userId) ?? "湖の魚";
+}
+
 function reactionText(messageCode, profile = null) {
   const slotMatch = String(messageCode ?? "").match(/^share_interest_([1-3])$/);
   if (slotMatch) {
@@ -187,7 +212,6 @@ function searchablePostText(post) {
     post.external_url,
     post.external_site_name,
     ...parseFieldTags(post.field_tags),
-    post.profile?.nickname,
     post.profile?.major,
     ...(post.profile?.interests ?? []),
   ].filter(Boolean).join(" "));
@@ -945,7 +969,7 @@ function initializePublicHomepage() {
     const messages = [
       "新しいボトルを流しました！",
       "情報・AIに興味があります",
-      "その人のボトルも読めます",
+      "湖にいる間だけの呼び名です",
     ];
     let messageIndex = 0;
     window.setInterval(() => {
@@ -1115,16 +1139,6 @@ function bindStaticEvents() {
       void sendAquariumReaction(button.dataset.directReaction, state.selectedFishPresence.user_id);
     }
   });
-  $("#drawerBottlePreview").addEventListener("click", (event) => {
-    const button = event.target.closest("[data-drawer-post-id]");
-    if (button) {
-      $("#fishDrawer").hidden = true;
-      openPost(button.dataset.drawerPostId);
-    }
-  });
-  $("#drawerViewBottlesButton").addEventListener("click", () => {
-    if (state.selectedFishPresence) openAuthorBottles(state.selectedFishPresence.user_id);
-  });
   $("#muteFishButton").addEventListener("click", toggleSelectedFishMute);
   $("#mutedUsersList").addEventListener("click", (event) => {
     const button = event.target.closest("[data-unmute-user]");
@@ -1158,15 +1172,10 @@ function bindStaticEvents() {
   $("#postOwnershipFilters").addEventListener("click", (event) => {
     const button = event.target.closest("[data-ownership]");
     if (!button) return;
-    state.postAuthorUserId = null;
     state.postOwnership = button.dataset.ownership;
     $$(".ownership-chip", $("#postOwnershipFilters")).forEach((chip) => {
       chip.classList.toggle("active", chip === button);
     });
-    renderPosts();
-  });
-  $("#clearPostAuthorFilterButton").addEventListener("click", () => {
-    state.postAuthorUserId = null;
     renderPosts();
   });
   $("#postList").addEventListener("click", handlePostListClick);
@@ -1351,7 +1360,7 @@ async function routeSession(session) {
     if (routeVersion !== state.routeVersion) return;
 
     state.profile = profile;
-    if (!state.profile?.nickname) {
+    if (!state.profile?.grade || !state.profile?.fish_type) {
       showOnly("onboarding");
       return;
     }
@@ -1388,7 +1397,6 @@ function cleanupSignedInState() {
   state.aquariumPresenceJoined = false;
   state.aquariumAvailable = true;
   state.mutedUserIds.clear();
-  state.mutedProfiles.clear();
   state.selectedFishPresence = null;
   state.aquariumIdle = false;
   state.lastAquariumReactionAt = 0;
@@ -1399,7 +1407,6 @@ function cleanupSignedInState() {
   state.selectedCategory = "all";
   state.postSearchQuery = "";
   state.postOwnership = "all";
-  state.postAuthorUserId = null;
   state.editingReplyId = null;
   state.replyingToReplyId = null;
   state.likedPostIds.clear();
@@ -1428,7 +1435,6 @@ async function saveInitialProfile(event) {
   try {
     const grade = $("#profileGrade").value;
     const profileFields = {
-      nickname: $("#profileNickname").value.trim(),
       grade,
       major: isSchoolGrade(grade) ? null : $("#profileMajor").value.trim() || null,
       interests: parseInterests($("#profileInterests").value),
@@ -1664,7 +1670,6 @@ async function loadMutedUsers() {
     throw error;
   }
   state.mutedUserIds = new Set((data ?? []).map((item) => item.muted_user_id));
-  state.mutedProfiles = await fetchProfiles([...state.mutedUserIds]);
   renderMutedUsers();
 }
 
@@ -1901,7 +1906,6 @@ async function toggleSelectedFishMute() {
       if (error) throw error;
     }
     state.mutedUserIds.add(selected.user_id);
-    if (selected.profile) state.mutedProfiles.set(selected.user_id, selected.profile);
     $("#fishDrawer").hidden = true;
     state.selectedFishPresence = null;
     renderAquarium();
@@ -1922,7 +1926,6 @@ async function unmuteUser(userId) {
       if (error) throw error;
     }
     state.mutedUserIds.delete(userId);
-    state.mutedProfiles.delete(userId);
     renderAquarium();
     showToast("ミュートを解除しました。", "success");
   } catch (error) {
@@ -2094,7 +2097,8 @@ function renderLake() {
   }
 
   visiblePresence.forEach((presenceItem, index) => {
-    const profile = presenceItem.profile ?? { nickname: "湖の仲間", fish_type: "aqua", grade: "—", major: "—", interests: [] };
+    const profile = presenceItem.profile ?? { fish_type: "aqua", grade: "—", major: "—", interests: [] };
+    const visitName = lakeVisitName(presenceItem);
     const fish = FISH[profile.fish_type] ?? FISH.aqua;
     const seed = Math.abs(hashNumber(presenceItem.user_id));
     const phoneLayout = window.matchMedia("(max-width: 760px)").matches;
@@ -2123,15 +2127,15 @@ function renderLake() {
       && !recentReaction.target_user_id
       && recentReaction.sender_user_id === presenceItem.user_id
     );
-    const opensBottles = fishIsSpeaking && BOTTLE_ANNOUNCEMENT_CODES.has(recentReaction?.message_code);
+    const announcesBottle = fishIsSpeaking && BOTTLE_ANNOUNCEMENT_CODES.has(recentReaction?.message_code);
     const mobileBubblePosition = phoneLayout && row === 0
       ? ` is-top-row${column === columns - 1 ? " is-side-left" : ""}`
       : "";
     const reactionBubble = recentReaction
-      ? `<span class="fish-reaction-bubble ${fishIsSpeaking ? "is-fish-voice" : "is-direct-reaction"}${opensBottles ? " is-bottle-notice" : ""}${mobileBubblePosition}"${opensBottles ? ' data-fish-bottle-notice="true"' : ""}>
-          ${fishIsSpeaking ? "" : `<small>${escapeHTML(recentReaction.profile?.nickname ?? "仲間")}から</small>`}
+      ? `<span class="fish-reaction-bubble ${fishIsSpeaking ? "is-fish-voice" : "is-direct-reaction"}${announcesBottle ? " is-bottle-notice" : ""}${mobileBubblePosition}">
+          ${fishIsSpeaking ? "" : `<small>湖の仲間から</small>`}
           <span>${escapeHTML(reactionText(recentReaction.message_code, recentReaction.profile))}</span>
-          ${opensBottles ? '<i class="ph ph-arrow-right" aria-hidden="true"></i>' : ""}
+          ${announcesBottle ? '<i class="ph ph-envelope-simple-open" aria-hidden="true"></i>' : ""}
         </span>`
       : "";
     const button = document.createElement("button");
@@ -2141,7 +2145,7 @@ function renderLake() {
     button.classList.toggle("is-me", isMe);
     button.classList.toggle("is-similar", !isMe && similarity >= 22);
     button.classList.add(status.className);
-    button.setAttribute("aria-label", `${profile.nickname}さん、${status.label}。プロフィールを見る${opensBottles ? "。ボトルのお知らせがあります" : ""}`);
+    button.setAttribute("aria-label", `${visitName}、${status.label}。プロフィールを見る${announcesBottle ? "。新しいボトルのお知らせがあります" : ""}`);
     button.style.setProperty("--top", `${phoneLayout ? 18 + row * 19 : 17 + row * 25}%`);
     button.style.setProperty("--static-left", `${phoneLayout ? 6 + column * 30 : 7 + column * 22}%`);
     button.style.setProperty("--route-x-one", `${Math.round(horizontalDirection * routeDistance * 0.34)}px`);
@@ -2160,13 +2164,9 @@ function renderLake() {
     button.innerHTML = `
       ${reactionBubble}
       <span class="fish-motion"><img class="fish-asset" src="${FISH_ASSET_URL}" alt="" /></span>
-      <span class="fish-label"><strong>${escapeHTML(profile.nickname)}${isMe ? "（あなた）" : ""}</strong><small><span class="status-orb ${status.className}"></span>${status.label}</small></span>`;
+      <span class="fish-label"><strong>${escapeHTML(visitName)}</strong><small><span class="status-orb ${status.className}"></span>${status.label}</small></span>`;
     button.addEventListener("click", (event) => {
       createLakeRipple(button);
-      if (event.target.closest("[data-fish-bottle-notice]")) {
-        void openAuthorBottles(presenceItem.user_id);
-        return;
-      }
       openFishDrawer(presenceItem);
     });
     layer.append(button);
@@ -2225,7 +2225,8 @@ function renderAquariumBroadcasts() {
   }
   if (state.lastAnnouncedAquariumReactionId === latestReaction.id) return;
   state.lastAnnouncedAquariumReactionId = latestReaction.id;
-  layer.textContent = `${latestReaction.profile?.nickname ?? "湖の仲間"}：${reactionText(latestReaction.message_code, latestReaction.profile)}`;
+  const senderPresence = activeAquariumPresence().find((presence) => presence.user_id === latestReaction.sender_user_id);
+  layer.textContent = `${lakeVisitName(senderPresence)}：${reactionText(latestReaction.message_code, latestReaction.profile)}`;
 }
 
 function renderMutedUsers() {
@@ -2236,11 +2237,10 @@ function renderMutedUsers() {
     return;
   }
   [...state.mutedUserIds].forEach((userId) => {
-    const profile = state.mutedProfiles.get(userId);
     const button = document.createElement("button");
     button.type = "button";
     button.dataset.unmuteUser = userId;
-    button.textContent = `${profile?.nickname ?? "ミュート中の利用者"}を解除`;
+    button.textContent = "ミュート中の魚を解除";
     container.append(button);
   });
 }
@@ -2370,94 +2370,8 @@ async function openReplyBottle(reply) {
   }
 }
 
-function postsByAuthor(userId) {
-  return state.posts
-    .filter((post) => post.user_id === userId)
-    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-}
-
-async function loadAuthorPosts(userId) {
-  if (!userId || IS_PREVIEW_MODE) return postsByAuthor(userId);
-
-  const posts = await fetchPostRows({ userId, limit: 100 });
-
-  const knownProfile = authorProfile(userId);
-  const profiles = knownProfile ? null : await fetchProfiles([userId]);
-  const profile = knownProfile ?? profiles?.get(userId) ?? null;
-  const authorPosts = (posts ?? []).map((post) => ({
-    ...normalizePost(post),
-    profile,
-  }));
-  const authorPostIds = new Set(authorPosts.map((post) => post.id));
-  state.posts = [
-    ...state.posts.filter((post) => post.user_id !== userId && !authorPostIds.has(post.id)),
-    ...authorPosts,
-  ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-  return authorPosts;
-}
-
-function authorProfile(userId) {
-  return state.aquariumPresence.find((presence) => presence.user_id === userId)?.profile
-    ?? state.posts.find((post) => post.user_id === userId)?.profile
-    ?? (userId === state.user?.id ? state.profile : null);
-}
-
-function renderFishDrawerBottles(userId) {
-  const posts = postsByAuthor(userId);
-  const preview = $("#drawerBottlePreview");
-  $("#drawerBottleCount").textContent = String(posts.length);
-  $("#drawerViewBottlesButton").hidden = posts.length === 0;
-  preview.replaceChildren();
-
-  if (!posts.length) {
-    preview.innerHTML = '<p class="drawer-bottle-empty"><i class="ph ph-bottle" aria-hidden="true"></i><span>この魚が流した公開ボトルは、まだありません。</span></p>';
-    return;
-  }
-
-  posts.slice(0, 2).forEach((post) => {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.dataset.drawerPostId = post.id;
-    button.className = "drawer-bottle-card";
-    button.innerHTML = `
-      <span><small>${escapeHTML(post.category)}</small><time>${escapeHTML(formatRelativeDate(post.created_at))}</time></span>
-      <strong>${escapeHTML(post.title)}</strong>
-      <i class="ph ph-arrow-up-right" aria-hidden="true"></i>`;
-    preview.append(button);
-  });
-}
-
-async function openAuthorBottles(userId) {
-  if (!userId) return;
-  const profile = authorProfile(userId);
-  state.postAuthorUserId = userId;
-  state.postOwnership = "all";
-  state.selectedCategory = "all";
-  state.postSearchQuery = "";
-  $("#postSearchInput").value = "";
-  $("#clearPostSearchButton").hidden = true;
-  $$(".category-chip", $("#categoryFilters")).forEach((chip) => {
-    chip.classList.toggle("active", chip.dataset.category === "all");
-  });
-  $$(".ownership-chip", $("#postOwnershipFilters")).forEach((chip) => {
-    chip.classList.toggle("active", chip.dataset.ownership === "all");
-  });
-  $("#fishDrawer").hidden = true;
-  state.selectedFishPresence = null;
-  showPage("board");
-  renderPosts();
-  showToast(`${profile?.nickname ?? "この仲間"}さんのボトルを表示しています。`, "success");
-  window.setTimeout(() => $("#boardTitle")?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
-  try {
-    await loadAuthorPosts(userId);
-    if (state.postAuthorUserId === userId) renderPosts();
-  } catch (error) {
-    showToast(readableError(error), "error");
-  }
-}
-
 function openFishDrawer(presence) {
-  const profile = presence.profile ?? { nickname: "湖の仲間", grade: "—", major: "—", fish_type: "aqua", interests: [] };
+  const profile = presence.profile ?? { grade: "—", major: "—", fish_type: "aqua", interests: [] };
   const fish = FISH[profile.fish_type] ?? FISH.aqua;
   const isMe = presence.user_id === state.user?.id;
   const status = AQUARIUM_STATUS[presence.status] ?? AQUARIUM_STATUS.social;
@@ -2465,7 +2379,7 @@ function openFishDrawer(presence) {
   state.selectedFishPresence = presence;
   $("#drawerFish").src = FISH_ASSET_URL;
   $("#drawerFish").style.filter = fish.filter;
-  $("#drawerName").textContent = `${profile.nickname}${isMe ? "（あなた）" : ""}`;
+  $("#drawerName").textContent = lakeVisitName(presence);
   $("#drawerMeta").textContent = [
     profile.grade || "区分未設定",
     profile.major || parseInterests(profile.interests)[0] || "分野未設定",
@@ -2478,15 +2392,6 @@ function openFishDrawer(presence) {
   matchBadge.hidden = isMe || profileSimilarity(profile) < 22;
   $("#drawerStatus").innerHTML = `<span class="status-orb ${status.className}"></span>${status.label}`;
   $("#drawerElapsed").textContent = `湖に来て ${formatShortDuration(Date.now() - new Date(presence.joined_at).getTime())}`;
-  renderFishDrawerBottles(presence.user_id);
-  void loadAuthorPosts(presence.user_id)
-    .then(() => {
-      if (state.selectedFishPresence?.user_id === presence.user_id && !$("#fishDrawer").hidden) {
-        renderFishDrawerBottles(presence.user_id);
-      }
-    })
-    .catch((error) => console.error("Failed to load member bottles", error));
-
   const reactionSection = $("#drawerReactionSection");
   const hint = $("#drawerReactionHint");
   reactionSection.hidden = isMe || presence.status === "observe";
@@ -2501,7 +2406,6 @@ function openFishDrawer(presence) {
 function renderPosts() {
   const searchTerms = normalizeSearchText(state.postSearchQuery).split(" ").filter(Boolean);
   const visiblePosts = state.posts.filter((post) => {
-    if (state.postAuthorUserId && post.user_id !== state.postAuthorUserId) return false;
     if (state.selectedCategory !== "all" && post.category !== state.selectedCategory) return false;
     const isOwn = post.user_id === state.user?.id;
     if (state.postOwnership === "mine" && !isOwn) return false;
@@ -2512,17 +2416,11 @@ function renderPosts() {
   const list = $("#postList");
   const boardIsVisible = $("#appView").dataset.activePage === "board";
   const summary = $("#postResultsSummary");
-  const author = state.postAuthorUserId ? authorProfile(state.postAuthorUserId) : null;
-  const authorFilter = $("#postAuthorFilter");
-  authorFilter.hidden = !state.postAuthorUserId;
-  if (state.postAuthorUserId) $("#postAuthorFilterName").textContent = author?.nickname ?? "仲間";
-  const hasFilters = Boolean(state.postAuthorUserId) || state.selectedCategory !== "all" || state.postOwnership !== "all" || searchTerms.length > 0;
+  const hasFilters = state.selectedCategory !== "all" || state.postOwnership !== "all" || searchTerms.length > 0;
   list.replaceChildren();
   $("#postEmpty").hidden = visiblePosts.length > 0;
   summary.textContent = hasFilters
-    ? state.postAuthorUserId
-      ? `${author?.nickname ?? "仲間"}さんのボトルが${visiblePosts.length}件見つかりました`
-      : `${visiblePosts.length}件のボトルが見つかりました`
+    ? `${visiblePosts.length}件のボトルが見つかりました`
     : `${visiblePosts.length}件のボトルが流れています`;
   $("#postEmptyTitle").textContent = state.posts.length ? "条件に合うボトルがありません" : "まだボトルがありません";
   $("#postEmptyMessage").textContent = state.posts.length
@@ -2537,7 +2435,7 @@ function renderPosts() {
     card.classList.toggle("is-own-post", isOwn);
     const liked = state.likedPostIds.has(post.id);
     const replyCount = state.replies.filter((reply) => reply.post_id === post.id).length;
-    const author = isOwn ? "あなた" : post.profile?.nickname ?? "湖の仲間";
+    const author = isOwn ? "あなた" : "匿名の魚";
     const excerpt = post.body.length > 130 ? `${post.body.slice(0, 130)}…` : post.body;
     const fieldTags = parseFieldTags(post.field_tags);
     const hasExternalLink = Boolean(normalizeExternalUrl(post.external_url));
@@ -2705,7 +2603,7 @@ function openPost(postId, show = true) {
   const isOwner = post.user_id === state.user.id;
   $("#detailBadges").innerHTML = `<span class="post-badge">${escapeHTML(post.category)}</span><span class="post-badge type">${escapeHTML(post.post_type)}</span>${isOwner ? '<span class="post-badge owner"><i class="ph ph-user" aria-hidden="true"></i> 自分のボトル</span>' : ""}`;
   $("#detailTitle").textContent = post.title;
-  $("#detailMeta").textContent = `${isOwner ? "あなた" : post.profile?.nickname ?? "湖の仲間"}・${post.profile?.grade ?? "学年未設定"}・${formatRelativeDate(post.created_at)}`;
+  $("#detailMeta").textContent = `${isOwner ? "あなた" : "匿名の魚"}・${post.profile?.grade ?? "学年未設定"}・${formatRelativeDate(post.created_at)}`;
   const detailFieldTags = parseFieldTags(post.field_tags);
   $("#detailFieldTags").innerHTML = detailFieldTags.map((tag) => `<button class="post-field-tag" type="button" data-search-tag="${escapeHTML(tag)}">${escapeHTML(tag)}</button>`).join("");
   $("#detailFieldTags").hidden = detailFieldTags.length === 0;
@@ -2923,6 +2821,7 @@ function renderReplies(postId) {
   }
 
   const repliesById = new Map(replies.map((reply) => [reply.id, reply]));
+  const participantLabels = threadParticipantLabels(postId);
   const childrenByParent = new Map();
   replies.forEach((reply) => {
     if (!reply.parent_reply_id || !repliesById.has(reply.parent_reply_id)) return;
@@ -2943,14 +2842,14 @@ function renderReplies(postId) {
     item.style.setProperty("--reply-indent", `${Math.min(depth, 4) * 24}px`);
     item.style.setProperty("--reply-indent-mobile", `${Math.min(depth, 3) * 12}px`);
     if (reply.parent_reply_id) item.classList.add("is-thread-reply");
-    const author = reply.profile?.nickname ?? "湖の仲間";
+    const author = threadAuthorLabel(reply.sender_user_id, postId, participantLabels);
     const meta = [reply.profile?.grade, reply.profile?.major].filter(Boolean).join("・");
     const isSender = reply.sender_user_id === state.user?.id;
     const canReply = state.threadedRepliesAvailable && reply.recipient_user_id === state.user?.id;
     const isEditing = isSender && state.editingReplyId === reply.id;
     const isReplying = canReply && state.replyingToReplyId === reply.id;
     const parentReply = reply.parent_reply_id ? repliesById.get(reply.parent_reply_id) : null;
-    const parentAuthor = parentReply?.profile?.nickname ?? "相手";
+    const parentAuthor = parentReply ? threadAuthorLabel(parentReply.sender_user_id, postId, participantLabels) : "相手";
 
     if (isEditing) {
       item.classList.add("editing");
@@ -2973,7 +2872,7 @@ function renderReplies(postId) {
         !isSender ? `<button type="button" class="reply-action-button" data-reply-action="report" data-reply-id="${escapeHTML(reply.id)}"><i class="ph ph-flag" aria-hidden="true"></i> 通報</button>` : "",
       ].filter(Boolean).join("");
       item.innerHTML = `
-        ${parentReply ? `<p class="reply-context"><i class="ph ph-arrow-bend-down-right" aria-hidden="true"></i> ${escapeHTML(parentAuthor)}さんへの返信</p>` : ""}
+        ${parentReply ? `<p class="reply-context"><i class="ph ph-arrow-bend-down-right" aria-hidden="true"></i> ${escapeHTML(parentAuthor)}への返信</p>` : ""}
         <p class="reply-body">${escapeHTML(reply.body)}</p>
         <div class="reply-item-meta">
           <footer>${escapeHTML(author)}${meta ? `・${escapeHTML(meta)}` : ""}・${formatRelativeDate(reply.created_at)}</footer>
@@ -2981,10 +2880,10 @@ function renderReplies(postId) {
         </div>
         ${isReplying ? `
           <form class="nested-reply-form" data-nested-reply-form="${escapeHTML(reply.id)}">
-            <label for="nested-reply-${escapeHTML(reply.id)}">${escapeHTML(author)}さんに返信</label>
+            <label for="nested-reply-${escapeHTML(reply.id)}">${escapeHTML(author)}に返信</label>
             <textarea id="nested-reply-${escapeHTML(reply.id)}" data-nested-reply-body="${escapeHTML(reply.id)}" rows="3" maxlength="1000" placeholder="返信内容を入力" required></textarea>
             <div class="nested-reply-actions">
-              <p><i class="ph ph-drop" aria-hidden="true"></i> 内容はここで全員が確認でき、返信ボトルは${escapeHTML(author)}さんの湖だけに届きます。</p>
+              <p><i class="ph ph-drop" aria-hidden="true"></i> 内容はここで全員が確認でき、返信ボトルは${escapeHTML(author)}の湖だけに届きます。</p>
               <div>
                 <button type="button" class="reply-action-button cancel" data-reply-action="cancel-reply" data-reply-id="${escapeHTML(reply.id)}">キャンセル</button>
                 <button type="submit" class="reply-action-button save"><span class="button-label">返信を届ける</span><span class="spinner" aria-hidden="true"></span></button>
@@ -3110,7 +3009,7 @@ async function submitNestedReply(event) {
     renderPosts();
     renderBottles();
     renderMyPosts();
-    showToast(`${parentReply.profile?.nickname ?? "相手"}さんへ返信を届けました。`, "success");
+    showToast("返信を届けました。", "success");
   } catch (error) {
     showToast(readableError(error), "error");
   } finally {
@@ -3281,7 +3180,7 @@ function renderProfileIdentity() {
   $("#headerFish").firstElementChild.style.filter = fish.filter;
   $("#myFish").src = FISH_ASSET_URL;
   $("#myFish").style.filter = fish.filter;
-  $("#myNickname").textContent = state.profile.nickname;
+  $("#myNickname").textContent = "あなたの魚";
   $("#myMeta").textContent = [state.profile.grade, state.profile.major].filter(Boolean).join("・");
   const interests = parseInterests(state.profile.interests);
   $("#myInterests").innerHTML = interests.map((interest) => `<span>${escapeHTML(interest)}</span>`).join("");
@@ -3316,7 +3215,6 @@ function renderMyPosts() {
 }
 
 function openProfileEditor() {
-  $("#editNickname").value = state.profile.nickname;
   $("#editGrade").value = state.profile.grade;
   $("#editMajor").value = state.profile.major ?? "";
   $("#editInterests").value = parseInterests(state.profile.interests).join("、");
@@ -3336,7 +3234,6 @@ async function saveEditedProfile(event) {
   try {
     const grade = $("#editGrade").value;
     const updates = {
-      nickname: $("#editNickname").value.trim(),
       grade,
       major: isSchoolGrade(grade) ? null : $("#editMajor").value.trim() || null,
       interests: parseInterests($("#editInterests").value),
@@ -3466,7 +3363,7 @@ function renderAdminDashboard(data) {
 
   $("#adminReportList").innerHTML = (data.reports ?? []).length ? data.reports.map((report) => `<article><div><span class="admin-status status-${escapeHTML(report.status)}">${escapeHTML(report.status)}</span><strong>${escapeHTML(report.reason)}</strong><p>${escapeHTML(report.detail || "補足なし")}</p><small>${escapeHTML(report.target_type)}・${formatDate(report.created_at)}</small></div><div class="admin-row-actions"><button type="button" data-admin-action="resolve-report" data-report-id="${escapeHTML(report.id)}" data-status="resolved">対応済み</button><button type="button" data-admin-action="resolve-report" data-report-id="${escapeHTML(report.id)}" data-status="dismissed">却下</button></div></article>`).join("") : '<p class="admin-empty">未確認の通報はありません。</p>';
 
-  $("#adminUserList").innerHTML = (data.users ?? []).map((user) => `<article><div><span class="admin-status ${user.status === "suspended" ? "status-open" : "status-resolved"}">${user.status === "suspended" ? "利用停止" : "利用中"}</span><strong>${escapeHTML(user.nickname || "未設定")}</strong><p>${escapeHTML([user.grade, user.major, user.graduation_year ? `${user.graduation_year}年卒` : ""].filter(Boolean).join("・") || "属性未設定")}</p><small>最終アクセス ${user.last_accessed_at ? formatDate(user.last_accessed_at) : "記録なし"}</small></div><div class="admin-row-actions"><button type="button" data-admin-action="set-user-status" data-user-id="${escapeHTML(user.user_id)}" data-status="${user.status === "suspended" ? "active" : "suspended"}">${user.status === "suspended" ? "解除" : "停止"}</button></div></article>`).join("") || '<p class="admin-empty">利用者データはまだありません。</p>';
+  $("#adminUserList").innerHTML = (data.users ?? []).map((user) => `<article><div><span class="admin-status ${user.status === "suspended" ? "status-open" : "status-resolved"}">${user.status === "suspended" ? "利用停止" : "利用中"}</span><strong>ユーザー ${escapeHTML(String(user.user_id).slice(0, 8))}</strong><p>${escapeHTML([user.grade, user.major, user.graduation_year ? `${user.graduation_year}年卒` : ""].filter(Boolean).join("・") || "属性未設定")}</p><small>最終アクセス ${user.last_accessed_at ? formatDate(user.last_accessed_at) : "記録なし"}</small></div><div class="admin-row-actions"><button type="button" data-admin-action="set-user-status" data-user-id="${escapeHTML(user.user_id)}" data-status="${user.status === "suspended" ? "active" : "suspended"}">${user.status === "suspended" ? "解除" : "停止"}</button></div></article>`).join("") || '<p class="admin-empty">利用者データはまだありません。</p>';
 
   $("#adminPostModerationList").innerHTML = (data.recent_posts ?? []).map((post) => `<article><div><span class="admin-status ${post.moderation_status === "hidden" ? "status-open" : "status-resolved"}">${post.moderation_status === "hidden" ? "非表示" : "公開中"}</span><strong>${escapeHTML(post.title)}</strong><p>${escapeHTML(post.body)}</p><small>${escapeHTML(post.category)}・${formatDate(post.created_at)}</small></div><div class="admin-row-actions"><button type="button" data-admin-action="moderate-content" data-target-type="post" data-target-id="${escapeHTML(post.id)}" data-status="${post.moderation_status === "hidden" ? "visible" : "hidden"}">${post.moderation_status === "hidden" ? "再公開" : "非表示"}</button></div></article>`).join("") || '<p class="admin-empty">ボトルはまだありません。</p>';
   $("#adminReplyModerationList").innerHTML = (data.recent_replies ?? []).map((reply) => `<article><div><span class="admin-status ${reply.moderation_status === "hidden" ? "status-open" : "status-resolved"}">${reply.moderation_status === "hidden" ? "非表示" : "公開中"}</span><strong>返信</strong><p>${escapeHTML(reply.body)}</p><small>${formatDate(reply.created_at)}</small></div><div class="admin-row-actions"><button type="button" data-admin-action="moderate-content" data-target-type="reply" data-target-id="${escapeHTML(reply.id)}" data-status="${reply.moderation_status === "hidden" ? "visible" : "hidden"}">${reply.moderation_status === "hidden" ? "再公開" : "非表示"}</button></div></article>`).join("") || '<p class="admin-empty">返信はまだありません。</p>';
@@ -3581,7 +3478,6 @@ function bootstrapPreviewMode() {
   const userId = "preview-me";
   const me = {
     user_id: userId,
-    nickname: "みなも",
     grade: "大学2年",
     major: "情報工学",
     interests: ["AI", "データ分析", "ロボット"],
@@ -3589,10 +3485,10 @@ function bootstrapPreviewMode() {
     bio: "AIとロボットを学びながら、研究室選びを考えています。",
   };
   const members = [
-    { user_id: "preview-a", nickname: "あおい", grade: "高校3年", major: null, interests: ["建築", "都市計画", "環境デザイン"], fish_type: "aqua", bio: "建築とまちづくりに興味があります。" },
-    { user_id: "preview-b", nickname: "りこ", grade: "大学1年", major: "生命科学", interests: ["細胞", "医療"], fish_type: "mint", bio: "実験レポートと仲良くなりたいです。" },
-    { user_id: "preview-c", nickname: "すず", grade: "大学3年", major: "応用化学", interests: ["材料", "有機化学"], fish_type: "lemon", bio: "材料系の研究室を探しています。" },
-    { user_id: "preview-d", nickname: "しおり", grade: "大学院", major: "機械工学", interests: ["ロボット", "制御工学"], fish_type: "lilac", bio: "ロボット制御の研究をしています。" },
+    { user_id: "preview-a", grade: "高校3年", major: null, interests: ["建築", "都市計画", "環境デザイン"], fish_type: "aqua", bio: "建築とまちづくりに興味があります。" },
+    { user_id: "preview-b", grade: "大学1年", major: "生命科学", interests: ["細胞", "医療"], fish_type: "mint", bio: "実験レポートと仲良くなりたいです。" },
+    { user_id: "preview-c", grade: "大学3年", major: "応用化学", interests: ["材料", "有機化学"], fish_type: "lemon", bio: "材料系の研究室を探しています。" },
+    { user_id: "preview-d", grade: "大学院", major: "機械工学", interests: ["ロボット", "制御工学"], fish_type: "lilac", bio: "ロボット制御の研究をしています。" },
   ];
 
   state.session = { user: { id: userId } };

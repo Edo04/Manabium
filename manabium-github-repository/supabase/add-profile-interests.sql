@@ -17,6 +17,6 @@ begin
 end $$;
 
 revoke update on table public.profiles from authenticated;
-grant update (nickname, grade, major, interests, fish_type) on table public.profiles to authenticated;
+grant update (grade, major, interests, fish_type) on table public.profiles to authenticated;
 
 select pg_notify('pgrst', 'reload schema');
