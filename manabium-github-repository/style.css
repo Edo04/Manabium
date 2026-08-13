@@ -2108,6 +2108,297 @@ textarea:focus {
 .aquarium-quick-messages button:disabled,
 .drawer-reaction-buttons button:disabled { cursor: default; opacity: 0.42; }
 
+.aquarium-message-dock {
+  display: flex;
+  min-height: 78px;
+  padding: 13px 16px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: rgba(251, 252, 248, 0.96);
+  border-top: 1px solid rgba(58, 98, 105, 0.1);
+}
+
+.aquarium-message-dock-copy,
+.aquarium-message-dock-actions,
+.aquarium-message-dock-copy > span:last-child {
+  display: flex;
+  align-items: center;
+}
+
+.aquarium-message-dock-copy { gap: 11px; }
+.aquarium-message-dock-copy > span:last-child { align-items: flex-start; flex-direction: column; }
+.aquarium-message-dock-copy strong { color: #365e65; font-size: 0.75rem; }
+.aquarium-message-dock-copy small { color: #819497; font-size: 0.6rem; }
+
+.message-dock-icon {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  color: #4f8285;
+  background: linear-gradient(145deg, #e7f5f2, #f8f3eb);
+  border: 1px solid rgba(62, 103, 110, 0.1);
+  border-radius: 14px;
+  font-size: 1.1rem;
+  place-items: center;
+}
+
+.aquarium-message-dock-actions { gap: 8px; }
+.shared-bottles-button,
+.lake-message-button {
+  position: relative;
+  display: inline-flex;
+  min-height: 43px;
+  padding: 9px 14px;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  cursor: pointer;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.shared-bottles-button {
+  color: #52747a;
+  background: #f3f7f4;
+  border: 1px solid rgba(62, 103, 110, 0.12);
+}
+
+.shared-bottles-button b {
+  display: grid;
+  min-width: 19px;
+  height: 19px;
+  padding: 0 5px;
+  color: white;
+  background: #db8c80;
+  border-radius: 99px;
+  font-size: 0.55rem;
+  place-items: center;
+}
+
+.lake-message-button {
+  color: white;
+  background: linear-gradient(135deg, #4f8587, #376b71);
+  border: 0;
+  box-shadow: 0 8px 22px rgba(45, 93, 99, 0.18);
+}
+
+.shared-bottles-button:disabled,
+.lake-message-button:disabled { cursor: default; opacity: 0.45; }
+
+.lake-message-modal { width: min(calc(100% - 28px), 720px); }
+.lake-message-modal > article,
+.bottle-share-modal > article,
+.shared-bottles-modal > article { padding: clamp(22px, 4vw, 34px); }
+.lake-message-heading p:last-child { margin: 4px 0 0; color: #7a8e92; font-size: 0.72rem; }
+
+.lake-message-categories {
+  display: grid;
+  padding: 5px;
+  margin: 22px 0 17px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 5px;
+  background: #f1f6f3;
+  border-radius: 18px;
+}
+
+.lake-message-categories button {
+  display: grid;
+  min-height: 62px;
+  padding: 8px 6px;
+  cursor: pointer;
+  place-items: center;
+  gap: 3px;
+  color: #6c8488;
+  background: transparent;
+  border: 0;
+  border-radius: 14px;
+  font-size: 0.63rem;
+  font-weight: 800;
+}
+
+.lake-message-categories button i { font-size: 1rem; }
+.lake-message-categories button.active {
+  color: #355f66;
+  background: #fffdfa;
+  box-shadow: 0 5px 15px rgba(46, 79, 84, 0.09);
+}
+
+.lake-message-panel {
+  min-height: 246px;
+  padding: 4px 1px;
+}
+
+.lake-message-options { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+.lake-message-options button {
+  display: grid;
+  min-height: 66px;
+  padding: 12px 13px;
+  align-items: center;
+  grid-template-columns: 34px minmax(0, 1fr) 22px;
+  gap: 9px;
+  cursor: pointer;
+  color: #3f686e;
+  background: #fbfcf8;
+  border: 1px solid rgba(64, 104, 109, 0.13);
+  border-radius: 17px;
+  font-size: 0.71rem;
+  font-weight: 750;
+  text-align: left;
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.lake-message-options button > i:first-child {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  color: #568b8b;
+  background: #eaf5f2;
+  border-radius: 11px;
+  font-size: 1rem;
+  place-items: center;
+}
+
+.lake-message-options .send-mark { color: #9ab0b2; }
+.lake-message-options button:hover {
+  border-color: rgba(61, 113, 116, 0.27);
+  box-shadow: 0 9px 22px rgba(43, 78, 83, 0.09);
+  transform: translateY(-2px);
+}
+
+.lake-message-panel-intro,
+.lake-message-empty,
+.bottle-share-empty {
+  display: flex;
+  padding: 16px;
+  align-items: center;
+  gap: 12px;
+  color: #5c777c;
+  background: linear-gradient(135deg, #edf7f4, #faf7f0);
+  border-radius: 17px;
+}
+
+.lake-message-panel-intro > span {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  background: white;
+  border-radius: 13px;
+  font-size: 1.15rem;
+  place-items: center;
+}
+
+.lake-message-panel-intro div,
+.lake-message-empty p,
+.bottle-share-empty p { display: grid; margin: 0; gap: 2px; }
+.lake-message-panel-intro small,
+.lake-message-empty span,
+.bottle-share-empty span { color: #809296; font-size: 0.64rem; }
+.lake-message-empty,
+.bottle-share-empty { min-height: 150px; justify-content: center; text-align: left; }
+.lake-message-empty > i,
+.bottle-share-empty > i { font-size: 1.8rem; }
+
+.bottle-share-entry-grid { display: grid; margin-top: 11px; grid-template-columns: 1fr 1fr; gap: 10px; }
+.bottle-share-entry-grid button {
+  display: grid;
+  min-height: 105px;
+  padding: 17px;
+  align-items: center;
+  grid-template-columns: 40px 1fr;
+  gap: 12px;
+  cursor: pointer;
+  color: #446b71;
+  background: #fffdfa;
+  border: 1px solid rgba(64, 104, 109, 0.13);
+  border-radius: 18px;
+  text-align: left;
+}
+.bottle-share-entry-grid button > i { font-size: 1.3rem; }
+.bottle-share-entry-grid button > span { display: grid; gap: 3px; }
+.bottle-share-entry-grid small { color: #839498; font-size: 0.61rem; }
+
+.bottle-share-filters {
+  display: inline-flex;
+  padding: 4px;
+  margin: 17px 0 13px;
+  gap: 4px;
+  background: #f0f5f2;
+  border-radius: 999px;
+}
+.bottle-share-filters button {
+  min-height: 36px;
+  padding: 7px 13px;
+  cursor: pointer;
+  color: #71868a;
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+  font-size: 0.66rem;
+  font-weight: 800;
+}
+.bottle-share-filters button.active { color: #3f666c; background: #fffdfa; box-shadow: 0 4px 12px rgba(48, 80, 84, 0.08); }
+.bottle-share-list,
+.shared-bottles-list { display: grid; max-height: min(52vh, 470px); overflow: auto; gap: 8px; }
+
+.bottle-share-item {
+  display: grid;
+  padding: 13px;
+  align-items: center;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  gap: 11px;
+  background: #fcfcf8;
+  border: 1px solid rgba(63, 104, 109, 0.11);
+  border-radius: 17px;
+}
+.bottle-share-item-art,
+.shared-bottle-row-art {
+  display: grid;
+  width: 40px;
+  height: 40px;
+  color: #b77d72;
+  background: #fff1eb;
+  border-radius: 13px;
+  place-items: center;
+}
+.bottle-share-item > div { min-width: 0; }
+.bottle-share-item strong { display: block; margin: 3px 0; overflow: hidden; color: #3e646b; font-size: 0.75rem; text-overflow: ellipsis; white-space: nowrap; }
+.bottle-share-item p { display: -webkit-box; margin: 0; overflow: hidden; color: #7d9094; font-size: 0.61rem; -webkit-box-orient: vertical; -webkit-line-clamp: 1; }
+.bottle-share-item-badges { display: flex; gap: 4px; }
+.bottle-share-item-badges small { padding: 2px 6px; color: #668084; background: #edf4f1; border-radius: 99px; font-size: 0.52rem; }
+.bottle-share-item > button {
+  min-height: 38px;
+  padding: 7px 10px;
+  cursor: pointer;
+  color: #456e73;
+  background: white;
+  border: 1px solid rgba(62, 103, 110, 0.15);
+  border-radius: 12px;
+  font-size: 0.61rem;
+  font-weight: 800;
+}
+
+.shared-bottle-row {
+  display: grid;
+  width: 100%;
+  padding: 12px;
+  align-items: center;
+  grid-template-columns: 42px minmax(0, 1fr) 22px;
+  gap: 11px;
+  cursor: pointer;
+  color: #45696f;
+  background: #fcfcf8;
+  border: 1px solid rgba(63, 104, 109, 0.11);
+  border-radius: 17px;
+  text-align: left;
+}
+.shared-bottle-row > span:nth-child(2) { display: grid; min-width: 0; gap: 2px; }
+.shared-bottle-row small { color: #8a7773; font-size: 0.56rem; }
+.shared-bottle-row strong { overflow: hidden; font-size: 0.74rem; text-overflow: ellipsis; white-space: nowrap; }
+.shared-bottle-row em { color: #87989b; font-size: 0.56rem; font-style: normal; }
+.fish-reaction-bubble.is-bottle-notice { cursor: pointer; }
+
 #aquariumPage .lake-hint {
   display: block;
   position: static;
@@ -2200,7 +2491,7 @@ textarea:focus {
 .focus-mode-note span { font-size: 0.68rem; }
 
 #aquariumPage.is-focus-mode .aquarium-control-deck,
-#aquariumPage.is-focus-mode .aquarium-quick-messages,
+#aquariumPage.is-focus-mode .aquarium-message-dock,
 #aquariumPage.is-focus-mode .lake-hint {
   opacity: 0.62;
 }
@@ -2274,10 +2565,24 @@ textarea:focus {
     border-top: 1px solid rgba(77, 114, 119, 0.12);
     border-right: 1px solid rgba(77, 114, 119, 0.12);
   }
-  .aquarium-quick-messages { padding: 11px; justify-content: flex-start; overflow-x: auto; flex-wrap: nowrap; scrollbar-width: none; }
-  .aquarium-quick-messages::-webkit-scrollbar { display: none; }
-  .aquarium-quick-messages > span,
-  .aquarium-quick-messages button { flex: 0 0 auto; }
+  .aquarium-message-dock { padding: 11px; align-items: stretch; flex-direction: column; gap: 10px; }
+  .aquarium-message-dock-copy small { display: none; }
+  .aquarium-message-dock-actions { display: grid; width: 100%; grid-template-columns: 1fr 1fr; }
+  .shared-bottles-button,
+  .lake-message-button { width: 100%; min-height: 47px; }
+  .lake-message-modal { width: calc(100% - 20px); }
+  .lake-message-modal > article,
+  .bottle-share-modal > article,
+  .shared-bottles-modal > article { padding: 20px 16px; }
+  .lake-message-categories { margin: 18px 0 13px; }
+  .lake-message-categories button { min-height: 58px; font-size: 0.58rem; }
+  .lake-message-panel { min-height: 260px; }
+  .lake-message-options { grid-template-columns: 1fr; }
+  .lake-message-options button { min-height: 58px; }
+  .bottle-share-entry-grid { grid-template-columns: 1fr; }
+  .bottle-share-entry-grid button { min-height: 82px; }
+  .bottle-share-item { grid-template-columns: 38px minmax(0, 1fr); }
+  .bottle-share-item > button { min-height: 42px; grid-column: 1 / -1; }
   #aquariumPage .lake-hint { padding: 2px 14px 13px; }
 
   .aquarium-study-dock {

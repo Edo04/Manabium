@@ -57,17 +57,55 @@ create table if not exists public.aquarium_reactions (
   id uuid primary key default gen_random_uuid(),
   sender_user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
   target_user_id uuid references auth.users(id) on delete cascade,
+  post_id uuid references public.posts(id) on delete cascade,
   message_code text not null check (message_code in (
-    'hello', 'starting', 'new_bottle', 'question_bottle', 'info_bottle',
+    'hello', 'starting', 'share_grade', 'share_major',
     'share_interest_1', 'share_interest_2', 'share_interest_3',
+    'ask_bottle_any', 'ask_bottle_class', 'ask_bottle_research', 'ask_bottle_career', 'ask_bottle_event',
+    'share_bottle_mine', 'share_bottle_recommend',
     'good_work', 'taking_break',
-    'together', 'same_field', 'support', 'interesting', 'view_bottles', 'good_work_direct'
+    'together', 'same_field', 'support', 'interesting', 'recommend_bottle_direct', 'good_work_direct'
   )),
   created_at timestamptz not null default now(),
   constraint aquarium_reaction_not_self check (
     target_user_id is null or sender_user_id <> target_user_id
   )
 );
+
+alter table public.aquarium_reactions
+  add column if not exists post_id uuid references public.posts(id) on delete cascade;
+do $$
+declare
+  constraint_name text;
+begin
+  for constraint_name in
+    select c.conname
+    from pg_constraint c
+    where c.conrelid = 'public.aquarium_reactions'::regclass
+      and c.contype = 'c'
+      and pg_get_constraintdef(c.oid) ilike '%message_code%'
+  loop
+    execute format('alter table public.aquarium_reactions drop constraint %I', constraint_name);
+  end loop;
+end $$;
+update public.aquarium_reactions
+set message_code = case message_code
+  when 'new_bottle' then 'ask_bottle_any'
+  when 'question_bottle' then 'ask_bottle_any'
+  when 'info_bottle' then 'ask_bottle_any'
+  when 'view_bottles' then 'recommend_bottle_direct'
+  else message_code
+end
+where message_code in ('new_bottle', 'question_bottle', 'info_bottle', 'view_bottles');
+alter table public.aquarium_reactions
+  add constraint aquarium_reactions_message_code_check check (message_code in (
+    'hello', 'starting', 'share_grade', 'share_major',
+    'share_interest_1', 'share_interest_2', 'share_interest_3',
+    'ask_bottle_any', 'ask_bottle_class', 'ask_bottle_research', 'ask_bottle_career', 'ask_bottle_event',
+    'share_bottle_mine', 'share_bottle_recommend',
+    'good_work', 'taking_break',
+    'together', 'same_field', 'support', 'interesting', 'recommend_bottle_direct', 'good_work_direct'
+  ));
 
 create index if not exists aquarium_reactions_created_idx
   on public.aquarium_reactions (created_at desc);
@@ -77,6 +115,9 @@ create index if not exists aquarium_reactions_sender_created_idx
 
 create index if not exists aquarium_reactions_target_created_idx
   on public.aquarium_reactions (target_user_id, created_at desc);
+create index if not exists aquarium_reactions_post_created_idx
+  on public.aquarium_reactions (post_id, created_at desc)
+  where post_id is not null;
 
 -- owner_user_id本人の画面からだけ参照・変更できるミュート一覧です。
 create table if not exists public.aquarium_mutes (
@@ -148,6 +189,7 @@ declare
   sender_status text;
   target_status text;
   target_accepts boolean;
+  shared_post_owner uuid;
 begin
   if auth.uid() is null then
     raise exception 'Authentication required';
@@ -167,11 +209,26 @@ begin
 
   if new.target_user_id is null then
     if new.message_code not in (
-      'hello', 'starting', 'new_bottle', 'question_bottle', 'info_bottle',
+      'hello', 'starting', 'share_grade', 'share_major',
       'share_interest_1', 'share_interest_2', 'share_interest_3',
+      'ask_bottle_any', 'ask_bottle_class', 'ask_bottle_research', 'ask_bottle_career', 'ask_bottle_event',
+      'share_bottle_mine', 'share_bottle_recommend',
       'good_work', 'taking_break'
     ) then
       raise exception 'Invalid aquarium-wide message';
+    end if;
+    if new.message_code in ('share_bottle_mine', 'share_bottle_recommend') then
+      if new.post_id is null then raise exception 'Bottle share requires a post'; end if;
+      select p.user_id into shared_post_owner from public.posts p where p.id = new.post_id;
+      if shared_post_owner is null then raise exception 'Shared bottle was not found'; end if;
+      if new.message_code = 'share_bottle_mine' and shared_post_owner <> auth.uid() then
+        raise exception 'Only your own bottle can be shared as yours';
+      end if;
+      if new.message_code = 'share_bottle_recommend' and shared_post_owner = auth.uid() then
+        raise exception 'Use own bottle sharing for your post';
+      end if;
+    elsif new.post_id is not null then
+      raise exception 'This message cannot attach a bottle';
     end if;
     if exists (
       select 1 from public.aquarium_reactions r
@@ -180,13 +237,22 @@ begin
     ) then
       raise exception 'Reaction cooldown';
     end if;
+    if new.post_id is not null and exists (
+      select 1 from public.aquarium_reactions r
+      where r.sender_user_id = auth.uid()
+        and r.post_id = new.post_id
+        and r.created_at > now() - interval '10 minutes'
+    ) then
+      raise exception 'Bottle share cooldown';
+    end if;
   else
     if new.target_user_id = auth.uid() then
       raise exception 'Cannot react to yourself';
     end if;
-    if new.message_code not in ('together', 'same_field', 'support', 'interesting', 'view_bottles', 'good_work_direct') then
+    if new.message_code not in ('together', 'same_field', 'support', 'interesting', 'recommend_bottle_direct', 'good_work_direct') then
       raise exception 'Invalid direct reaction';
     end if;
+    if new.post_id is not null then raise exception 'Direct reactions cannot attach a bottle'; end if;
 
     select p.status into target_status
     from public.aquarium_presence p
@@ -297,7 +363,7 @@ drop policy if exists "Authenticated users can view recent aquarium reactions" o
 create policy "Authenticated users can view recent aquarium reactions"
 on public.aquarium_reactions for select
 to authenticated
-using (created_at > now() - interval '30 seconds');
+using (created_at > now() - interval '6 hours');
 
 drop policy if exists "Users can send aquarium reactions as themselves" on public.aquarium_reactions;
 create policy "Users can send aquarium reactions as themselves"
@@ -337,7 +403,7 @@ grant insert (participate_as_fish, receive_reactions, default_status) on table p
 grant update (participate_as_fish, receive_reactions, default_status) on table public.aquarium_preferences to authenticated;
 
 grant select on table public.aquarium_reactions to authenticated;
-grant insert (target_user_id, message_code) on table public.aquarium_reactions to authenticated;
+grant insert (target_user_id, message_code, post_id) on table public.aquarium_reactions to authenticated;
 
 grant select, delete on table public.aquarium_mutes to authenticated;
 grant insert (owner_user_id, muted_user_id) on table public.aquarium_mutes to authenticated;

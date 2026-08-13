@@ -27,8 +27,8 @@
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.2/src/regular/style.css"
     />
-    <link rel="stylesheet" href="./style.css?v=20260813-anonymous-identity-1" />
-    <script type="module" src="./app.js?v=20260813-anonymous-identity-1"></script>
+    <link rel="stylesheet" href="./style.css?v=20260813-bottle-sharing-1" />
+    <script type="module" src="./app.js?v=20260813-bottle-sharing-1"></script>
   </head>
   <body>
     <div class="ambient ambient-one" aria-hidden="true"></div>
@@ -401,6 +401,7 @@
                 <option>大学3年</option>
                 <option>大学4年</option>
                 <option>大学院</option>
+                <option>既卒・社会人</option>
                 <option>その他</option>
               </select>
             </label>
@@ -613,20 +614,21 @@
                 <p><strong>いまは静かな湖です</strong><span>あなたの魚が最初の一匹として泳ぎます。</span></p>
               </div>
             </div>
-            <div id="aquariumQuickMessages" class="aquarium-quick-messages" aria-label="湖全体への定型文">
-              <span>湖のみんなへ</span>
-              <button type="button" data-global-reaction="hello">こんにちは</button>
-              <button type="button" data-global-reaction="starting">湖に来ました</button>
-              <button class="quick-message-featured" type="button" data-global-reaction="new_bottle"><i class="ph ph-envelope-simple-open" aria-hidden="true"></i> 新しいボトルを流しました</button>
-              <button class="quick-message-featured" type="button" data-global-reaction="question_bottle"><i class="ph ph-question" aria-hidden="true"></i> 質問ボトルを流しました</button>
-              <button class="quick-message-featured" type="button" data-global-reaction="info_bottle"><i class="ph ph-info" aria-hidden="true"></i> 情報ボトルを流しました</button>
-              <button type="button" data-global-reaction="good_work">またね</button>
-              <button type="button" data-global-reaction="taking_break">少し離れます</button>
-              <span class="quick-message-divider" aria-hidden="true"></span>
-              <span id="interestMessageLabel">興味を伝える</span>
-              <button type="button" data-global-reaction="share_interest_1" data-interest-slot="0" hidden></button>
-              <button type="button" data-global-reaction="share_interest_2" data-interest-slot="1" hidden></button>
-              <button type="button" data-global-reaction="share_interest_3" data-interest-slot="2" hidden></button>
+            <div id="aquariumMessageDock" class="aquarium-message-dock" aria-label="湖で交流する">
+              <div class="aquarium-message-dock-copy">
+                <span class="message-dock-icon"><i class="ph ph-chat-circle-dots" aria-hidden="true"></i></span>
+                <span><strong>湖のみんなと話す</strong><small>カテゴリから安心な定型文を選べます</small></span>
+              </div>
+              <div class="aquarium-message-dock-actions">
+                <button id="openSharedBottlesButton" class="shared-bottles-button" type="button">
+                  <i class="ph ph-waves" aria-hidden="true"></i>
+                  <span>紹介されたボトル</span>
+                  <b id="sharedBottlesCount" hidden>0</b>
+                </button>
+                <button id="openLakeMessageButton" class="lake-message-button" type="button">
+                  <i class="ph ph-paper-plane-tilt" aria-hidden="true"></i> メッセージ
+                </button>
+              </div>
             </div>
             <div class="lake-community-guide" aria-label="湖の使い方">
               <p><i class="ph ph-fish-simple" aria-hidden="true"></i><span><strong>魚は、今この湖にいる仲間</strong><small>タップするとプロフィールと定型リアクションを確認できます</small></span></p>
@@ -652,7 +654,7 @@
                   <button type="button" data-direct-reaction="same_field">同じ分野です</button>
                   <button type="button" data-direct-reaction="support">応援しています</button>
                   <button type="button" data-direct-reaction="interesting">その分野、気になります</button>
-                  <button type="button" data-direct-reaction="view_bottles">ボトルも見てみたいです</button>
+                  <button type="button" data-direct-reaction="recommend_bottle_direct">おすすめのボトルはありますか？</button>
                   <button type="button" data-direct-reaction="good_work_direct">また話そう</button>
                 </div>
                 <p id="drawerReactionHint" class="drawer-reaction-hint"></p>
@@ -847,6 +849,58 @@
         </button>
       </nav>
     </div>
+
+    <dialog id="lakeMessageDialog" class="modal lake-message-modal">
+      <article>
+        <div class="modal-heading lake-message-heading">
+          <div>
+            <p class="eyebrow">LAKE MESSAGE</p>
+            <h2>湖へメッセージを送る</h2>
+            <p>カテゴリを選んで、送りたい定型文を選びます。</p>
+          </div>
+          <button class="modal-close" type="button" data-close-dialog="lakeMessageDialog" aria-label="閉じる">×</button>
+        </div>
+        <div id="lakeMessageCategories" class="lake-message-categories" role="tablist" aria-label="メッセージのカテゴリ">
+          <button class="active" type="button" role="tab" aria-selected="true" data-message-category="greeting"><i class="ph ph-hand-waving" aria-hidden="true"></i><span>あいさつ</span></button>
+          <button type="button" role="tab" aria-selected="false" data-message-category="profile"><i class="ph ph-fish-simple" aria-hidden="true"></i><span>自己紹介</span></button>
+          <button type="button" role="tab" aria-selected="false" data-message-category="question"><i class="ph ph-question" aria-hidden="true"></i><span>聞いてみる</span></button>
+          <button type="button" role="tab" aria-selected="false" data-message-category="bottle"><i class="ph ph-envelope-simple-open" aria-hidden="true"></i><span>ボトル共有</span></button>
+        </div>
+        <div id="lakeMessagePanel" class="lake-message-panel"></div>
+      </article>
+    </dialog>
+
+    <dialog id="bottleShareDialog" class="modal bottle-share-modal">
+      <article>
+        <div class="modal-heading">
+          <div>
+            <p class="eyebrow">SHARE A BOTTLE</p>
+            <h2>ボトルを湖へ紹介する</h2>
+          </div>
+          <button class="modal-close" type="button" data-close-dialog="bottleShareDialog" aria-label="閉じる">×</button>
+        </div>
+        <p class="subtle">紹介した魚のプロフィールや投稿履歴にはつながらず、この1本だけを湖のみんなへ届けます。</p>
+        <div id="bottleShareFilters" class="bottle-share-filters" role="group" aria-label="共有するボトルの種類">
+          <button class="active" type="button" data-share-source="mine">自分のボトル</button>
+          <button type="button" data-share-source="recommended">おすすめする</button>
+        </div>
+        <div id="bottleShareList" class="bottle-share-list"></div>
+      </article>
+    </dialog>
+
+    <dialog id="sharedBottlesDialog" class="modal shared-bottles-modal">
+      <article>
+        <div class="modal-heading">
+          <div>
+            <p class="eyebrow">SHARED IN THE LAKE</p>
+            <h2>湖で紹介されたボトル</h2>
+          </div>
+          <button class="modal-close" type="button" data-close-dialog="sharedBottlesDialog" aria-label="閉じる">×</button>
+        </div>
+        <p class="subtle">今この湖で紹介されたボトルを、直近5件まで確認できます。</p>
+        <div id="sharedBottlesList" class="shared-bottles-list"></div>
+      </article>
+    </dialog>
 
     <dialog id="composerDialog" class="modal composer-modal">
       <form id="postForm" method="dialog" novalidate>
@@ -1082,7 +1136,7 @@
             <select id="editGrade" required>
               <option>中学1年</option><option>中学2年</option><option>中学3年</option><option>高校1年</option>
               <option>高校2年</option><option>高校3年</option><option>大学1年</option><option>大学2年</option>
-              <option>大学3年</option><option>大学4年</option><option>大学院</option><option>その他</option>
+              <option>大学3年</option><option>大学4年</option><option>大学院</option><option>既卒・社会人</option><option>その他</option>
             </select>
           </label>
           <label id="editMajorField">
