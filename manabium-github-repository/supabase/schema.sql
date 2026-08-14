@@ -132,6 +132,17 @@ create table if not exists public.post_likes (
 
 create index if not exists post_likes_user_idx on public.post_likes (user_id);
 
+-- 「あとで読む」はいいねと分離した非公開保存です。保存者本人以外には公開しません。
+create table if not exists public.post_bookmarks (
+  post_id uuid not null references public.posts(id) on delete cascade,
+  user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
+  created_at timestamptz not null default now(),
+  primary key (post_id, user_id)
+);
+
+create index if not exists post_bookmarks_user_created_idx
+  on public.post_bookmarks (user_id, created_at desc);
+
 -- 投稿への返信。ログイン利用者全員が閲覧でき、parent_reply_idで会話をつなぎます。
 create table if not exists public.post_replies (
   id uuid primary key default gen_random_uuid(),
@@ -599,6 +610,7 @@ for each row execute function public.validate_aquarium_reaction();
 alter table public.profiles enable row level security;
 alter table public.posts enable row level security;
 alter table public.post_likes enable row level security;
+alter table public.post_bookmarks enable row level security;
 alter table public.post_replies enable row level security;
 alter table public.aquarium_presence enable row level security;
 alter table public.aquarium_preferences enable row level security;
@@ -668,6 +680,25 @@ with check ((select auth.uid()) = user_id);
 drop policy if exists "Users can remove their own like" on public.post_likes;
 create policy "Users can remove their own like"
 on public.post_likes for delete
+to authenticated
+using ((select auth.uid()) = user_id);
+
+-- あとで読む：保存一覧、追加、削除のすべてを本人だけに限定します。
+drop policy if exists "Users can view their own bookmarks" on public.post_bookmarks;
+create policy "Users can view their own bookmarks"
+on public.post_bookmarks for select
+to authenticated
+using ((select auth.uid()) = user_id);
+
+drop policy if exists "Users can add their own bookmark" on public.post_bookmarks;
+create policy "Users can add their own bookmark"
+on public.post_bookmarks for insert
+to authenticated
+with check ((select auth.uid()) = user_id);
+
+drop policy if exists "Users can remove their own bookmark" on public.post_bookmarks;
+create policy "Users can remove their own bookmark"
+on public.post_bookmarks for delete
 to authenticated
 using ((select auth.uid()) = user_id);
 
@@ -796,6 +827,7 @@ using ((select auth.uid()) = owner_user_id);
 revoke all on table public.profiles from anon, authenticated;
 revoke all on table public.posts from anon, authenticated;
 revoke all on table public.post_likes from anon, authenticated;
+revoke all on table public.post_bookmarks from anon, authenticated;
 revoke all on table public.post_replies from anon, authenticated;
 revoke all on table public.aquarium_presence from anon, authenticated;
 revoke all on table public.aquarium_preferences from anon, authenticated;
@@ -810,6 +842,8 @@ grant select, insert, delete on table public.posts to authenticated;
 grant update (title, body, category, post_type, field_tags, external_url, external_site_name) on table public.posts to authenticated;
 
 grant select, insert, delete on table public.post_likes to authenticated;
+grant select, delete on table public.post_bookmarks to authenticated;
+grant insert (post_id) on table public.post_bookmarks to authenticated;
 grant select, delete on table public.post_replies to authenticated;
 grant insert (post_id, parent_reply_id, sender_user_id, body) on table public.post_replies to authenticated;
 grant update (body, is_read) on table public.post_replies to authenticated;
@@ -1559,7 +1593,7 @@ $$;
 do $$
 declare table_name text;
 begin
-  foreach table_name in array array['profiles','posts','post_likes','post_replies','aquarium_presence','aquarium_preferences','aquarium_reactions','aquarium_mutes'] loop
+  foreach table_name in array array['profiles','posts','post_likes','post_bookmarks','post_replies','aquarium_presence','aquarium_preferences','aquarium_reactions','aquarium_mutes'] loop
     execute format('drop trigger if exists block_suspended_writes on public.%I', table_name);
     execute format('create trigger block_suspended_writes before insert or update or delete on public.%I for each row execute function public.block_suspended_writes()', table_name);
   end loop;

@@ -119,6 +119,9 @@ const state = {
   replies: [],
   myPosts: [],
   likedPostIds: new Set(),
+  savedPostIds: new Set(),
+  savedPosts: [],
+  bookmarksAvailable: true,
   selectedCategory: "all",
   postSearchQuery: "",
   postOwnership: "all",
@@ -178,7 +181,7 @@ function lakeVisitName(presence) {
 }
 
 function threadParticipantLabels(postId) {
-  const post = state.posts.find((item) => item.id === postId);
+  const post = findKnownPost(postId);
   const participants = [...new Set(state.replies
     .filter((reply) => reply.post_id === postId && reply.sender_user_id !== post?.user_id)
     .map((reply) => reply.sender_user_id))].sort();
@@ -187,7 +190,7 @@ function threadParticipantLabels(postId) {
 
 function threadAuthorLabel(userId, postId, labels = threadParticipantLabels(postId)) {
   if (userId === state.user?.id) return "あなた";
-  const post = state.posts.find((item) => item.id === postId);
+  const post = findKnownPost(postId);
   if (post?.user_id === userId) return "投稿した魚";
   return labels.get(userId) ?? "湖の魚";
 }
@@ -211,9 +214,15 @@ function reactionText(messageCode, profile = null) {
   return AQUARIUM_REACTIONS[messageCode] ?? "湖から合図が届きました";
 }
 
+function findKnownPost(postId) {
+  return state.posts.find((post) => post.id === postId)
+    ?? state.savedPosts.find((post) => post.id === postId)
+    ?? null;
+}
+
 function reactionPost(reaction) {
   if (!reaction?.post_id) return null;
-  return state.posts.find((post) => post.id === reaction.post_id) ?? null;
+  return findKnownPost(reaction.post_id);
 }
 
 function bottleShareText(reaction) {
@@ -308,7 +317,7 @@ function renderPostExternalLink(container, value, siteName = "") {
   const displayName = normalizeExternalSiteName(siteName) || "公式・参考サイト";
   link.setAttribute("aria-label", `${displayName}を新しいタブで開く`);
   link.addEventListener("click", () => {
-    const post = state.posts.find((item) => item.id === state.selectedPostId);
+    const post = findKnownPost(state.selectedPostId);
     if (post) trackAnalyticsEvent("external_link_click", { page_key: "board", content_type: "bottle", content_id: post.id });
   });
 
@@ -514,6 +523,12 @@ function isMissingAquariumSchema(error) {
     && (message.includes("schema cache") || message.includes("relation") || message.includes("table"));
 }
 
+function isMissingBookmarksSchema(error) {
+  const message = String(error?.message ?? "").toLowerCase();
+  return message.includes("post_bookmarks")
+    && (message.includes("schema cache") || message.includes("relation") || message.includes("table"));
+}
+
 function isMissingPostFieldTagsColumn(error) {
   const message = String(error?.message ?? "").toLowerCase();
   return message.includes("field_tags") && (message.includes("schema cache") || message.includes("column"));
@@ -700,6 +715,7 @@ function readableError(error) {
   if (lower.includes("user already registered")) return "このメールアドレスは登録済みです。";
   if (lower.includes("password should be")) return "パスワードは8文字以上にしてください。";
   if (lower.includes("post_replies") && lower.includes("schema cache")) return "返信機能のデータ設定が古い状態です。管理者へお知らせください。";
+  if (lower.includes("post_bookmarks") && (lower.includes("schema cache") || lower.includes("relation"))) return "「あとで読む」を使うにはSupabaseの追加SQLを実行してください。";
   if (lower.includes("bottle share cooldown")) return "同じボトルは10分後にもう一度紹介できます。";
   if (lower.includes("post_id") && (lower.includes("schema cache") || lower.includes("column"))) return "ボトル共有を使うにはSupabaseの追加SQLを実行してください。";
   if (lower.includes("reaction target cooldown")) return "同じ相手への連続送信を防いでいます。少し待ってから送ってください。";
@@ -1226,6 +1242,11 @@ function bindStaticEvents() {
     const button = event.target.closest("[data-post-id]");
     if (button) openPost(button.dataset.postId);
   });
+  $("#mySavedPostList").addEventListener("click", (event) => {
+    const button = event.target.closest("[data-post-id]");
+    if (button) openPost(button.dataset.postId);
+  });
+  $("#detailBookmarkButton").addEventListener("click", () => toggleBookmark(state.selectedPostId));
   $("#detailLikeButton").addEventListener("click", () => toggleLike(state.selectedPostId));
   $("#editPostButton").addEventListener("click", openPostEditor);
   $("#deletePostButton").addEventListener("click", openPostDeleteConfirmation);
@@ -1427,6 +1448,7 @@ function cleanupSignedInState() {
   state.posts = [];
   state.replies = [];
   state.myPosts = [];
+  state.savedPosts = [];
   state.aquariumPresence = [];
   state.aquariumReactions = [];
   state.aquariumPresenceJoined = false;
@@ -1445,6 +1467,8 @@ function cleanupSignedInState() {
   state.editingReplyId = null;
   state.replyingToReplyId = null;
   state.likedPostIds.clear();
+  state.savedPostIds.clear();
+  state.bookmarksAvailable = true;
   state.threadedRepliesAvailable = true;
   $("#postSearchInput").value = "";
   $("#clearPostSearchButton").hidden = true;
@@ -1909,7 +1933,7 @@ function renderLakeMessagePanel() {
   const panel = $("#lakeMessagePanel");
   const category = state.lakeMessageCategory;
   if (category === "bottle") {
-    panel.innerHTML = '<div class="lake-message-panel-intro"><span><i class="ph ph-envelope-simple-open" aria-hidden="true"></i></span><div><strong>1本のボトルを湖へ紹介</strong><small>投稿者の履歴ではなく、選んだボトルへ直接案内します。</small></div></div><div class="bottle-share-entry-grid"><button type="button" data-open-bottle-share="mine"><i class="ph ph-paper-plane-tilt" aria-hidden="true"></i><span><strong>自分のボトルを知らせる</strong><small>新しく流した相談や情報を紹介</small></span></button><button type="button" data-open-bottle-share="recommended"><i class="ph ph-heart" aria-hidden="true"></i><span><strong>おすすめを共有する</strong><small>役に立った誰かのボトルを紹介</small></span></button></div>';
+    panel.innerHTML = '<div class="lake-message-panel-intro"><span><i class="ph ph-envelope-simple-open" aria-hidden="true"></i></span><div><strong>1本のボトルを湖へ紹介</strong><small>投稿者の履歴ではなく、選んだボトルへ直接案内します。</small></div></div><div class="bottle-share-entry-grid"><button type="button" data-open-bottle-share="mine"><i class="ph ph-paper-plane-tilt" aria-hidden="true"></i><span><strong>自分のボトル</strong><small>新しく流した相談や情報を紹介</small></span></button><button type="button" data-open-bottle-share="saved"><i class="ph ph-bookmark-simple" aria-hidden="true"></i><span><strong>あとで読むから紹介</strong><small>保存しておいた1本をすぐ選ぶ</small></span></button><button type="button" data-open-bottle-share="recommended"><i class="ph ph-compass" aria-hidden="true"></i><span><strong>みんなのボトルから探す</strong><small>近い分野の投稿を見つける</small></span></button></div>';
     return;
   }
   const messages = category === "profile" ? profileLakeMessages() : (LAKE_MESSAGE_GROUPS[category] ?? []);
@@ -1962,6 +1986,7 @@ function handleLakeMessagePanelClick(event) {
 }
 
 function shareableBottlePosts(source = state.bottleShareSource) {
+  if (source === "saved") return [...state.savedPosts].slice(0, 20);
   const mine = source === "mine";
   return state.posts
     .filter((post) => (post.user_id === state.user?.id) === mine)
@@ -1976,15 +2001,19 @@ function renderBottleShareList() {
   const list = $("#bottleShareList");
   const posts = shareableBottlePosts();
   if (!posts.length) {
-    const mine = state.bottleShareSource === "mine";
-    list.innerHTML = '<div class="bottle-share-empty"><i class="ph ph-envelope-simple" aria-hidden="true"></i><p><strong>' + (mine ? "自分のボトルはまだありません" : "紹介できるボトルがありません") + '</strong><span>' + (mine ? "ボトルを投稿すると、湖で直接紹介できます。" : "ボトル画面を更新してから、もう一度お試しください。") + '</span></p></div>';
+    const emptyCopy = state.bottleShareSource === "mine"
+      ? ["自分のボトルはまだありません", "ボトルを投稿すると、湖で直接紹介できます。"]
+      : state.bottleShareSource === "saved"
+        ? [state.bookmarksAvailable ? "保存したボトルはまだありません" : "保存機能の追加SQLが必要です", state.bookmarksAvailable ? "役に立ったボトルを「あとで読む」に入れておくと、ここからすぐ紹介できます。" : "Supabaseへ追加SQLを実行してから、画面を更新してください。"]
+        : ["紹介できるボトルがありません", "ボトル画面を更新してから、もう一度お試しください。"];
+    list.innerHTML = '<div class="bottle-share-empty"><i class="ph ph-envelope-simple" aria-hidden="true"></i><p><strong>' + emptyCopy[0] + '</strong><span>' + emptyCopy[1] + '</span></p></div>';
     return;
   }
   list.innerHTML = posts.map((post) => '<article class="bottle-share-item"><span class="bottle-share-item-art"><i class="ph ph-envelope-simple-open" aria-hidden="true"></i></span><div><span class="bottle-share-item-badges"><small>' + escapeHTML(post.category) + '</small><small>' + escapeHTML(post.post_type) + '</small></span><strong>' + escapeHTML(post.title) + '</strong><p>' + escapeHTML(bottlePreviewExcerpt(post)) + '</p></div><button type="button" data-share-post="' + escapeHTML(post.id) + '"><i class="ph ph-waves" aria-hidden="true"></i> 湖へ紹介</button></article>').join("");
 }
 
 function openBottleShareDialog(source = "mine") {
-  state.bottleShareSource = source === "recommended" ? "recommended" : "mine";
+  state.bottleShareSource = ["mine", "saved", "recommended"].includes(source) ? source : "mine";
   $$("[data-share-source]", $("#bottleShareFilters")).forEach((button) => {
     button.classList.toggle("active", button.dataset.shareSource === state.bottleShareSource);
   });
@@ -2003,7 +2032,7 @@ function handleBottleShareFilterClick(event) {
 function handleBottleShareListClick(event) {
   const button = event.target.closest("[data-share-post]");
   if (!button) return;
-  const post = state.posts.find((item) => item.id === button.dataset.sharePost);
+  const post = findKnownPost(button.dataset.sharePost);
   if (!post) {
     showToast("このボトルは現在共有できません。", "info");
     return;
@@ -2082,7 +2111,7 @@ async function sendAquariumReaction(messageCode, targetUserId = null, postId = n
   }
   const now = Date.now();
   if (BOTTLE_SHARE_CODES.has(messageCode)) {
-    const post = state.posts.find((item) => item.id === postId);
+    const post = findKnownPost(postId);
     if (!post) {
       showToast("共有するボトルを選んでください。", "info");
       return;
@@ -2221,6 +2250,62 @@ async function fetchPostRows({ userId = null, limit = 60 } = {}) {
   throw new Error("ボトルのデータ構成を確認できませんでした。");
 }
 
+async function fetchPostRowsByIds(postIds) {
+  const ids = [...new Set(postIds.filter(Boolean))];
+  if (!ids.length) return [];
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    const { data, error } = await supabase
+      .from("posts")
+      .select(postSelectFields())
+      .in("id", ids);
+    if (!error) return data ?? [];
+    if (!disableUnavailablePostColumn(error)) throw error;
+  }
+  throw new Error("保存したボトルのデータ構成を確認できませんでした。");
+}
+
+async function loadBookmarks() {
+  if (IS_PREVIEW_MODE) return;
+  const { data: bookmarks, error } = await supabase
+    .from("post_bookmarks")
+    .select("post_id,created_at")
+    .eq("user_id", state.user.id)
+    .order("created_at", { ascending: false })
+    .limit(100);
+
+  if (error) {
+    if (!isMissingBookmarksSchema(error)) throw error;
+    state.bookmarksAvailable = false;
+    state.savedPostIds.clear();
+    state.savedPosts = [];
+    renderPosts();
+    renderMyPage();
+    return;
+  }
+
+  state.bookmarksAvailable = true;
+  const rows = bookmarks ?? [];
+  const postIds = rows.map((bookmark) => bookmark.post_id);
+  const currentPosts = new Map(state.posts.map((post) => [post.id, post]));
+  const missingRows = await fetchPostRowsByIds(postIds.filter((postId) => !currentPosts.has(postId)));
+  const profiles = await fetchProfiles(missingRows.map((post) => post.user_id));
+  missingRows.forEach((post) => {
+    const normalized = normalizePost(post);
+    currentPosts.set(post.id, { ...normalized, profile: profiles.get(post.user_id) ?? null });
+  });
+  state.savedPostIds = new Set(postIds.filter((postId) => currentPosts.has(postId)));
+  state.savedPosts = rows
+    .map((bookmark) => {
+      const post = currentPosts.get(bookmark.post_id);
+      return post ? { ...post, bookmarked_at: bookmark.created_at } : null;
+    })
+    .filter(Boolean);
+  renderPosts();
+  renderMyPage();
+  if ($("#bottleShareDialog").open) renderBottleShareList();
+  if (state.selectedPostId && $("#postDialog").open) openPost(state.selectedPostId, false);
+}
+
 async function loadPosts() {
   const posts = await fetchPostRows({ limit: 60 });
 
@@ -2236,7 +2321,8 @@ async function loadPosts() {
     ...normalizePost(post),
     profile: profiles.get(post.user_id) ?? null,
   }));
-  state.aquariumReactions = state.aquariumReactions.filter((reaction) => !reaction.post_id || state.posts.some((post) => post.id === reaction.post_id));
+  await loadBookmarks();
+  state.aquariumReactions = state.aquariumReactions.filter((reaction) => !reaction.post_id || findKnownPost(reaction.post_id));
   renderPosts();
   renderBottles();
   renderAquariumControls();
@@ -2685,6 +2771,7 @@ function renderPosts() {
     const isOwn = post.user_id === state.user?.id;
     card.classList.toggle("is-own-post", isOwn);
     const liked = state.likedPostIds.has(post.id);
+    const saved = state.savedPostIds.has(post.id);
     const replyCount = state.replies.filter((reply) => reply.post_id === post.id).length;
     const author = isOwn ? "あなた" : "匿名の魚";
     const excerpt = post.body.length > 130 ? `${post.body.slice(0, 130)}…` : post.body;
@@ -2709,6 +2796,9 @@ function renderPosts() {
         <p class="post-meta">${escapeHTML(author)}・${formatRelativeDate(post.created_at)}</p>
         <div class="post-reactions">
           <span class="reply-summary"><i class="ph ph-chat-circle-dots" aria-hidden="true"></i> ${replyCount}</span>
+          <button class="bookmark-button bookmark-button-icon ${saved ? "saved" : ""}" type="button" data-action="bookmark" data-post-id="${post.id}" aria-label="${saved ? "あとで読むから外す" : "あとで読むに保存"}" title="${saved ? "保存済み" : "あとで読む"}">
+            <i class="ph ph-bookmark-simple" aria-hidden="true"></i>
+          </button>
           <button class="like-button ${liked ? "liked" : ""}" type="button" data-action="like" data-post-id="${post.id}" aria-label="いいね">
             <span aria-hidden="true">♡</span> ${Number(post.like_count) || 0}
           </button>
@@ -2734,6 +2824,11 @@ async function handlePostListClick(event) {
   const button = event.target.closest("[data-action][data-post-id]");
   if (!button) return;
   if (button.dataset.action === "open") openPost(button.dataset.postId);
+  if (button.dataset.action === "bookmark") {
+    button.disabled = true;
+    await toggleBookmark(button.dataset.postId);
+    button.disabled = false;
+  }
   if (button.dataset.action === "like") {
     button.disabled = true;
     await toggleLike(button.dataset.postId);
@@ -2844,7 +2939,7 @@ async function submitPost(event) {
 }
 
 function openPost(postId, show = true) {
-  const post = state.posts.find((item) => item.id === postId);
+  const post = findKnownPost(postId);
   if (!post) return;
   if (show || state.selectedPostId !== post.id) {
     state.editingReplyId = null;
@@ -2864,6 +2959,12 @@ function openPost(postId, show = true) {
   const likeButton = $("#detailLikeButton");
   likeButton.classList.toggle("liked", liked);
   likeButton.innerHTML = `<span aria-hidden="true">♡</span> ${Number(post.like_count) || 0} いいね`;
+  const saved = state.savedPostIds.has(post.id);
+  const bookmarkButton = $("#detailBookmarkButton");
+  bookmarkButton.classList.toggle("saved", saved);
+  bookmarkButton.disabled = false;
+  bookmarkButton.title = state.bookmarksAvailable ? "自分だけに表示されます" : "Supabaseの追加SQLが必要です";
+  bookmarkButton.innerHTML = `<i class="ph ph-bookmark-simple" aria-hidden="true"></i><span>${saved ? "保存済み" : "あとで読む"}</span>`;
   $("#postOwnerActions").hidden = !isOwner;
   $("#reportPostButton").hidden = isOwner;
   $("#replyForm").hidden = isOwner;
@@ -2874,7 +2975,7 @@ function openPost(postId, show = true) {
 }
 
 function openPostReport() {
-  const post = state.posts.find((item) => item.id === state.selectedPostId);
+  const post = findKnownPost(state.selectedPostId);
   if (!post || post.user_id === state.user?.id) return;
   state.reportTarget = { type: "post", id: post.id };
   $("#reportForm").reset();
@@ -2907,7 +3008,8 @@ async function submitReport(event) {
 }
 
 function selectedOwnedPost() {
-  return state.posts.find((post) => post.id === state.selectedPostId && post.user_id === state.user?.id) ?? null;
+  const post = findKnownPost(state.selectedPostId);
+  return post?.user_id === state.user?.id ? post : null;
 }
 
 function openPostEditor() {
@@ -3032,6 +3134,8 @@ async function deleteSelectedPost() {
       state.myPosts = state.myPosts.filter((item) => item.id !== post.id);
       state.replies = state.replies.filter((reply) => reply.post_id !== post.id);
       state.likedPostIds.delete(post.id);
+      state.savedPostIds.delete(post.id);
+      state.savedPosts = state.savedPosts.filter((item) => item.id !== post.id);
       state.selectedPostId = null;
       closeDialog("deletePostDialog");
       renderPosts();
@@ -3345,7 +3449,7 @@ async function deleteOwnReply(reply) {
 async function submitReply(event) {
   event.preventDefault();
   if (!event.currentTarget.reportValidity() || !state.selectedPostId) return;
-  const selectedPost = state.posts.find((post) => post.id === state.selectedPostId);
+  const selectedPost = findKnownPost(state.selectedPostId);
   if (!selectedPost || selectedPost.user_id === state.user.id) {
     showToast("自分のボトルには返信できません。", "error");
     return;
@@ -3395,12 +3499,51 @@ async function submitReply(event) {
   }
 }
 
+async function toggleBookmark(postId) {
+  if (!postId) return;
+  if (!state.bookmarksAvailable) {
+    showToast("「あとで読む」を使うにはSupabaseの追加SQLを実行してください。", "info");
+    return;
+  }
+  const post = findKnownPost(postId);
+  if (!post) {
+    showToast("このボトルは現在保存できません。", "info");
+    return;
+  }
+  const saved = state.savedPostIds.has(postId);
+  try {
+    if (!IS_PREVIEW_MODE) {
+      const query = saved
+        ? supabase.from("post_bookmarks").delete().eq("post_id", postId)
+        : supabase.from("post_bookmarks").insert({ post_id: postId });
+      const { error } = await query;
+      if (error) throw error;
+    }
+
+    if (saved) {
+      state.savedPostIds.delete(postId);
+      state.savedPosts = state.savedPosts.filter((item) => item.id !== postId);
+    } else {
+      state.savedPostIds.add(postId);
+      state.savedPosts = [{ ...post, bookmarked_at: new Date().toISOString() }, ...state.savedPosts.filter((item) => item.id !== postId)];
+    }
+    renderPosts();
+    renderMyPage();
+    if ($("#bottleShareDialog").open) renderBottleShareList();
+    if (state.selectedPostId === postId && $("#postDialog").open) openPost(postId, false);
+    trackAnalyticsEvent(saved ? "content_bookmark_remove" : "content_bookmark_add", { page_key: $("#appView").dataset.activePage || "board", content_type: "bottle", content_id: postId });
+    showToast(saved ? "「あとで読む」から外しました。" : "「あとで読む」に保存しました。", "success");
+  } catch (error) {
+    showToast(readableError(error), "error");
+  }
+}
+
 async function toggleLike(postId) {
   if (!postId) return;
   const liked = state.likedPostIds.has(postId);
   try {
     if (IS_PREVIEW_MODE) {
-      const post = state.posts.find((item) => item.id === postId);
+      const post = findKnownPost(postId);
       if (!post) return;
       if (liked) {
         state.likedPostIds.delete(postId);
@@ -3444,7 +3587,9 @@ function renderMyPage() {
   renderProfileIdentity();
   $("#myPostCount").textContent = `${state.myPosts.length}件`;
   $("#myReplyCount").textContent = `${state.replies.filter((reply) => reply.sender_user_id === state.user?.id).length}件`;
+  $("#mySavedCount").textContent = `${state.savedPosts.length}件`;
   renderMyPosts();
+  renderMySavedPosts();
 }
 
 function renderMyPosts() {
@@ -3461,6 +3606,27 @@ function renderMyPosts() {
     button.dataset.postId = post.id;
     const replyCount = state.replies.filter((reply) => reply.post_id === post.id).length;
     button.innerHTML = `<div><strong>${escapeHTML(post.title)}</strong><span>${escapeHTML(post.category)}・${formatDate(post.created_at)}</span></div><span class="history-value">返信 ${replyCount}・♡ ${Number(post.like_count) || 0}</span>`;
+    container.append(button);
+  });
+}
+
+function renderMySavedPosts() {
+  const container = $("#mySavedPostList");
+  container.replaceChildren();
+  if (!state.bookmarksAvailable) {
+    container.innerHTML = '<p class="history-empty">保存機能を使うには、Supabaseへ追加SQLを実行してください。</p>';
+    return;
+  }
+  if (!state.savedPosts.length) {
+    container.innerHTML = '<p class="history-empty">気になるボトルを「あとで読む」に入れると、ここに並びます。</p>';
+    return;
+  }
+  state.savedPosts.slice(0, 12).forEach((post) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "history-item saved-history-item";
+    button.dataset.postId = post.id;
+    button.innerHTML = `<span class="saved-history-icon"><i class="ph ph-bookmark-simple" aria-hidden="true"></i></span><div><strong>${escapeHTML(post.title)}</strong><span>${escapeHTML(post.category)}・${formatDate(post.bookmarked_at ?? post.created_at)}</span></div><i class="ph ph-caret-right" aria-hidden="true"></i>`;
     container.append(button);
   });
 }
@@ -3862,6 +4028,12 @@ function bootstrapPreviewMode() {
   ];
   state.myPosts = state.posts.filter((post) => post.user_id === userId);
   state.likedPostIds = new Set(["preview-post-2"]);
+  state.savedPostIds = new Set(["preview-post-2", "preview-post-4"]);
+  state.savedPosts = [
+    { ...state.posts[1], bookmarked_at: new Date(now - 18 * 60000).toISOString() },
+    { ...state.posts[3], bookmarked_at: new Date(now - 90 * 60000).toISOString() },
+  ];
+  state.bookmarksAvailable = true;
   state.aquariumReactions = [
     {
       id: "preview-shared-bottle",

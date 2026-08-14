@@ -27,8 +27,8 @@
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.2/src/regular/style.css"
     />
-    <link rel="stylesheet" href="./style.css?v=20260813-bottle-sharing-1" />
-    <script type="module" src="./app.js?v=20260813-bottle-sharing-1"></script>
+    <link rel="stylesheet" href="./style.css?v=20260813-bottle-bookmarks-1" />
+    <script type="module" src="./app.js?v=20260813-bottle-bookmarks-1"></script>
   </head>
   <body>
     <div class="ambient ambient-one" aria-hidden="true"></div>
@@ -739,6 +739,7 @@
               <div class="stat-row">
                 <div><strong id="myPostCount">0件</strong><span>投稿</span></div>
                 <div><strong id="myReplyCount">0件</strong><span>返信</span></div>
+                <div><strong id="mySavedCount">0件</strong><span>あとで読む</span></div>
               </div>
               <p class="community-stats-note">相談や情報共有は、ボトルメッセージからいつでも続けられます。</p>
             </section>
@@ -750,6 +751,16 @@
                 <h2 id="myPostsTitle">自分のボトル</h2>
               </div>
               <div id="myPostList" class="history-list"></div>
+            </section>
+            <section class="history-card saved-posts-card" aria-labelledby="mySavedPostsTitle">
+              <div class="section-heading">
+                <div>
+                  <p class="eyebrow">PRIVATE</p>
+                  <h2 id="mySavedPostsTitle">あとで読む</h2>
+                </div>
+                <span class="private-save-label"><i class="ph ph-lock-key" aria-hidden="true"></i> 自分だけ</span>
+              </div>
+              <div id="mySavedPostList" class="history-list"></div>
             </section>
           </div>
         </section>
@@ -882,7 +893,8 @@
         <p class="subtle">紹介した魚のプロフィールや投稿履歴にはつながらず、この1本だけを湖のみんなへ届けます。</p>
         <div id="bottleShareFilters" class="bottle-share-filters" role="group" aria-label="共有するボトルの種類">
           <button class="active" type="button" data-share-source="mine">自分のボトル</button>
-          <button type="button" data-share-source="recommended">おすすめする</button>
+          <button type="button" data-share-source="saved"><i class="ph ph-bookmark-simple" aria-hidden="true"></i> あとで読む</button>
+          <button type="button" data-share-source="recommended">みんなのボトル</button>
         </div>
         <div id="bottleShareList" class="bottle-share-list"></div>
       </article>
@@ -993,7 +1005,10 @@
         <div id="detailBody" class="detail-body"></div>
         <div id="detailExternalLink" class="detail-external-link" hidden></div>
         <div class="detail-footer">
-          <button id="detailLikeButton" class="like-button" type="button"></button>
+          <div class="detail-reaction-actions">
+            <button id="detailBookmarkButton" class="bookmark-button" type="button"><i class="ph ph-bookmark-simple" aria-hidden="true"></i><span>あとで読む</span></button>
+            <button id="detailLikeButton" class="like-button" type="button"></button>
+          </div>
           <div id="postOwnerActions" class="post-owner-actions" hidden>
             <button id="editPostButton" class="button button-small button-ghost" type="button">
               <i class="ph ph-pencil-simple" aria-hidden="true"></i> 編集
