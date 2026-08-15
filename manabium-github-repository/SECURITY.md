@@ -6,6 +6,8 @@
 
 利用者本人のブラウザには、ログイン処理のため本人のメールアドレスとセッションが存在します。本人以外のメールアドレス、本名、管理メモ、分析ログ、管理者一覧をブラウザへ返さないことが必須条件です。
 
+分析イベントはログイン済み利用者だけ記録します。`record_analytics_events`は`SECURITY DEFINER`のため`anon`へ実行権限を付与せず、Cloudflare Pages FunctionでもBearerトークンを必須にします。未ログイン状態の流入計測は、安全なサーバー専用取り込み口を用意するまで行いません。
+
 ## テスト公開前の必須作業
 
 1. Supabase SQL Editorで`supabase/security-hardening.sql`を実行し、最後の4項目がすべて`false`になることを確認する。

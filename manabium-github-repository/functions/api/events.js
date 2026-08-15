@@ -46,6 +46,8 @@ export function onRequestOptions({ request }) {
 
 export async function onRequestPost({ request, env }) {
   if (!isSameOriginRequest(request)) return json({ error: "Cross-origin request denied." }, 403);
+  const authorization = request.headers.get("Authorization");
+  if (!authorization?.startsWith("Bearer ")) return json({ error: "Authentication required." }, 401);
   if (!env.SUPABASE_URL || !env.SUPABASE_PUBLISHABLE_KEY) {
     return json({ error: "Analytics is not configured." }, 503);
   }
@@ -74,13 +76,12 @@ export async function onRequestPost({ request, env }) {
     return json({ error: "Invalid event batch." }, 400);
   }
 
-  const authorization = request.headers.get("Authorization");
   const headers = {
     apikey: env.SUPABASE_PUBLISHABLE_KEY,
+    Authorization: authorization,
     "Content-Type": "application/json",
     Prefer: "return=representation",
   };
-  if (authorization?.startsWith("Bearer ")) headers.Authorization = authorization;
 
   const response = await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/record_analytics_events`, {
     method: "POST",

@@ -543,10 +543,13 @@ const analyticsContext = (() => {
 })();
 
 async function trackAnalyticsEvent(eventType, attributes = {}) {
-  if (IS_PREVIEW_MODE || location.protocol === "file:") return;
+  // 未ログイン利用者からSECURITY DEFINERの分析RPCを呼ばせません。
+  if (IS_PREVIEW_MODE || location.protocol === "file:" || !state.session?.access_token) return;
   try {
-    const headers = { "Content-Type": "application/json" };
-    if (state.session?.access_token) headers.Authorization = `Bearer ${state.session.access_token}`;
+    const headers = {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${state.session.access_token}`,
+    };
     await fetch("/api/events", {
       method: "POST",
       headers,

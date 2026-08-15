@@ -691,7 +691,8 @@ grant select (id, post_id, parent_reply_id, sender_user_id, recipient_user_id, b
   on table public.post_replies to authenticated;
 
 revoke all on function public.record_analytics_events(uuid, uuid, jsonb, text, text, text, text, text, text, text, boolean, boolean) from public;
-grant execute on function public.record_analytics_events(uuid, uuid, jsonb, text, text, text, text, text, text, text, boolean, boolean) to anon, authenticated;
+revoke execute on function public.record_analytics_events(uuid, uuid, jsonb, text, text, text, text, text, text, text, boolean, boolean) from anon;
+grant execute on function public.record_analytics_events(uuid, uuid, jsonb, text, text, text, text, text, text, text, boolean, boolean) to authenticated;
 revoke all on function public.admin_analytics_dashboard(date, date, text) from public;
 revoke all on function public.admin_moderate_content(text, uuid, text, text) from public;
 revoke all on function public.admin_resolve_report(uuid, text, text) from public;

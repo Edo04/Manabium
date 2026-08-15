@@ -1627,7 +1627,8 @@ grant select (id, post_id, parent_reply_id, sender_user_id, recipient_user_id, b
   on table public.post_replies to authenticated;
 
 revoke all on function public.record_analytics_events(uuid, uuid, jsonb, text, text, text, text, text, text, text, boolean, boolean) from public;
-grant execute on function public.record_analytics_events(uuid, uuid, jsonb, text, text, text, text, text, text, text, boolean, boolean) to anon, authenticated;
+revoke execute on function public.record_analytics_events(uuid, uuid, jsonb, text, text, text, text, text, text, text, boolean, boolean) from anon;
+grant execute on function public.record_analytics_events(uuid, uuid, jsonb, text, text, text, text, text, text, text, boolean, boolean) to authenticated;
 revoke all on function public.admin_analytics_dashboard(date, date, text) from public;
 revoke all on function public.admin_moderate_content(text, uuid, text, text) from public;
 revoke all on function public.admin_resolve_report(uuid, text, text) from public;
@@ -2017,7 +2018,7 @@ grant execute on function private.is_admin(uuid) to authenticated, service_role;
 grant execute on function private.is_active_user(uuid) to authenticated, service_role;
 grant execute on function public.is_current_user_admin() to authenticated;
 grant execute on function public.get_my_profile_analytics_fields() to authenticated;
-grant execute on function public.record_analytics_events(uuid, uuid, jsonb, text, text, text, text, text, text, text, boolean, boolean) to anon, authenticated;
+grant execute on function public.record_analytics_events(uuid, uuid, jsonb, text, text, text, text, text, text, text, boolean, boolean) to authenticated;
 grant execute on function public.admin_analytics_dashboard(date, date, text) to authenticated;
 grant execute on function public.admin_moderate_content(text, uuid, text, text) to authenticated;
 grant execute on function public.admin_resolve_report(uuid, text, text) to authenticated;

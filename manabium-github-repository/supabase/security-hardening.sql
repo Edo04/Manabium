@@ -120,7 +120,7 @@ grant execute on function private.is_active_user(uuid) to authenticated, service
 grant execute on function public.is_current_user_admin() to authenticated;
 grant execute on function public.get_my_profile_analytics_fields() to authenticated;
 grant execute on function public.record_analytics_events(uuid, uuid, jsonb, text, text, text, text, text, text, text, boolean, boolean)
-  to anon, authenticated;
+  to authenticated;
 grant execute on function public.admin_analytics_dashboard(date, date, text) to authenticated;
 grant execute on function public.admin_moderate_content(text, uuid, text, text) to authenticated;
 grant execute on function public.admin_resolve_report(uuid, text, text) to authenticated;
