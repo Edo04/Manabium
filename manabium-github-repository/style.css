@@ -10029,9 +10029,10 @@ textarea {
 
 #appView[data-active-page="aquarium"] #aquariumPage .reply-lily {
   top: auto;
-  right: 4.5%;
-  bottom: 8%;
-  width: clamp(132px, 13vw, 164px);
+  right: auto;
+  bottom: 3.5%;
+  left: 2.4%;
+  width: clamp(126px, 12vw, 152px);
   min-height: 104px;
 }
 
@@ -10378,9 +10379,10 @@ textarea {
 @media (max-width: 760px) {
   #appView[data-active-page="aquarium"] #aquariumPage .reply-lily {
     top: auto;
-    right: 2%;
-    bottom: 5%;
-    width: 112px;
+    right: auto;
+    bottom: 2%;
+    left: 1%;
+    width: 102px;
     min-height: 88px;
   }
 
@@ -10488,17 +10490,18 @@ textarea {
    ========================================================== */
 .library-door {
   position: absolute;
-  right: clamp(22px, 5vw, 76px);
-  bottom: clamp(28px, 8%, 82px);
-  z-index: 7;
-  width: 142px;
-  height: 160px;
+  right: clamp(-5px, .8vw, 14px);
+  bottom: -8px;
+  z-index: 5;
+  width: 170px;
+  height: 150px;
   padding: 0;
   cursor: pointer;
   color: #eff9f4;
   background: transparent;
   border: 0;
-  filter: drop-shadow(0 14px 18px rgba(24, 66, 69, 0.22));
+  filter: drop-shadow(0 12px 15px rgba(24, 57, 57, 0.2));
+  transform-origin: 65% 88%;
   transition: filter 220ms ease, transform 220ms ease;
 }
 
@@ -10510,101 +10513,121 @@ textarea {
 }
 
 .library-door::before {
-  right: -25px;
-  bottom: -6px;
-  width: 82px;
-  height: 79px;
-  opacity: 0.78;
+  right: -9px;
+  bottom: -13px;
+  width: 178px;
+  height: 69px;
+  opacity: 0.92;
   background:
-    radial-gradient(ellipse at 32% 82%, rgba(58, 101, 91, 0.88) 0 8%, transparent 9%),
-    radial-gradient(ellipse at 54% 63%, rgba(73, 123, 105, 0.84) 0 7%, transparent 8%),
-    radial-gradient(ellipse at 72% 43%, rgba(91, 139, 116, 0.76) 0 7%, transparent 8%);
-  transform: rotate(-18deg);
+    radial-gradient(ellipse at 12% 82%, #577a78 0 17%, transparent 18%),
+    radial-gradient(ellipse at 31% 68%, #73918b 0 19%, transparent 20%),
+    radial-gradient(ellipse at 53% 78%, #496e6d 0 22%, transparent 23%),
+    radial-gradient(ellipse at 76% 66%, #6f8f89 0 20%, transparent 21%),
+    radial-gradient(ellipse at 94% 84%, #456867 0 16%, transparent 17%);
+  filter: saturate(.74);
 }
 
 .library-door::after {
-  left: -28px;
-  bottom: -3px;
-  width: 76px;
-  height: 65px;
-  background:
-    radial-gradient(ellipse at 30% 70%, rgba(79, 122, 107, 0.75) 0 9%, transparent 10%),
-    radial-gradient(ellipse at 52% 48%, rgba(95, 140, 117, 0.72) 0 8%, transparent 9%),
-    radial-gradient(ellipse at 70% 24%, rgba(58, 103, 92, 0.72) 0 7%, transparent 8%);
-  transform: rotate(14deg);
+  left: 42px;
+  bottom: 17px;
+  width: 95px;
+  height: 23px;
+  opacity: .42;
+  border-top: 2px solid rgba(229, 248, 237, .52);
+  border-radius: 50%;
+  box-shadow: 0 -6px 0 -4px rgba(229, 248, 237, .42);
 }
 
 .library-door:hover,
-.library-door:focus-visible { filter: drop-shadow(0 18px 26px rgba(24, 66, 69, 0.31)); transform: translateY(-4px); }
+.library-door:focus-visible { filter: brightness(1.06) drop-shadow(0 15px 20px rgba(24, 66, 69, 0.28)); transform: translateY(-2px) scale(1.015); }
 .library-door:focus-visible { outline: 3px solid rgba(255, 247, 210, 0.9); outline-offset: 7px; border-radius: 60px 60px 18px 18px; }
-.library-door.is-entering { transform: scale(1.08); filter: brightness(1.15) drop-shadow(0 0 28px rgba(255, 244, 187, 0.72)); }
+.library-door.is-entering { transform: scale(1.045); filter: brightness(1.13) drop-shadow(0 0 24px rgba(255, 244, 187, 0.56)); }
 
 .library-door-glow {
   position: absolute;
-  inset: 24px 28px 18px;
-  background: radial-gradient(ellipse at 50% 58%, rgba(255, 245, 193, 0.68), rgba(177, 229, 205, 0.2) 52%, transparent 72%);
-  border-radius: 60% 60% 18px 18px;
+  left: 47px;
+  bottom: 25px;
+  width: 82px;
+  height: 100px;
+  background: radial-gradient(ellipse at 50% 66%, rgba(255, 235, 158, .6), rgba(180, 223, 192, .17) 50%, transparent 74%);
+  border-radius: 58% 58% 24% 24%;
+  filter: blur(2px);
   animation: library-door-breathe 4.8s ease-in-out infinite;
 }
 
 .library-door-panel {
   position: absolute;
-  left: 39px;
-  bottom: 22px;
+  left: 54px;
+  bottom: 24px;
   display: grid;
-  width: 64px;
-  height: 91px;
-  color: #ecf7e9;
-  background: linear-gradient(145deg, rgba(52, 93, 80, 0.94), rgba(28, 65, 66, 0.96));
-  border: 3px solid rgba(187, 207, 179, 0.7);
-  border-bottom-width: 6px;
-  border-radius: 36px 36px 8px 8px;
-  box-shadow: inset 0 0 17px rgba(241, 234, 177, 0.17);
+  width: 68px;
+  height: 87px;
+  color: rgba(255, 246, 199, .9);
+  background:
+    radial-gradient(ellipse at 50% 68%, rgba(232, 208, 133, .22), transparent 37%),
+    linear-gradient(160deg, #294c4d, #183839 73%);
+  border: 5px solid rgba(109, 139, 130, .82);
+  border-bottom-width: 8px;
+  border-radius: 48% 48% 16% 16% / 42% 42% 12% 12%;
+  box-shadow: inset 0 0 22px rgba(242, 224, 158, .16), 0 4px 0 rgba(34, 64, 62, .32);
   place-items: center;
 }
 
-.library-door-panel i { font-size: 1.5rem; text-shadow: 0 0 13px rgba(255, 242, 174, 0.65); }
+.library-door-panel i { margin-top: 11px; font-size: 1.35rem; text-shadow: 0 0 13px rgba(255, 231, 154, 0.72); }
 .library-door-stones { position: absolute; inset: 0; }
-.library-door-stones i { position: absolute; width: 45px; height: 35px; background: linear-gradient(145deg, #8ca8a0, #547d79); border: 2px solid rgba(221, 235, 225, 0.26); border-radius: 55% 45% 48% 52%; box-shadow: inset 4px 5px 9px rgba(255,255,255,.12); }
-.library-door-stones i:nth-child(1) { left: 15px; bottom: 17px; transform: rotate(13deg); }
-.library-door-stones i:nth-child(2) { right: 13px; bottom: 16px; transform: rotate(-8deg); }
-.library-door-stones i:nth-child(3) { left: 22px; top: 32px; transform: rotate(50deg); }
-.library-door-stones i:nth-child(4) { right: 20px; top: 30px; transform: rotate(-48deg); }
+.library-door-stones i { position: absolute; width: 48px; height: 35px; background: linear-gradient(145deg, #87a29a, #517675); border: 1px solid rgba(224, 237, 224, 0.2); border-radius: 57% 43% 52% 48%; box-shadow: inset 5px 6px 10px rgba(255,255,255,.1), 0 4px 7px rgba(37,65,64,.16); filter: saturate(.68); }
+.library-door-stones i:nth-child(1) { left: 23px; bottom: 16px; transform: rotate(11deg) scale(1.08); }
+.library-door-stones i:nth-child(2) { right: 7px; bottom: 13px; transform: rotate(-9deg) scale(1.1); }
+.library-door-stones i:nth-child(3) { left: 30px; top: 35px; transform: rotate(58deg) scale(.88); }
+.library-door-stones i:nth-child(4) { right: 24px; top: 30px; transform: rotate(-53deg) scale(.82); }
+.library-door-stones i:nth-child(5) { left: 55px; top: 15px; transform: rotate(8deg) scale(.76); }
+.library-door-stones i:nth-child(6) { right: 49px; bottom: 4px; transform: rotate(-4deg) scale(.76); }
+
+.library-door-reeds { position: absolute; left: 12px; bottom: 31px; width: 48px; height: 77px; opacity: .82; pointer-events: none; }
+.library-door-reeds i { position: absolute; bottom: 0; width: 25px; height: 64px; border-left: 3px solid rgba(68, 112, 91, .78); border-radius: 50%; transform-origin: bottom; }
+.library-door-reeds i::before,
+.library-door-reeds i::after { position: absolute; width: 17px; height: 8px; content: ""; background: rgba(83, 126, 99, .78); border-radius: 100% 0 100% 0; }
+.library-door-reeds i::before { top: 18px; left: -4px; transform: rotate(-24deg); }
+.library-door-reeds i::after { top: 34px; left: 3px; transform: scaleX(-1) rotate(-24deg); }
+.library-door-reeds i:nth-child(1) { left: 6px; height: 58px; transform: rotate(-13deg); }
+.library-door-reeds i:nth-child(2) { left: 20px; height: 72px; transform: rotate(4deg); }
+.library-door-reeds i:nth-child(3) { left: 34px; height: 50px; transform: rotate(17deg); }
 
 .library-door-label {
   position: absolute;
-  right: 50%;
-  bottom: -27px;
+  right: 8px;
+  bottom: 2px;
   display: grid;
   width: max-content;
-  min-width: 128px;
-  padding: 7px 12px;
-  color: #385f61;
-  background: rgba(252, 254, 249, 0.91);
-  border: 1px solid rgba(58, 101, 101, 0.14);
-  border-radius: 13px;
-  box-shadow: 0 7px 18px rgba(30, 69, 72, 0.13);
-  backdrop-filter: blur(9px);
-  transform: translateX(50%);
+  min-width: 118px;
+  padding: 6px 11px;
+  color: #edf4e8;
+  background: rgba(56, 85, 78, .82);
+  border: 1px solid rgba(205, 222, 199, .3);
+  border-radius: 46% 54% 43% 57% / 35% 40% 60% 65%;
+  box-shadow: inset 0 1px rgba(255,255,255,.1), 0 5px 12px rgba(30, 58, 57, .16);
+  text-shadow: 0 1px 2px rgba(27, 52, 51, .36);
 }
-.library-door-label strong { font-family: var(--font-display); font-size: 0.74rem; letter-spacing: 0.05em; }
-.library-door-label small { margin-top: 1px; color: #799094; font-size: 0.5rem; }
+.library-door-label strong { font-family: var(--font-display); font-size: 0.64rem; letter-spacing: 0.05em; }
+.library-door-label small { display: none; }
 .library-door-tip {
   position: absolute;
-  right: calc(100% + 14px);
-  top: 30px;
-  width: 200px;
-  padding: 10px 12px;
-  color: #496b6d;
-  background: rgba(255, 253, 246, 0.94);
-  border: 1px solid rgba(74, 111, 110, 0.13);
-  border-radius: 14px 14px 4px 14px;
-  box-shadow: 0 10px 25px rgba(34, 71, 73, 0.14);
-  font-size: 0.59rem;
+  right: 6px;
+  top: -42px;
+  width: 180px;
+  padding: 9px 12px;
+  color: #496d68;
+  background: rgba(233, 246, 237, .87);
+  border: 1px solid rgba(79, 119, 106, .16);
+  border-radius: 50% 48% 46% 52% / 54% 54% 46% 46%;
+  box-shadow: 0 8px 20px rgba(34, 71, 67, .1);
+  font-size: 0.55rem;
   font-weight: 700;
   line-height: 1.65;
+  text-align: center;
   animation: library-tip-arrive 700ms cubic-bezier(.2,.8,.2,1) both 800ms;
 }
+.library-door-tip::after { position: absolute; right: 26px; bottom: -9px; width: 7px; height: 7px; content: ""; background: rgba(233, 246, 237, .82); border-radius: 50%; box-shadow: 9px 9px 0 -2px rgba(233, 246, 237, .74); }
 .library-door-tip[hidden] { display: none; }
 .fish-reaction-bubble.is-note-notice { cursor: pointer; border-color: rgba(106, 89, 130, 0.24); background: linear-gradient(145deg, #fffdfa, #f2edf7); }
 .fish-reaction-bubble.is-note-notice > i { color: #806a91; }
@@ -10804,18 +10827,21 @@ textarea {
   .desktop-nav { gap: 2px; }
   .mobile-nav { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .mobile-nav-link { min-width: 0; padding-inline: 3px; }
-  .library-door { right: 12px; bottom: 42px; width: 92px; height: 108px; }
-  .library-door-panel { left: 26px; bottom: 13px; width: 41px; height: 61px; border-width: 2px 2px 4px; }
+  .library-door { right: -6px; bottom: -7px; width: 118px; height: 112px; }
+  .library-door-panel { left: 38px; bottom: 18px; width: 47px; height: 60px; border-width: 3px 3px 6px; }
   .library-door-panel i { font-size: 1rem; }
-  .library-door-stones i { width: 29px; height: 23px; }
-  .library-door-stones i:nth-child(1) { left: 9px; bottom: 9px; }
-  .library-door-stones i:nth-child(2) { right: 7px; bottom: 8px; }
-  .library-door-stones i:nth-child(3) { left: 14px; top: 22px; }
-  .library-door-stones i:nth-child(4) { right: 12px; top: 20px; }
-  .library-door-label { bottom: -24px; min-width: 100px; padding: 5px 8px; }
+  .library-door-glow { left: 31px; bottom: 19px; width: 61px; height: 75px; }
+  .library-door-stones i { width: 32px; height: 23px; }
+  .library-door-stones i:nth-child(1) { left: 17px; bottom: 12px; }
+  .library-door-stones i:nth-child(2) { right: 3px; bottom: 11px; }
+  .library-door-stones i:nth-child(3) { left: 21px; top: 28px; }
+  .library-door-stones i:nth-child(4) { right: 17px; top: 26px; }
+  .library-door-stones i:nth-child(5) { left: 39px; top: 13px; }
+  .library-door-stones i:nth-child(6) { right: 31px; bottom: 3px; }
+  .library-door-reeds { left: 4px; bottom: 25px; width: 34px; height: 57px; transform: scale(.76); transform-origin: bottom left; }
+  .library-door-label { right: 2px; bottom: 2px; min-width: 92px; padding: 4px 7px; }
   .library-door-label strong { font-size: .58rem; }
-  .library-door-label small { display: none; }
-  .library-door-tip { right: -2px; top: -65px; width: 185px; border-radius: 14px 14px 4px 14px; }
+  .library-door-tip { right: 1px; top: -48px; width: 160px; padding: 8px 10px; }
   .library-page { padding-bottom: 105px; }
   .library-hero { min-height: 260px; padding: 28px 22px; margin: -2px -2px 17px; align-items: flex-start; flex-direction: column; justify-content: center; gap: 20px; border-radius: 23px; }
   .library-hero h1 { font-size: clamp(2.2rem, 12vw, 3.1rem); }

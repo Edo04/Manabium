@@ -2772,12 +2772,42 @@ function bottlePreviewExcerpt(post) {
   return text.length > 86 ? `${text.slice(0, 86)}…` : text;
 }
 
+function lakeBottlePosition(seed, index, phoneLayout, occupiedSlots) {
+  const slots = phoneLayout
+    ? [
+        [17, 20], [54, 22], [31, 43], [69, 45], [32, 67], [48, 52],
+      ]
+    : [
+        [17, 22], [41, 18], [65, 28], [81, 42], [28, 47],
+        [53, 50], [34, 72], [55, 72], [64, 64],
+      ];
+  const start = (seed + index * 5) % slots.length;
+  let slotIndex = start;
+  for (let offset = 0; offset < slots.length; offset += 1) {
+    const candidate = (start + offset) % slots.length;
+    if (!occupiedSlots.has(candidate)) {
+      slotIndex = candidate;
+      break;
+    }
+  }
+  occupiedSlots.add(slotIndex);
+  const [baseLeft, baseTop] = slots[slotIndex];
+  const jitterLeft = ((seed >>> 4) % 7) - 3;
+  const jitterTop = ((seed >>> 8) % 7) - 3;
+  return {
+    left: baseLeft + jitterLeft,
+    top: baseTop + jitterTop,
+    slotIndex,
+  };
+}
+
 function renderBottles() {
   const layer = $("#bottleLayer");
   if (!layer) return;
   layer.replaceChildren();
   const phoneLayout = window.matchMedia("(max-width: 760px)").matches;
   const timelineSeconds = Date.now() / 1000;
+  const occupiedSlots = new Set();
   visibleLakePosts().slice(0, phoneLayout ? 3 : MAX_LAKE_POSTS).forEach((post, index) => {
     const seed = Math.abs(hashNumber(post.id));
     const duration = 18 + ((seed % 7) * 1.15);
@@ -2786,9 +2816,11 @@ function renderBottles() {
     button.className = "floating-bottle";
     button.classList.toggle("is-similar", profileSimilarity(post.profile) >= 22 || postRelevance(post) >= 34);
     button.setAttribute("aria-label", `投稿「${post.title}」を読む`);
-    const left = phoneLayout ? 8 + ((seed + index * 19) % 64) : 8 + ((seed + index * 19) % 76);
+    const position = lakeBottlePosition(seed, index, phoneLayout, occupiedSlots);
+    const left = position.left;
+    button.dataset.lakeSlot = String(position.slotIndex);
     button.style.left = `${left}%`;
-    button.style.top = `${17 + ((seed + index * 11) % 60)}%`;
+    button.style.top = `${position.top}%`;
     const rotation = -14 + (seed % 29);
     button.style.setProperty("--rotation", `${rotation}deg`);
     button.style.setProperty("--inverse-rotation", `${-rotation}deg`);
