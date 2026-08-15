@@ -56,6 +56,8 @@ const AQUARIUM_REACTIONS = {
   ask_bottle_event: "イベントについて、おすすめのボトルはありますか？",
   share_bottle_mine: "新しいボトルを流しました。よかったら見てね！",
   share_bottle_recommend: "このボトル、おすすめです",
+  share_note_mine: "新しいノートを本棚へ置きました",
+  share_note_recommend: "このノート、おすすめです",
   good_work: "またね",
   taking_break: "少し離れます",
   together: "よろしくね",
@@ -67,6 +69,30 @@ const AQUARIUM_REACTIONS = {
 };
 
 const BOTTLE_SHARE_CODES = new Set(["share_bottle_mine", "share_bottle_recommend"]);
+const NOTE_SHARE_CODES = new Set(["share_note_mine", "share_note_recommend"]);
+
+const NOTE_TYPES = {
+  internship: { label: "インターン・就活", icon: "ph-briefcase", className: "note-type-internship" },
+  technology: { label: "技術・研究", icon: "ph-code", className: "note-type-technology" },
+  project: { label: "制作物・活動", icon: "ph-sparkle", className: "note-type-project" },
+  learning: { label: "学び・進路", icon: "ph-compass", className: "note-type-learning" },
+};
+
+const NOTE_FEEDBACK_TYPES = {
+  impressions: "感想がほしい",
+  questions: "質問を受けたい",
+  advice: "アドバイスがほしい",
+  same_experience: "同じ経験を聞きたい",
+  none: "読むだけでOK",
+};
+
+const NOTE_COMMENT_TYPES = {
+  impression: "参考になりました",
+  question: "質問があります",
+  same_experience: "同じ経験があります",
+  advice: "アドバイスがあります",
+  support: "応援しています",
+};
 
 const FISH = {
   coral: { filter: "hue-rotate(0deg) saturate(.9)" },
@@ -122,6 +148,17 @@ const state = {
   savedPostIds: new Set(),
   savedPosts: [],
   bookmarksAvailable: true,
+  notes: [],
+  noteComments: [],
+  noteBookmarkIds: new Set(),
+  noteBookmarksAvailable: true,
+  libraryAvailable: true,
+  selectedLibraryShelf: "all",
+  selectedNoteType: "all",
+  noteSearchQuery: "",
+  selectedNoteId: null,
+  editingNoteId: null,
+  noteSubmitStatus: "published",
   selectedCategory: "all",
   postSearchQuery: "",
   postOwnership: "all",
@@ -225,12 +262,25 @@ function reactionPost(reaction) {
   return findKnownPost(reaction.post_id);
 }
 
+function reactionNote(reaction) {
+  if (!reaction?.note_id) return null;
+  return findKnownNote(reaction.note_id);
+}
+
 function bottleShareText(reaction) {
   const post = reactionPost(reaction);
   if (!post) return "紹介されたボトルは、いまは読むことができません";
   return reaction.message_code === "share_bottle_mine"
     ? `「${post.title}」を流しました`
     : `「${post.title}」がおすすめです`;
+}
+
+function noteShareText(reaction) {
+  const note = reactionNote(reaction);
+  if (!note) return "紹介されたノートは、いまは読むことができません";
+  return reaction.message_code === "share_note_mine"
+    ? `「${note.title}」を本棚へ置きました`
+    : `「${note.title}」がおすすめです`;
 }
 
 function parseFieldTags(value) {
@@ -716,6 +766,8 @@ function readableError(error) {
   if (lower.includes("password should be")) return "パスワードは8文字以上にしてください。";
   if (lower.includes("post_replies") && lower.includes("schema cache")) return "返信機能のデータ設定が古い状態です。管理者へお知らせください。";
   if (lower.includes("post_bookmarks") && (lower.includes("schema cache") || lower.includes("relation"))) return "「あとで読む」を使うにはSupabaseの追加SQLを実行してください。";
+  if (isMissingLibrarySchema(error)) return "湖畔の図書館を使うにはSupabaseの追加SQLを実行してください。";
+  if (lower.includes("note share cooldown")) return "同じノートは10分後にもう一度紹介できます。";
   if (lower.includes("bottle share cooldown")) return "同じボトルは10分後にもう一度紹介できます。";
   if (lower.includes("post_id") && (lower.includes("schema cache") || lower.includes("column"))) return "ボトル共有を使うにはSupabaseの追加SQLを実行してください。";
   if (lower.includes("reaction target cooldown")) return "同じ相手への連続送信を防いでいます。少し待ってから送ってください。";
@@ -1054,10 +1106,11 @@ function showOnly(viewName) {
 
 function routeFromLocation() {
   const hash = decodeURIComponent(location.hash.slice(1));
-  if (hash.startsWith("post=")) return { page: "board", postId: hash.slice(5) };
-  if (hash === "lake") return { page: "aquarium", postId: null };
-  if (["board", "mypage", "aquarium", "admin"].includes(hash)) return { page: hash, postId: null };
-  return { page: "aquarium", postId: null };
+  if (hash.startsWith("post=")) return { page: "board", postId: hash.slice(5), noteId: null };
+  if (hash.startsWith("note=")) return { page: "library", postId: null, noteId: hash.slice(5) };
+  if (hash === "lake") return { page: "aquarium", postId: null, noteId: null };
+  if (["board", "library", "mypage", "aquarium", "admin"].includes(hash)) return { page: hash, postId: null, noteId: null };
+  return { page: "aquarium", postId: null, noteId: null };
 }
 
 function upsertLocalOwnPresence(status = "social") {
@@ -1095,7 +1148,7 @@ async function enterAquariumPage() {
 
 function showPage(pageName, updateHash = true) {
   if (!state.session) return;
-  const allowed = state.isAdmin ? ["aquarium", "board", "mypage", "admin"] : ["aquarium", "board", "mypage"];
+  const allowed = state.isAdmin ? ["aquarium", "board", "library", "mypage", "admin"] : ["aquarium", "board", "library", "mypage"];
   const requestedPage = pageName === "home" ? "aquarium" : pageName;
   const nextPage = allowed.includes(requestedPage) ? requestedPage : "aquarium";
   const previousPage = $("#appView").dataset.activePage;
@@ -1129,6 +1182,7 @@ function showPage(pageName, updateHash = true) {
   }
   if (nextPage === "admin") void loadAdminDashboard();
   if (nextPage === "board") renderPosts();
+  if (nextPage === "library") renderNotes();
   trackAnalyticsEvent("page_view", { page_key: nextPage });
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
@@ -1196,6 +1250,77 @@ function bindStaticEvents() {
     if (button) void unmuteUser(button.dataset.unmuteUser);
   });
   $("#closeAquariumIntroButton").addEventListener("click", closeAquariumIntro);
+
+  $("#libraryDoor").addEventListener("click", () => {
+    try { localStorage.setItem("manabium:library-door-seen", "1"); } catch { /* storage is optional */ }
+    $("#libraryDoor").classList.add("is-entering");
+    window.setTimeout(() => {
+      $("#libraryDoor").classList.remove("is-entering");
+      showPage("library");
+    }, window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 360);
+  });
+  try { $("#libraryDoorTip").hidden = localStorage.getItem("manabium:library-door-seen") === "1"; } catch { /* storage is optional */ }
+  $("#openNoteComposerButton").addEventListener("click", () => openNoteComposer());
+  $("#libraryShelves").addEventListener("click", (event) => {
+    const button = event.target.closest("[data-library-shelf]");
+    if (!button) return;
+    state.selectedLibraryShelf = button.dataset.libraryShelf;
+    $$("[data-library-shelf]", $("#libraryShelves")).forEach((item) => {
+      item.classList.toggle("active", item === button);
+      if (item === button) item.setAttribute("aria-current", "page");
+      else item.removeAttribute("aria-current");
+    });
+    renderNotes();
+  });
+  $("#noteTypeFilters").addEventListener("click", (event) => {
+    const button = event.target.closest("[data-note-type]");
+    if (!button) return;
+    state.selectedNoteType = button.dataset.noteType;
+    $$("[data-note-type]", $("#noteTypeFilters")).forEach((item) => item.classList.toggle("active", item === button));
+    renderNotes();
+  });
+  $("#noteSearchInput").addEventListener("input", (event) => {
+    state.noteSearchQuery = event.currentTarget.value.trim();
+    $("#clearNoteSearchButton").hidden = !state.noteSearchQuery;
+    renderNotes();
+  });
+  $("#clearNoteSearchButton").addEventListener("click", () => {
+    state.noteSearchQuery = "";
+    $("#noteSearchInput").value = "";
+    $("#clearNoteSearchButton").hidden = true;
+    renderNotes();
+    $("#noteSearchInput").focus();
+  });
+  $("#noteList").addEventListener("click", handleNoteListClick);
+  $("#noteForm").addEventListener("submit", submitNote);
+  $("#saveNoteDraftButton").addEventListener("click", () => {
+    state.noteSubmitStatus = "draft";
+    $("#noteForm").requestSubmit($("#publishNoteButton"));
+  });
+  $("#publishNoteButton").addEventListener("click", () => { state.noteSubmitStatus = "published"; });
+  $("#noteSummary").addEventListener("input", () => { $("#noteSummaryCharacterCount").textContent = String($("#noteSummary").value.length); });
+  $("#noteBody").addEventListener("input", () => { $("#noteBodyCharacterCount").textContent = String($("#noteBody").value.length); });
+  $("#noteExternalUrl").addEventListener("input", (event) => validateExternalUrlInput(event.currentTarget));
+  $("#noteExternalSiteName").addEventListener("input", () => validateExternalUrlInput($("#noteExternalUrl")));
+  $("#noteDetailTags").addEventListener("click", (event) => {
+    const button = event.target.closest("[data-note-search-tag]");
+    if (!button) return;
+    closeDialog("noteDialog");
+    showPage("library");
+    state.noteSearchQuery = button.dataset.noteSearchTag;
+    $("#noteSearchInput").value = state.noteSearchQuery;
+    $("#clearNoteSearchButton").hidden = false;
+    state.selectedLibraryShelf = "all";
+    renderNotes();
+  });
+  $("#noteBookmarkButton").addEventListener("click", () => toggleNoteBookmark(state.selectedNoteId));
+  $("#shareNoteToLakeButton").addEventListener("click", shareSelectedNoteToLake);
+  $("#editNoteButton").addEventListener("click", () => openNoteComposer(state.selectedNoteId));
+  $("#deleteNoteButton").addEventListener("click", openNoteDeleteConfirmation);
+  $("#confirmDeleteNoteButton").addEventListener("click", deleteSelectedNote);
+  $("#reportNoteButton").addEventListener("click", openNoteReport);
+  $("#noteCommentForm").addEventListener("submit", submitNoteComment);
+  $("#noteCommentList").addEventListener("click", handleNoteCommentClick);
 
   $("#openComposerButton").addEventListener("click", openComposer);
   $("#postForm").addEventListener("submit", submitPost);
@@ -1293,6 +1418,7 @@ function bindStaticEvents() {
     const route = routeFromLocation();
     showPage(route.page, false);
     if (route.postId) window.setTimeout(() => openPost(route.postId), 0);
+    if (route.noteId) window.setTimeout(() => openNote(route.noteId), 0);
   });
 }
 
@@ -1428,10 +1554,12 @@ async function routeSession(session) {
     await loadAll();
     if (routeVersion !== state.routeVersion) return;
     const requestedRoute = routeFromLocation();
-    const destination = enteringSignedInApp && !requestedRoute.postId ? "aquarium" : requestedRoute.page;
-    showPage(destination, enteringSignedInApp && !requestedRoute.postId);
+    const hasDeepLink = Boolean(requestedRoute.postId || requestedRoute.noteId);
+    const destination = enteringSignedInApp && !hasDeepLink ? "aquarium" : requestedRoute.page;
+    showPage(destination, enteringSignedInApp && !hasDeepLink);
     subscribeToRealtime();
     if (requestedRoute.postId) window.setTimeout(() => openPost(requestedRoute.postId), 0);
+    if (requestedRoute.noteId) window.setTimeout(() => openNote(requestedRoute.noteId), 0);
   } catch (error) {
     showOnly("auth");
     showToast(`初期データを読めませんでした: ${readableError(error)}`, "error");
@@ -1469,6 +1597,18 @@ function cleanupSignedInState() {
   state.likedPostIds.clear();
   state.savedPostIds.clear();
   state.bookmarksAvailable = true;
+  state.notes = [];
+  state.noteComments = [];
+  state.noteBookmarkIds.clear();
+  state.noteBookmarksAvailable = true;
+  state.libraryAvailable = true;
+  state.selectedLibraryShelf = "all";
+  state.selectedNoteType = "all";
+  state.noteSearchQuery = "";
+  state.selectedNoteId = null;
+  state.editingNoteId = null;
+  $("#noteSearchInput").value = "";
+  $("#clearNoteSearchButton").hidden = true;
   state.threadedRepliesAvailable = true;
   $("#postSearchInput").value = "";
   $("#clearPostSearchButton").hidden = true;
@@ -1572,6 +1712,7 @@ async function loadAll() {
     loadReplies(),
     loadMyData(),
     loadAquariumData(),
+    loadLibraryData(),
   ]);
   const failures = results.filter((result) => result.status === "rejected");
   if (failures.length) {
@@ -1699,15 +1840,15 @@ async function loadAquariumReactions() {
   const cutoff = new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString();
   let { data, error } = await supabase
     .from("aquarium_reactions")
-    .select("id,sender_user_id,target_user_id,message_code,post_id,created_at")
+    .select("id,sender_user_id,target_user_id,message_code,post_id,note_id,created_at")
     .gte("created_at", cutoff)
     .order("created_at", { ascending: false })
     .limit(80);
-  if (error && String(error.message ?? "").toLowerCase().includes("post_id")) {
+  if (error && /post_id|note_id/i.test(String(error.message ?? ""))) {
     ({ data, error } = await supabase
       .from("aquarium_reactions")
-      .select("id,sender_user_id,target_user_id,message_code,created_at")
-      .gte("created_at", new Date(Date.now() - 30 * 1000).toISOString())
+      .select("id,sender_user_id,target_user_id,message_code,post_id,created_at")
+      .gte("created_at", cutoff)
       .order("created_at", { ascending: false })
       .limit(80));
   }
@@ -1719,6 +1860,7 @@ async function loadAquariumReactions() {
   state.aquariumReactions = (data ?? []).map((reaction) => ({
     ...reaction,
     post_id: reaction.post_id ?? null,
+    note_id: reaction.note_id ?? null,
     profile: profiles.get(reaction.sender_user_id) ?? null,
   }));
   renderAquarium();
@@ -2091,7 +2233,7 @@ function handleSharedBottlesListClick(event) {
   openPost(button.dataset.openSharedPost);
 }
 
-async function sendAquariumReaction(messageCode, targetUserId = null, postId = null) {
+async function sendAquariumReaction(messageCode, targetUserId = null, postId = null, noteId = null) {
   if (!AQUARIUM_REACTIONS[messageCode] || !state.aquariumPresenceJoined) {
     showToast("湖への接続が完了すると定型リアクションを送れます。", "info");
     return;
@@ -2124,8 +2266,25 @@ async function sendAquariumReaction(messageCode, targetUserId = null, postId = n
       showToast("自分のボトルは「自分のボトル」から共有してください。", "info");
       return;
     }
+    noteId = null;
+  } else if (NOTE_SHARE_CODES.has(messageCode)) {
+    const note = findKnownNote(noteId);
+    if (!note || note.status !== "published") {
+      showToast("紹介するノートを選んでください。", "info");
+      return;
+    }
+    if (messageCode === "share_note_mine" && note.user_id !== state.user.id) {
+      showToast("自分のノートとして紹介できるのは、自分で書いたノートだけです。", "error");
+      return;
+    }
+    if (messageCode === "share_note_recommend" && note.user_id === state.user.id) {
+      showToast("自分のノートは新しいノートとして紹介します。", "info");
+      return;
+    }
+    postId = null;
   } else {
     postId = null;
+    noteId = null;
   }
   if (!targetUserId && now - state.lastAquariumReactionAt < AQUARIUM_GLOBAL_REACTION_COOLDOWN_MS) {
     showToast("連続送信を防いでいます。少し待ってから送ってください。", "info");
@@ -2149,14 +2308,18 @@ async function sendAquariumReaction(messageCode, targetUserId = null, postId = n
         target_user_id: targetUserId,
         message_code: messageCode,
         post_id: postId,
+        note_id: noteId,
         created_at: new Date().toISOString(),
         profile: state.profile,
       };
     } else {
       const payload = { target_user_id: targetUserId, message_code: messageCode };
       if (postId) payload.post_id = postId;
-      const selectedFields = postId
-        ? "id,sender_user_id,target_user_id,message_code,post_id,created_at"
+      if (noteId) payload.note_id = noteId;
+      const selectedFields = noteId
+        ? "id,sender_user_id,target_user_id,message_code,note_id,created_at"
+        : postId
+          ? "id,sender_user_id,target_user_id,message_code,post_id,created_at"
         : "id,sender_user_id,target_user_id,message_code,created_at";
       const { data, error } = await supabase
         .from("aquarium_reactions")
@@ -2164,7 +2327,7 @@ async function sendAquariumReaction(messageCode, targetUserId = null, postId = n
         .select(selectedFields)
         .single();
       if (error) throw error;
-      reaction = { ...data, post_id: data.post_id ?? null, profile: state.profile };
+      reaction = { ...data, post_id: data.post_id ?? null, note_id: data.note_id ?? null, profile: state.profile };
     }
     state.lastAquariumReactionAt = Date.now();
     if (targetUserId) state.lastAquariumReactionTargetAt.set(targetUserId, state.lastAquariumReactionAt);
@@ -2379,6 +2542,8 @@ function subscribeToRealtime() {
     .on("postgres_changes", { event: "*", schema: "public", table: "posts" }, () => scheduleRealtimeReload("posts"))
     .on("postgres_changes", { event: "*", schema: "public", table: "post_likes" }, () => scheduleRealtimeReload("posts"))
     .on("postgres_changes", { event: "*", schema: "public", table: "post_replies" }, () => scheduleRealtimeReload("replies"))
+    .on("postgres_changes", { event: "*", schema: "public", table: "lakeside_notes" }, () => scheduleRealtimeReload("library"))
+    .on("postgres_changes", { event: "*", schema: "public", table: "note_comments" }, () => scheduleRealtimeReload("library"))
     .on("postgres_changes", { event: "*", schema: "public", table: "aquarium_presence" }, () => scheduleRealtimeReload("aquarium"))
     .on("postgres_changes", { event: "INSERT", schema: "public", table: "aquarium_reactions" }, () => scheduleRealtimeReload("reactions"))
     .subscribe((status) => {
@@ -2401,6 +2566,7 @@ function scheduleRealtimeReload(kind) {
       else if (kinds.has("replies")) tasks.push(loadReplies(), loadMyData());
       if (kinds.has("aquarium")) tasks.push(loadAquariumPresence());
       if (kinds.has("reactions")) tasks.push(loadAquariumReactions());
+      if (kinds.has("library")) tasks.push(loadLibraryData());
       await Promise.all(tasks);
     } catch (error) {
       console.error("Realtime refresh failed", error);
@@ -2473,15 +2639,17 @@ function renderLake() {
       && recentReaction.sender_user_id === presenceItem.user_id
     );
     const announcesBottle = fishIsSpeaking && BOTTLE_SHARE_CODES.has(recentReaction?.message_code);
+    const announcesNote = fishIsSpeaking && NOTE_SHARE_CODES.has(recentReaction?.message_code);
     const sharedPost = announcesBottle ? reactionPost(recentReaction) : null;
+    const sharedNote = announcesNote ? reactionNote(recentReaction) : null;
     const mobileBubblePosition = phoneLayout && row === 0
       ? ` is-top-row${column === columns - 1 ? " is-side-left" : ""}`
       : "";
     const reactionBubble = recentReaction
-      ? `<span class="fish-reaction-bubble ${fishIsSpeaking ? "is-fish-voice" : "is-direct-reaction"}${announcesBottle ? " is-bottle-notice" : ""}${mobileBubblePosition}">
+      ? `<span class="fish-reaction-bubble ${fishIsSpeaking ? "is-fish-voice" : "is-direct-reaction"}${announcesBottle ? " is-bottle-notice" : ""}${announcesNote ? " is-note-notice" : ""}${mobileBubblePosition}">
           ${fishIsSpeaking ? "" : `<small>湖の仲間から</small>`}
-          <span>${escapeHTML(announcesBottle ? bottleShareText(recentReaction) : reactionText(recentReaction.message_code, recentReaction.profile))}</span>
-          ${announcesBottle ? '<i class="ph ph-envelope-simple-open" aria-hidden="true"></i>' : ""}
+          <span>${escapeHTML(announcesBottle ? bottleShareText(recentReaction) : announcesNote ? noteShareText(recentReaction) : reactionText(recentReaction.message_code, recentReaction.profile))}</span>
+          ${announcesBottle ? '<i class="ph ph-envelope-simple-open" aria-hidden="true"></i>' : announcesNote ? '<i class="ph ph-book-open-text" aria-hidden="true"></i>' : ""}
         </span>`
       : "";
     const button = document.createElement("button");
@@ -2491,7 +2659,7 @@ function renderLake() {
     button.classList.toggle("is-me", isMe);
     button.classList.toggle("is-similar", !isMe && similarity >= 22);
     button.classList.add(status.className);
-    button.setAttribute("aria-label", `${visitName}、${status.label}。プロフィールを見る${announcesBottle ? "。新しいボトルのお知らせがあります" : ""}`);
+    button.setAttribute("aria-label", `${visitName}、${status.label}。プロフィールを見る${announcesBottle ? "。ボトルのお知らせがあります" : announcesNote ? "。ノートのお知らせがあります" : ""}`);
     button.style.setProperty("--top", `${phoneLayout ? 18 + row * 19 : 17 + row * 25}%`);
     button.style.setProperty("--static-left", `${phoneLayout ? 6 + column * 30 : 7 + column * 22}%`);
     button.style.setProperty("--route-x-one", `${Math.round(horizontalDirection * routeDistance * 0.34)}px`);
@@ -2515,6 +2683,11 @@ function renderLake() {
       createLakeRipple(button);
       if (sharedPost && event.target.closest(".fish-reaction-bubble")) {
         openPost(sharedPost.id);
+        return;
+      }
+      if (sharedNote && event.target.closest(".fish-reaction-bubble")) {
+        showPage("library");
+        openNote(sharedNote.id);
         return;
       }
       openFishDrawer(presenceItem);
@@ -2562,7 +2735,12 @@ function renderAquariumBroadcasts() {
   if (state.lastAnnouncedAquariumReactionId === latestReaction.id) return;
   state.lastAnnouncedAquariumReactionId = latestReaction.id;
   const senderPresence = activeAquariumPresence().find((presence) => presence.user_id === latestReaction.sender_user_id);
-  layer.textContent = `${lakeVisitName(senderPresence)}：${BOTTLE_SHARE_CODES.has(latestReaction.message_code) ? bottleShareText(latestReaction) : reactionText(latestReaction.message_code, latestReaction.profile)}`;
+  const reactionCopy = BOTTLE_SHARE_CODES.has(latestReaction.message_code)
+    ? bottleShareText(latestReaction)
+    : NOTE_SHARE_CODES.has(latestReaction.message_code)
+      ? noteShareText(latestReaction)
+      : reactionText(latestReaction.message_code, latestReaction.profile);
+  layer.textContent = `${lakeVisitName(senderPresence)}：${reactionCopy}`;
 }
 
 function renderMutedUsers() {
@@ -3866,6 +4044,492 @@ function syncBodyModalState() {
   document.body.classList.toggle("modal-open", $$('dialog[open]').length > 0);
 }
 
+function isMissingLibrarySchema(error) {
+  const message = String(error?.message ?? "").toLowerCase();
+  return ["lakeside_notes", "note_comments", "note_bookmarks"].some((table) => message.includes(table))
+    && (message.includes("schema cache") || message.includes("relation") || message.includes("table"));
+}
+
+function parseNoteTags(value) {
+  const source = Array.isArray(value) ? value : String(value ?? "").split(/[、,，]/);
+  return [...new Set(source.map((item) => String(item).trim()).filter(Boolean))].slice(0, 8);
+}
+
+function normalizeNote(note) {
+  return {
+    ...note,
+    note_type: NOTE_TYPES[note.note_type] ? note.note_type : "learning",
+    feedback_type: NOTE_FEEDBACK_TYPES[note.feedback_type] ? note.feedback_type : "none",
+    field_tags: parseNoteTags(note.field_tags),
+    status: ["draft", "published", "private"].includes(note.status) ? note.status : "draft",
+    external_url: normalizeExternalUrl(note.external_url),
+    external_site_name: normalizeExternalSiteName(note.external_site_name),
+  };
+}
+
+function findKnownNote(noteId) {
+  return state.notes.find((note) => note.id === noteId) ?? null;
+}
+
+function noteSearchText(note) {
+  return normalizeSearchText([
+    note.title,
+    note.summary,
+    note.body,
+    NOTE_TYPES[note.note_type]?.label,
+    ...parseNoteTags(note.field_tags),
+  ].filter(Boolean).join(" "));
+}
+
+function noteRelevance(note) {
+  const profileWords = parseInterests(state.profile?.interests).concat(state.profile?.major ?? []);
+  const text = noteSearchText(note);
+  return profileWords.reduce((score, word) => score + (word && text.includes(normalizeSearchText(word)) ? 10 : 0), 0);
+}
+
+function noteStatusLabel(note) {
+  if (note.status === "published") return "公開中";
+  if (note.status === "private") return "非公開";
+  return "下書き";
+}
+
+function noteCommentAuthorLabel(comment, note) {
+  if (comment.user_id === state.user?.id) return "あなた";
+  if (comment.user_id === note?.user_id) return "書き手";
+  const participants = [...new Set(state.noteComments
+    .filter((item) => item.note_id === note?.id && item.user_id !== note?.user_id)
+    .map((item) => item.user_id))].sort();
+  const index = Math.max(0, participants.indexOf(comment.user_id));
+  return `読者${String.fromCharCode(65 + (index % 26))}`;
+}
+
+async function loadLibraryData() {
+  if (IS_PREVIEW_MODE) {
+    renderNotes();
+    return;
+  }
+  let notesResponse;
+  try {
+    notesResponse = await supabase
+      .from("lakeside_notes")
+      .select("id,user_id,note_type,title,summary,body,field_tags,feedback_type,external_url,external_site_name,status,moderation_status,created_at,updated_at,published_at")
+      .order("created_at", { ascending: false })
+      .limit(120);
+    if (notesResponse.error) throw notesResponse.error;
+  } catch (error) {
+    if (!isMissingLibrarySchema(error)) throw error;
+    state.libraryAvailable = false;
+    state.noteBookmarksAvailable = false;
+    state.notes = [];
+    state.noteComments = [];
+    state.noteBookmarkIds.clear();
+    renderNotes();
+    return;
+  }
+
+  state.libraryAvailable = true;
+  state.notes = (notesResponse.data ?? []).map(normalizeNote);
+  const [commentsResponse, bookmarksResponse] = await Promise.all([
+    supabase.from("note_comments").select("id,note_id,user_id,comment_type,body,created_at,updated_at").order("created_at", { ascending: true }).limit(500),
+    supabase.from("note_bookmarks").select("note_id,created_at").eq("user_id", state.user.id),
+  ]);
+  if (commentsResponse.error) throw commentsResponse.error;
+  state.noteComments = commentsResponse.data ?? [];
+  if (bookmarksResponse.error) {
+    if (!isMissingLibrarySchema(bookmarksResponse.error)) throw bookmarksResponse.error;
+    state.noteBookmarksAvailable = false;
+    state.noteBookmarkIds.clear();
+  } else {
+    state.noteBookmarksAvailable = true;
+    state.noteBookmarkIds = new Set((bookmarksResponse.data ?? []).map((item) => item.note_id));
+  }
+  renderNotes();
+  if ($("#fishLayer")) renderAquarium();
+  if (state.selectedNoteId && $("#noteDialog").open) openNote(state.selectedNoteId, false);
+}
+
+function currentShelfNotes() {
+  let notes = [...state.notes];
+  if (state.selectedLibraryShelf === "all") {
+    notes = notes.filter((note) => note.status === "published" && note.moderation_status !== "hidden");
+  } else if (state.selectedLibraryShelf === "mine") {
+    notes = notes.filter((note) => note.user_id === state.user?.id);
+  } else if (state.selectedLibraryShelf === "saved") {
+    notes = notes.filter((note) => state.noteBookmarkIds.has(note.id) && note.status === "published");
+  }
+  if (state.selectedNoteType !== "all") notes = notes.filter((note) => note.note_type === state.selectedNoteType);
+  const searchTerms = normalizeSearchText(state.noteSearchQuery).split(" ").filter(Boolean);
+  if (searchTerms.length) notes = notes.filter((note) => searchTerms.every((term) => noteSearchText(note).includes(term)));
+  if (state.selectedLibraryShelf === "all" && !searchTerms.length) {
+    notes.sort((a, b) => (noteRelevance(b) - noteRelevance(a)) || (new Date(b.published_at ?? b.created_at) - new Date(a.published_at ?? a.created_at)));
+  } else {
+    notes.sort((a, b) => new Date(b.updated_at ?? b.created_at) - new Date(a.updated_at ?? a.created_at));
+  }
+  return notes;
+}
+
+function renderNotes() {
+  const list = $("#noteList");
+  if (!list) return;
+  const shelfCopy = {
+    all: ["COMMUNITY NOTES", "みんなの本棚"],
+    mine: ["MY WRITING DESK", "わたしの本棚"],
+    saved: ["BOOKMARKED NOTES", "しおりの本棚"],
+  }[state.selectedLibraryShelf] ?? ["COMMUNITY NOTES", "みんなの本棚"];
+  $("#libraryShelfEyebrow").textContent = shelfCopy[0];
+  $("#libraryShelfTitle").textContent = shelfCopy[1];
+  list.replaceChildren();
+
+  if (!state.libraryAvailable) {
+    $("#noteResultsSummary").textContent = "準備中";
+    $("#noteEmpty").hidden = false;
+    $("#noteEmptyTitle").textContent = "図書館の本棚を準備しています";
+    $("#noteEmptyMessage").textContent = "Supabaseで湖畔の図書館用SQLを実行すると利用できます。";
+    $("#openNoteComposerButton").disabled = true;
+    return;
+  }
+  $("#openNoteComposerButton").disabled = false;
+  const notes = currentShelfNotes();
+  $("#noteResultsSummary").textContent = `${notes.length}冊のノート`;
+  $("#noteEmpty").hidden = notes.length > 0;
+  if (!notes.length) {
+    const hasFilters = state.selectedNoteType !== "all" || state.noteSearchQuery;
+    $("#noteEmptyTitle").textContent = hasFilters ? "条件に合うノートがありません" : state.selectedLibraryShelf === "saved" ? "しおりを挟んだノートはまだありません" : state.selectedLibraryShelf === "mine" ? "あなたの本棚はまだ空です" : "まだノートがありません";
+    $("#noteEmptyMessage").textContent = hasFilters ? "検索する言葉や種類を変えてみてください。" : state.selectedLibraryShelf === "saved" ? "気になるノートにしおりを挟むと、ここへ並びます。" : "最初の一冊を湖畔へ残してみませんか。";
+  }
+
+  notes.forEach((note, index) => {
+    const type = NOTE_TYPES[note.note_type];
+    const isOwn = note.user_id === state.user?.id;
+    const saved = state.noteBookmarkIds.has(note.id);
+    const comments = state.noteComments.filter((comment) => comment.note_id === note.id).length;
+    const tags = parseNoteTags(note.field_tags);
+    const card = document.createElement("article");
+    card.className = `note-card ${type.className}${isOwn ? " is-own-note" : ""}${note.status !== "published" ? " is-draft-note" : ""}`;
+    card.style.setProperty("--note-order", String(index));
+    const previewId = `note-preview-${note.id}`;
+    card.innerHTML = `
+      <button class="note-open-button" type="button" data-note-action="open" data-note-id="${escapeHTML(note.id)}" aria-describedby="${previewId}">
+        <span class="note-cover-mark"><i class="ph ${type.icon}" aria-hidden="true"></i></span>
+        <span class="note-card-topline"><span class="note-type-label">${escapeHTML(type.label)}</span>${isOwn ? `<span class="note-status-label">${escapeHTML(noteStatusLabel(note))}</span>` : ""}</span>
+        <h3>${escapeHTML(note.title)}</h3>
+        <p class="note-card-summary">${escapeHTML(note.summary)}</p>
+        <span class="note-card-tags">${tags.slice(0, 3).map((tag) => `<span>${escapeHTML(tag)}</span>`).join("")}</span>
+        <span class="note-card-footer"><span><i class="ph ph-chat-circle-dots" aria-hidden="true"></i>${comments}</span><span>${formatRelativeDate(note.published_at ?? note.updated_at ?? note.created_at)}</span></span>
+        <span id="${previewId}" class="note-hover-preview" role="tooltip"><small>${escapeHTML(type.label)}・${escapeHTML(NOTE_FEEDBACK_TYPES[note.feedback_type])}</small><strong>${escapeHTML(note.title)}</strong><span>${escapeHTML(note.summary)}</span><em><i class="ph ph-book-open" aria-hidden="true"></i> ノートをひらく</em></span>
+      </button>
+      ${!isOwn && note.status === "published" ? `<button class="note-card-bookmark ${saved ? "saved" : ""}" type="button" data-note-action="bookmark" data-note-id="${escapeHTML(note.id)}" aria-label="${saved ? "しおりを外す" : "しおりを挟む"}" title="${saved ? "しおり済み" : "しおりを挟む"}"><i class="ph ph-bookmark-simple" aria-hidden="true"></i></button>` : ""}`;
+    list.append(card);
+  });
+
+  if ($("#appView").dataset.activePage === "library" && state.selectedLibraryShelf === "all") {
+    notes.slice(0, 30).forEach((note) => {
+      const key = `article:${note.id}`;
+      if (state.analyticsImpressions.has(key)) return;
+      state.analyticsImpressions.add(key);
+      trackAnalyticsEvent("content_impression", { page_key: "library", content_type: "article", content_id: note.id });
+    });
+  }
+}
+
+async function handleNoteListClick(event) {
+  const button = event.target.closest("[data-note-action][data-note-id]");
+  if (!button) return;
+  if (button.dataset.noteAction === "open") openNote(button.dataset.noteId);
+  if (button.dataset.noteAction === "bookmark") {
+    button.disabled = true;
+    await toggleNoteBookmark(button.dataset.noteId);
+    button.disabled = false;
+  }
+}
+
+function resetNoteForm() {
+  $("#noteForm").reset();
+  $("#noteSummaryCharacterCount").textContent = "0";
+  $("#noteBodyCharacterCount").textContent = "0";
+  $("#noteExternalUrl").setCustomValidity("");
+}
+
+function openNoteComposer(noteId = null) {
+  if (!state.libraryAvailable) {
+    showToast("湖畔の図書館を使うにはSupabaseの追加SQLを実行してください。", "info");
+    return;
+  }
+  resetNoteForm();
+  state.editingNoteId = noteId;
+  const note = noteId ? findKnownNote(noteId) : null;
+  if (note && note.user_id !== state.user?.id) return;
+  $("#noteComposerEyebrow").textContent = note ? "EDIT LAKESIDE NOTE" : "NEW LAKESIDE NOTE";
+  $("#noteComposerTitle").textContent = note ? "ノートを書き直す" : "湖畔にノートを残す";
+  if (note) {
+    $("#noteType").value = note.note_type;
+    $("#noteFeedbackType").value = note.feedback_type;
+    $("#noteFieldTags").value = parseNoteTags(note.field_tags).join("、");
+    $("#noteTitle").value = note.title;
+    $("#noteSummary").value = note.summary;
+    $("#noteBody").value = note.body;
+    $("#noteExternalUrl").value = note.external_url ?? "";
+    $("#noteExternalSiteName").value = note.external_site_name ?? "";
+    $("#noteSummaryCharacterCount").textContent = String(note.summary.length);
+    $("#noteBodyCharacterCount").textContent = String(note.body.length);
+    $("#saveNoteDraftButton").hidden = note.status === "published";
+    $("#publishNoteButton .button-label").textContent = note.status === "published" ? "更新して公開" : "本棚へ置く";
+  } else {
+    $("#saveNoteDraftButton").hidden = false;
+    $("#publishNoteButton .button-label").textContent = "本棚へ置く";
+  }
+  closeDialog("noteDialog");
+  openDialog("noteComposerDialog");
+  window.setTimeout(() => $("#noteTitle").focus(), 50);
+}
+
+async function submitNote(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const externalUrl = validateExternalUrlInput($("#noteExternalUrl"));
+  const externalSiteName = normalizeExternalSiteName($("#noteExternalSiteName").value);
+  if (externalSiteName && !externalUrl && !$("#noteExternalUrl").value.trim()) $("#noteExternalUrl").setCustomValidity("サイト名を入力した場合はURLも入力してください。");
+  if (!form.reportValidity()) return;
+  const status = state.noteSubmitStatus === "draft" ? "draft" : "published";
+  const button = status === "draft" ? $("#saveNoteDraftButton") : $("#publishNoteButton");
+  setButtonLoading(button, true);
+  const payload = {
+    note_type: $("#noteType").value,
+    feedback_type: $("#noteFeedbackType").value,
+    field_tags: parseNoteTags($("#noteFieldTags").value),
+    title: $("#noteTitle").value.trim(),
+    summary: $("#noteSummary").value.trim(),
+    body: $("#noteBody").value.trim(),
+    external_url: externalUrl || null,
+    external_site_name: externalUrl ? externalSiteName || null : null,
+    status,
+  };
+  try {
+    if (IS_PREVIEW_MODE) {
+      const existing = state.editingNoteId ? findKnownNote(state.editingNoteId) : null;
+      const next = normalizeNote({
+        ...existing,
+        ...payload,
+        id: existing?.id ?? `preview-note-${Date.now()}`,
+        user_id: state.user.id,
+        moderation_status: "visible",
+        created_at: existing?.created_at ?? new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        published_at: status === "published" ? existing?.published_at ?? new Date().toISOString() : null,
+      });
+      state.notes = [next, ...state.notes.filter((note) => note.id !== next.id)];
+    } else {
+      const mutation = state.editingNoteId
+        ? supabase.from("lakeside_notes").update(payload).eq("id", state.editingNoteId).eq("user_id", state.user.id)
+        : supabase.from("lakeside_notes").insert(payload);
+      const { error } = await mutation;
+      if (error) throw error;
+      await loadLibraryData();
+    }
+    closeDialog("noteComposerDialog");
+    state.editingNoteId = null;
+    state.noteSubmitStatus = "published";
+    state.selectedLibraryShelf = status === "draft" ? "mine" : "all";
+    $$("[data-library-shelf]", $("#libraryShelves")).forEach((item) => item.classList.toggle("active", item.dataset.libraryShelf === state.selectedLibraryShelf));
+    renderNotes();
+    showToast(status === "draft" ? "下書きをわたしの本棚へ保存しました。" : "ノートをみんなの本棚へ置きました。", "success");
+  } catch (error) {
+    showToast(readableError(error), "error");
+  } finally {
+    setButtonLoading(button, false);
+  }
+}
+
+function renderNoteExternalLink(note) {
+  const container = $("#noteDetailExternalLink");
+  const href = normalizeExternalUrl(note.external_url);
+  container.replaceChildren();
+  container.hidden = !href;
+  if (!href) return;
+  const url = new URL(href);
+  const link = document.createElement("a");
+  link.className = "post-primary-link";
+  link.href = href;
+  link.target = "_blank";
+  link.rel = "noopener noreferrer";
+  link.referrerPolicy = "no-referrer";
+  const label = normalizeExternalSiteName(note.external_site_name) || "関連サイト";
+  link.innerHTML = `<span class="post-primary-link-icon"><i class="ph ph-link-simple" aria-hidden="true"></i></span><span class="post-primary-link-copy"><strong>${escapeHTML(label)}</strong><small>${escapeHTML(url.hostname.replace(/^www\./, ""))} を開く</small></span><i class="ph ph-arrow-up-right" aria-hidden="true"></i>`;
+  link.addEventListener("click", () => trackAnalyticsEvent("external_link_click", { page_key: "library", content_type: "article", content_id: note.id }));
+  container.append(link);
+}
+
+function openNote(noteId, show = true) {
+  const note = findKnownNote(noteId);
+  if (!note) return;
+  const isOwner = note.user_id === state.user?.id;
+  if (note.status !== "published" && !isOwner) return;
+  state.selectedNoteId = note.id;
+  const type = NOTE_TYPES[note.note_type];
+  $("#noteDialog").className = `modal note-detail-modal ${type.className}`;
+  $("#noteDetailBadges").innerHTML = `<span class="note-detail-type"><i class="ph ${type.icon}" aria-hidden="true"></i>${escapeHTML(type.label)}</span><span>${escapeHTML(NOTE_FEEDBACK_TYPES[note.feedback_type])}</span>${isOwner ? `<span>${escapeHTML(noteStatusLabel(note))}</span>` : ""}`;
+  $("#noteDetailTitle").textContent = note.title;
+  $("#noteDetailMeta").textContent = `${isOwner ? "あなたのノート" : "匿名の書き手"}・${formatRelativeDate(note.published_at ?? note.updated_at ?? note.created_at)}`;
+  const tags = parseNoteTags(note.field_tags);
+  $("#noteDetailTags").innerHTML = tags.map((tag) => `<button type="button" data-note-search-tag="${escapeHTML(tag)}">${escapeHTML(tag)}</button>`).join("");
+  $("#noteDetailTags").hidden = tags.length === 0;
+  $("#noteDetailSummary").textContent = note.summary;
+  renderTextWithLinks($("#noteDetailBody"), note.body);
+  renderNoteExternalLink(note);
+  const saved = state.noteBookmarkIds.has(note.id);
+  $("#noteBookmarkButton").hidden = isOwner || note.status !== "published";
+  $("#noteBookmarkButton").classList.toggle("saved", saved);
+  $("#noteBookmarkButton").innerHTML = `<i class="ph ph-bookmark-simple" aria-hidden="true"></i><span>${saved ? "しおり済み" : "しおりを挟む"}</span>`;
+  $("#shareNoteToLakeButton").hidden = note.status !== "published";
+  $("#noteOwnerActions").hidden = !isOwner;
+  $("#reportNoteButton").hidden = isOwner || note.status !== "published";
+  $("#noteCommentForm").hidden = note.status !== "published";
+  renderNoteComments(note);
+  if (show) trackAnalyticsEvent("content_detail_view", { page_key: "library", content_type: "article", content_id: note.id });
+  if (show) openDialog("noteDialog");
+}
+
+function renderNoteComments(note) {
+  const comments = state.noteComments.filter((comment) => comment.note_id === note.id);
+  const list = $("#noteCommentList");
+  list.replaceChildren();
+  $("#noteCommentCount").textContent = `${comments.length}件`;
+  if (!comments.length) {
+    list.innerHTML = '<p class="reply-empty">まだ書き込みはありません。最初のしるしを残してみませんか。</p>';
+    return;
+  }
+  comments.forEach((comment) => {
+    const own = comment.user_id === state.user?.id;
+    const item = document.createElement("article");
+    item.className = "note-comment-item";
+    item.innerHTML = `<div><span class="note-comment-kind">${escapeHTML(NOTE_COMMENT_TYPES[comment.comment_type] ?? "書き込み")}</span><strong>${escapeHTML(noteCommentAuthorLabel(comment, note))}</strong><small>${formatRelativeDate(comment.created_at)}</small></div><p>${escapeHTML(comment.body)}</p>${own ? `<button type="button" data-delete-note-comment="${escapeHTML(comment.id)}"><i class="ph ph-trash" aria-hidden="true"></i> 削除</button>` : ""}`;
+    list.append(item);
+  });
+}
+
+async function submitNoteComment(event) {
+  event.preventDefault();
+  const note = findKnownNote(state.selectedNoteId);
+  if (!note || note.status !== "published" || !event.currentTarget.reportValidity()) return;
+  const button = $("#submitNoteCommentButton");
+  setButtonLoading(button, true);
+  const payload = { note_id: note.id, comment_type: $("#noteCommentType").value, body: $("#noteCommentBody").value.trim() };
+  try {
+    if (IS_PREVIEW_MODE) {
+      state.noteComments.push({ id: `preview-note-comment-${Date.now()}`, user_id: state.user.id, created_at: new Date().toISOString(), updated_at: new Date().toISOString(), ...payload });
+    } else {
+      const { error } = await supabase.from("note_comments").insert(payload);
+      if (error) throw error;
+      await loadLibraryData();
+    }
+    $("#noteCommentBody").value = "";
+    renderNoteComments(note);
+    renderNotes();
+    showToast("書き込みをノートへ残しました。", "success");
+  } catch (error) {
+    showToast(readableError(error), "error");
+  } finally {
+    setButtonLoading(button, false);
+  }
+}
+
+async function handleNoteCommentClick(event) {
+  const button = event.target.closest("[data-delete-note-comment]");
+  if (!button) return;
+  const comment = state.noteComments.find((item) => item.id === button.dataset.deleteNoteComment && item.user_id === state.user?.id);
+  if (!comment) return;
+  button.disabled = true;
+  try {
+    if (IS_PREVIEW_MODE) state.noteComments = state.noteComments.filter((item) => item.id !== comment.id);
+    else {
+      const { error } = await supabase.from("note_comments").delete().eq("id", comment.id).eq("user_id", state.user.id);
+      if (error) throw error;
+      await loadLibraryData();
+    }
+    const note = findKnownNote(comment.note_id);
+    if (note) renderNoteComments(note);
+    renderNotes();
+  } catch (error) {
+    button.disabled = false;
+    showToast(readableError(error), "error");
+  }
+}
+
+async function toggleNoteBookmark(noteId) {
+  const note = findKnownNote(noteId);
+  if (!note || !state.noteBookmarksAvailable) {
+    showToast("しおりを使うにはSupabaseの追加SQLを実行してください。", "info");
+    return;
+  }
+  const saved = state.noteBookmarkIds.has(noteId);
+  try {
+    if (!IS_PREVIEW_MODE) {
+      const query = saved ? supabase.from("note_bookmarks").delete().eq("note_id", noteId) : supabase.from("note_bookmarks").insert({ note_id: noteId });
+      const { error } = await query;
+      if (error) throw error;
+    }
+    if (saved) state.noteBookmarkIds.delete(noteId);
+    else state.noteBookmarkIds.add(noteId);
+    renderNotes();
+    if ($("#noteDialog").open && state.selectedNoteId === noteId) openNote(noteId, false);
+    showToast(saved ? "しおりを外しました。" : "しおりの本棚へ保存しました。", "success");
+  } catch (error) {
+    showToast(readableError(error), "error");
+  }
+}
+
+function openNoteDeleteConfirmation() {
+  const note = findKnownNote(state.selectedNoteId);
+  if (!note || note.user_id !== state.user?.id) return;
+  $("#deleteNoteTitle").textContent = note.title;
+  closeDialog("noteDialog");
+  openDialog("deleteNoteDialog");
+}
+
+async function deleteSelectedNote() {
+  const note = findKnownNote(state.selectedNoteId);
+  if (!note || note.user_id !== state.user?.id) return;
+  const button = $("#confirmDeleteNoteButton");
+  setButtonLoading(button, true);
+  try {
+    if (IS_PREVIEW_MODE) {
+      state.notes = state.notes.filter((item) => item.id !== note.id);
+      state.noteComments = state.noteComments.filter((item) => item.note_id !== note.id);
+      state.noteBookmarkIds.delete(note.id);
+    } else {
+      const { error } = await supabase.from("lakeside_notes").delete().eq("id", note.id).eq("user_id", state.user.id);
+      if (error) throw error;
+      await loadLibraryData();
+    }
+    state.selectedNoteId = null;
+    closeDialog("deleteNoteDialog");
+    renderNotes();
+    showToast("ノートを本棚から外しました。", "success");
+  } catch (error) {
+    showToast(readableError(error), "error");
+  } finally {
+    setButtonLoading(button, false);
+  }
+}
+
+function openNoteReport() {
+  const note = findKnownNote(state.selectedNoteId);
+  if (!note || note.user_id === state.user?.id) return;
+  state.reportTarget = { type: "note", id: note.id };
+  $("#reportForm").reset();
+  openDialog("reportDialog");
+}
+
+async function shareSelectedNoteToLake() {
+  const note = findKnownNote(state.selectedNoteId);
+  if (!note || note.status !== "published") return;
+  closeDialog("noteDialog");
+  showPage("aquarium");
+  await ensureAquariumPresence();
+  const code = note.user_id === state.user?.id ? "share_note_mine" : "share_note_recommend";
+  await sendAquariumReaction(code, null, null, note.id);
+}
+
 function formatRelativeDate(value) {
   const milliseconds = Date.now() - new Date(value).getTime();
   const minutes = Math.floor(milliseconds / 60000);
@@ -4045,6 +4709,52 @@ function bootstrapPreviewMode() {
       profile: members[0],
     },
   ];
+  state.notes = [
+    normalizeNote({
+      id: "preview-note-1", user_id: members[2].user_id, note_type: "internship",
+      title: "化学メーカーのインターンで、準備してよかったこと",
+      summary: "専門用語を並べるより、なぜそのテーマに興味を持ったかを自分の言葉で説明する準備が役立ちました。",
+      body: "参加前は研究内容を完璧に説明しなければと思っていました。実際には、取り組みの背景と自分が工夫した点を短く伝えられる方が会話につながりました。質問したいことを三つだけメモしておいたのも良かったです。\n\n企業名や選考内容の詳細は守秘義務に配慮して記載していません。",
+      field_tags: ["インターン", "応用化学", "面接"], feedback_type: "same_experience",
+      external_url: null, external_site_name: null, status: "published", moderation_status: "visible",
+      created_at: new Date(now - 2 * 86400000).toISOString(), updated_at: new Date(now - 2 * 86400000).toISOString(), published_at: new Date(now - 2 * 86400000).toISOString(),
+    }),
+    normalizeNote({
+      id: "preview-note-2", user_id: members[3].user_id, note_type: "technology",
+      title: "ロボット制御を学び始めたときの小さな実験ノート",
+      summary: "PID制御を数式だけで理解しようとして詰まったため、シミュレーションで値を一つずつ変えて挙動を比べました。",
+      body: "最初は三つの値を同時に調整してしまい、何が効いているのか分からなくなりました。そこで一つだけ変え、グラフと気づきをセットで残すようにしました。失敗した値も消さずに残すと、後から見返したときに理解がつながりました。",
+      field_tags: ["ロボット", "制御工学", "シミュレーション"], feedback_type: "advice",
+      external_url: "https://github.com/", external_site_name: "参考コード",
+      status: "published", moderation_status: "visible",
+      created_at: new Date(now - 7 * 3600000).toISOString(), updated_at: new Date(now - 7 * 3600000).toISOString(), published_at: new Date(now - 7 * 3600000).toISOString(),
+    }),
+    normalizeNote({
+      id: "preview-note-3", user_id: userId, note_type: "project",
+      title: "匿名コミュニティの湖をつくって考えたこと",
+      summary: "リアルタイムの存在感と安心できる匿名性を両立するため、自由チャットではなく定型リアクションを選びました。",
+      body: "魚が泳ぐ湖と、相談を残すボトルを組み合わせたWebアプリを制作しています。機能を増やすだけでなく、初めて来た人が意味を理解できる導線を何度も見直しました。今は長い経験を残せる図書館を試しています。",
+      field_tags: ["Webアプリ", "UI/UX", "コミュニティ"], feedback_type: "impressions",
+      external_url: null, external_site_name: null, status: "published", moderation_status: "visible",
+      created_at: new Date(now - 90 * 60000).toISOString(), updated_at: new Date(now - 90 * 60000).toISOString(), published_at: new Date(now - 90 * 60000).toISOString(),
+    }),
+    normalizeNote({
+      id: "preview-note-4", user_id: userId, note_type: "learning",
+      title: "研究室見学で聞きたいことの整理",
+      summary: "研究内容だけでなく、相談の仕方や普段の過ごし方も聞けるように質問を整理中です。",
+      body: "見学前に確認したい質問をまとめています。あとで先輩の体験も追記する予定です。",
+      field_tags: ["研究室選び", "大学生活"], feedback_type: "none",
+      external_url: null, external_site_name: null, status: "draft", moderation_status: "visible",
+      created_at: new Date(now - 30 * 60000).toISOString(), updated_at: new Date(now - 12 * 60000).toISOString(), published_at: null,
+    }),
+  ];
+  state.noteComments = [
+    { id: "preview-note-comment-1", note_id: "preview-note-2", user_id: userId, comment_type: "impression", body: "値を一つずつ変えて失敗も残す方法、試してみたいです。", created_at: new Date(now - 40 * 60000).toISOString(), updated_at: new Date(now - 40 * 60000).toISOString() },
+    { id: "preview-note-comment-2", note_id: "preview-note-3", user_id: members[0].user_id, comment_type: "question", body: "定型文の種類は、利用者の声を見ながら増やしていますか？", created_at: new Date(now - 25 * 60000).toISOString(), updated_at: new Date(now - 25 * 60000).toISOString() },
+  ];
+  state.noteBookmarkIds = new Set(["preview-note-1", "preview-note-2"]);
+  state.libraryAvailable = true;
+  state.noteBookmarksAvailable = true;
 
   document.body.classList.add("preview-mode");
   showOnly("app");
@@ -4053,6 +4763,7 @@ function bootstrapPreviewMode() {
   renderPosts();
   renderBottles();
   renderMyPage();
+  renderNotes();
   showPage(routeFromLocation().page, false);
 }
 

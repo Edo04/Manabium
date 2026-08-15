@@ -27,8 +27,8 @@
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.2/src/regular/style.css"
     />
-    <link rel="stylesheet" href="./style.css?v=20260813-bottle-bookmarks-1" />
-    <script type="module" src="./app.js?v=20260813-bottle-bookmarks-1"></script>
+    <link rel="stylesheet" href="./style.css?v=20260814-lakeside-library-1" />
+    <script type="module" src="./app.js?v=20260814-lakeside-library-1"></script>
   </head>
   <body>
     <div class="ambient ambient-one" aria-hidden="true"></div>
@@ -499,6 +499,9 @@
           <button class="nav-link" type="button" data-view="board" aria-label="ボトルメッセージ">
             <i class="ph ph-envelope-simple" aria-hidden="true"></i><span class="nav-label">ボトル</span>
           </button>
+          <button class="nav-link" type="button" data-view="library" aria-label="湖畔の図書館">
+            <i class="ph ph-books" aria-hidden="true"></i><span class="nav-label">図書館</span>
+          </button>
           <button class="nav-link" type="button" data-view="mypage">
             <i class="ph ph-user-circle" aria-hidden="true"></i><span class="nav-label">マイページ</span>
           </button>
@@ -601,6 +604,13 @@
               </div>
               <div id="fishLayer" class="fish-layer"></div>
               <div id="bottleLayer" class="bottle-layer"></div>
+              <button id="libraryDoor" class="library-door" type="button" aria-label="湖畔の図書館へ入る">
+                <span class="library-door-glow" aria-hidden="true"></span>
+                <span class="library-door-stones" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+                <span class="library-door-panel" aria-hidden="true"><i class="ph ph-book-open-text"></i></span>
+                <span class="library-door-label"><strong>湖畔の図書館</strong><small>ノートを読みに行く</small></span>
+                <span id="libraryDoorTip" class="library-door-tip">水草の奥に、みんなの経験が残る図書館があります</span>
+              </button>
               <button id="replyLily" class="reply-lily" type="button" hidden>
                 <span class="reply-lily-art" aria-hidden="true">
                   <img src="./assets/reply-lily.png" alt="" />
@@ -705,6 +715,62 @@
             <span aria-hidden="true">✉</span>
             <h2 id="postEmptyTitle">まだボトルがありません</h2>
             <p id="postEmptyMessage">このカテゴリーの最初のメッセージを流してみましょう。</p>
+          </div>
+        </section>
+
+        <section id="libraryPage" class="page library-page" data-page="library" aria-labelledby="libraryTitle" hidden>
+          <header class="library-hero">
+            <div>
+              <p class="eyebrow">LAKESIDE LIBRARY</p>
+              <h1 id="libraryTitle">湖畔の図書館</h1>
+              <p>経験や技術、つくったものを匿名のノートとして残し、次の誰かへ手渡す場所です。</p>
+            </div>
+            <button id="openNoteComposerButton" class="button library-write-button" type="button">
+              <i class="ph ph-pencil-line" aria-hidden="true"></i> ノートを書く
+            </button>
+          </header>
+
+          <nav id="libraryShelves" class="library-shelf-tabs" aria-label="本棚を選ぶ">
+            <button class="library-shelf-tab active" type="button" data-library-shelf="all" aria-current="page">
+              <span class="shelf-tab-icon"><i class="ph ph-books" aria-hidden="true"></i></span>
+              <span><strong>みんなの本棚</strong><small>公開された経験や知識</small></span>
+            </button>
+            <button class="library-shelf-tab" type="button" data-library-shelf="mine">
+              <span class="shelf-tab-icon"><i class="ph ph-notebook" aria-hidden="true"></i></span>
+              <span><strong>わたしの本棚</strong><small>下書きと公開中のノート</small></span>
+            </button>
+            <button class="library-shelf-tab" type="button" data-library-shelf="saved">
+              <span class="shelf-tab-icon"><i class="ph ph-bookmark-simple" aria-hidden="true"></i></span>
+              <span><strong>しおりの本棚</strong><small>あとで読みたいノート</small></span>
+            </button>
+          </nav>
+
+          <section class="library-tools" aria-label="ノートを検索・絞り込み">
+            <div class="library-search">
+              <i class="ph ph-magnifying-glass" aria-hidden="true"></i>
+              <label class="sr-only" for="noteSearchInput">タイトル・本文・分野で検索</label>
+              <input id="noteSearchInput" type="search" maxlength="80" placeholder="タイトル・本文・分野で検索" autocomplete="off" />
+              <button id="clearNoteSearchButton" type="button" aria-label="検索をクリア" hidden><i class="ph ph-x" aria-hidden="true"></i></button>
+            </div>
+            <div id="noteTypeFilters" class="note-type-filters" role="group" aria-label="ノートの種類で絞り込む">
+              <button class="active" type="button" data-note-type="all">すべて</button>
+              <button type="button" data-note-type="internship"><i class="ph ph-briefcase" aria-hidden="true"></i> インターン・就活</button>
+              <button type="button" data-note-type="technology"><i class="ph ph-code" aria-hidden="true"></i> 技術・研究</button>
+              <button type="button" data-note-type="project"><i class="ph ph-sparkle" aria-hidden="true"></i> 制作物・活動</button>
+              <button type="button" data-note-type="learning"><i class="ph ph-compass" aria-hidden="true"></i> 学び・進路</button>
+            </div>
+          </section>
+
+          <div class="library-shelf-heading">
+            <div><p id="libraryShelfEyebrow" class="eyebrow">COMMUNITY NOTES</p><h2 id="libraryShelfTitle">みんなの本棚</h2></div>
+            <p id="noteResultsSummary" aria-live="polite">0冊のノート</p>
+          </div>
+          <div class="library-bookcase" aria-hidden="true"><span></span><span></span><span></span></div>
+          <div id="noteList" class="note-grid" aria-live="polite"></div>
+          <div id="noteEmpty" class="library-empty" hidden>
+            <span aria-hidden="true"><i class="ph ph-book-open"></i></span>
+            <h2 id="noteEmptyTitle">まだノートがありません</h2>
+            <p id="noteEmptyMessage">最初の一冊を湖畔へ残してみませんか。</p>
           </div>
         </section>
 
@@ -851,6 +917,9 @@
         </button>
         <button class="mobile-nav-link" type="button" data-view="board">
           <i class="ph ph-envelope-simple" aria-hidden="true"></i><span>ボトル</span>
+        </button>
+        <button class="mobile-nav-link" type="button" data-view="library">
+          <i class="ph ph-books" aria-hidden="true"></i><span>図書館</span>
         </button>
         <button class="mobile-nav-link" type="button" data-view="mypage">
           <i class="ph ph-user-circle" aria-hidden="true"></i><span>マイページ</span>
@@ -1042,6 +1111,71 @@
           </form>
         </section>
       </article>
+    </dialog>
+
+    <dialog id="noteComposerDialog" class="modal note-composer-modal">
+      <form id="noteForm" method="dialog" novalidate>
+        <div class="modal-heading">
+          <div>
+            <p id="noteComposerEyebrow" class="eyebrow">NEW LAKESIDE NOTE</p>
+            <h2 id="noteComposerTitle">湖畔にノートを残す</h2>
+          </div>
+          <button class="modal-close" type="button" data-close-dialog="noteComposerDialog" aria-label="閉じる">×</button>
+        </div>
+        <div class="note-safety-banner"><i class="ph ph-shield-check" aria-hidden="true"></i><p><strong>匿名で公開されます</strong><span>氏名・学校名・研究室名・連絡先・守秘義務のある内容は書かないでください。</span></p></div>
+        <div class="two-column">
+          <label><span>ノートの種類</span><select id="noteType" required><option value="internship">インターン・就活体験</option><option value="technology">技術・研究</option><option value="project">制作物・活動記録</option><option value="learning">学び・進路の体験談</option></select></label>
+          <label><span>ほしい反応</span><select id="noteFeedbackType" required><option value="impressions">感想がほしい</option><option value="questions">質問を受けたい</option><option value="advice">アドバイスがほしい</option><option value="same_experience">同じ経験を聞きたい</option><option value="none">読むだけでOK</option></select></label>
+        </div>
+        <label><span>関連分野 <small>（カンマ区切り・最大8個）</small></span><input id="noteFieldTags" type="text" maxlength="180" placeholder="例：AI、ロボット、インターン" /><small>検索と、興味の近い人へ届けるために使います。</small></label>
+        <label><span>タイトル</span><input id="noteTitle" type="text" maxlength="120" placeholder="経験から、次の誰かへ残したいこと" required /></label>
+        <label><span>概要</span><textarea id="noteSummary" rows="3" maxlength="240" placeholder="本棚やカーソルを合わせたときに表示する短い要約" required></textarea><small class="field-help-row"><span>内容の入口になる2〜3文がおすすめです</span><span><span id="noteSummaryCharacterCount">0</span> / 240</span></small></label>
+        <label><span>本文</span><textarea id="noteBody" rows="12" maxlength="10000" placeholder="体験したこと、工夫したこと、次に試したいことなどを詳しく残してください。" required></textarea><small class="field-help-row"><span><i class="ph ph-notebook" aria-hidden="true"></i> 下書きなら後から続きを書けます</span><span><span id="noteBodyCharacterCount">0</span> / 10000</span></small></label>
+        <fieldset class="link-attachment note-link-attachment">
+          <legend><i class="ph ph-link-simple" aria-hidden="true"></i> 関連リンク <small>任意</small></legend>
+          <p>作品・参考資料・募集ページへ案内できます。リンク先から本人が分かる可能性があります。</p>
+          <div class="link-attachment-grid">
+            <label><span>サイト名</span><input id="noteExternalSiteName" type="text" maxlength="80" placeholder="例：制作したアプリ" /></label>
+            <label><span>URL</span><span class="url-input-wrap"><i class="ph ph-globe" aria-hidden="true"></i><input id="noteExternalUrl" type="url" maxlength="500" inputmode="url" autocomplete="url" placeholder="https://example.com" /></span></label>
+          </div>
+        </fieldset>
+        <div class="note-publish-note"><i class="ph ph-eye" aria-hidden="true"></i><span><strong>公開すると、みんなの本棚へ並びます</strong><small>下書きは自分の本棚だけに保存されます。</small></span></div>
+        <div class="modal-actions note-composer-actions">
+          <button class="button button-ghost" type="button" data-close-dialog="noteComposerDialog">キャンセル</button>
+          <button id="saveNoteDraftButton" class="button button-ghost" type="button"><i class="ph ph-file-dashed" aria-hidden="true"></i><span class="button-label">下書き保存</span><span class="spinner" aria-hidden="true"></span></button>
+          <button id="publishNoteButton" class="button library-write-button" type="submit"><i class="ph ph-book-open-text" aria-hidden="true"></i><span class="button-label">本棚へ置く</span><span class="spinner" aria-hidden="true"></span></button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog id="noteDialog" class="modal note-detail-modal">
+      <article>
+        <div class="modal-heading"><div id="noteDetailBadges" class="note-detail-badges"></div><button class="modal-close" type="button" data-close-dialog="noteDialog" aria-label="閉じる">×</button></div>
+        <header class="note-detail-header"><p id="noteDetailKicker" class="eyebrow">LAKESIDE NOTE</p><h2 id="noteDetailTitle"></h2><p id="noteDetailMeta"></p><div id="noteDetailTags" class="note-detail-tags"></div></header>
+        <p id="noteDetailSummary" class="note-detail-summary"></p>
+        <div id="noteDetailBody" class="note-detail-body"></div>
+        <div id="noteDetailExternalLink" class="detail-external-link" hidden></div>
+        <div class="note-detail-actions">
+          <button id="noteBookmarkButton" class="bookmark-button" type="button"><i class="ph ph-bookmark-simple" aria-hidden="true"></i><span>しおりを挟む</span></button>
+          <button id="shareNoteToLakeButton" class="button button-small button-ghost" type="button"><i class="ph ph-waves" aria-hidden="true"></i> 湖へ紹介</button>
+          <span class="note-action-spacer"></span>
+          <div id="noteOwnerActions" class="post-owner-actions" hidden><button id="editNoteButton" class="button button-small button-ghost" type="button"><i class="ph ph-pencil-simple" aria-hidden="true"></i> 編集</button><button id="deleteNoteButton" class="button button-small button-danger-ghost" type="button"><i class="ph ph-trash" aria-hidden="true"></i> 削除</button></div>
+          <button id="reportNoteButton" class="button button-small button-ghost" type="button"><i class="ph ph-flag" aria-hidden="true"></i> 通報</button>
+        </div>
+        <section class="note-comment-section" aria-labelledby="noteCommentTitle">
+          <div class="reply-section-heading"><div><p class="eyebrow">MARGINALIA</p><h3 id="noteCommentTitle">書き込み</h3></div><span id="noteCommentCount" class="reply-count">0件</span></div>
+          <div id="noteCommentList" class="note-comment-list" aria-live="polite"></div>
+          <form id="noteCommentForm" class="note-comment-form" novalidate>
+            <label><span>書き込みの種類</span><select id="noteCommentType"><option value="impression">参考になりました</option><option value="question">質問があります</option><option value="same_experience">同じ経験があります</option><option value="advice">アドバイスがあります</option><option value="support">応援しています</option></select></label>
+            <label><span>内容</span><textarea id="noteCommentBody" rows="3" maxlength="1500" placeholder="経験や質問を、やさしい言葉で残してください" required></textarea></label>
+            <button id="submitNoteCommentButton" class="button library-write-button" type="submit"><span class="button-label">書き込みを残す</span><span class="spinner" aria-hidden="true"></span></button>
+          </form>
+        </section>
+      </article>
+    </dialog>
+
+    <dialog id="deleteNoteDialog" class="modal confirm-modal">
+      <article><span class="confirm-icon" aria-hidden="true"><i class="ph ph-trash"></i></span><p class="eyebrow">REMOVE NOTE</p><h2>このノートを本棚から外しますか？</h2><p>「<span id="deleteNoteTitle">このノート</span>」と書き込みが削除されます。この操作は元に戻せません。</p><div class="modal-actions"><button class="button button-ghost" type="button" data-close-dialog="deleteNoteDialog">キャンセル</button><button id="confirmDeleteNoteButton" class="button button-danger" type="button"><span class="button-label">削除する</span><span class="spinner" aria-hidden="true"></span></button></div></article>
     </dialog>
 
     <dialog id="reportDialog" class="modal confirm-modal">
