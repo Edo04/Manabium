@@ -394,15 +394,19 @@ revoke all on table public.aquarium_preferences from anon, authenticated;
 revoke all on table public.aquarium_reactions from anon, authenticated;
 revoke all on table public.aquarium_mutes from anon, authenticated;
 
-grant select, delete on table public.aquarium_presence to authenticated;
+grant select (user_id, status, focus_topic, joined_at, heartbeat_at, updated_at)
+  on table public.aquarium_presence to authenticated;
+grant delete on table public.aquarium_presence to authenticated;
 grant insert (status, focus_topic) on table public.aquarium_presence to authenticated;
 grant update (status, focus_topic, heartbeat_at) on table public.aquarium_presence to authenticated;
 
-grant select on table public.aquarium_preferences to authenticated;
+grant select (user_id, participate_as_fish, receive_reactions, default_status, created_at, updated_at)
+  on table public.aquarium_preferences to authenticated;
 grant insert (participate_as_fish, receive_reactions, default_status) on table public.aquarium_preferences to authenticated;
 grant update (participate_as_fish, receive_reactions, default_status) on table public.aquarium_preferences to authenticated;
 
-grant select on table public.aquarium_reactions to authenticated;
+grant select (id, sender_user_id, target_user_id, post_id, message_code, created_at)
+  on table public.aquarium_reactions to authenticated;
 grant insert (target_user_id, message_code, post_id) on table public.aquarium_reactions to authenticated;
 
 grant select, delete on table public.aquarium_mutes to authenticated;

@@ -21,8 +21,12 @@ end $$;
 create index if not exists posts_field_tags_idx
   on public.posts using gin (field_tags);
 
-grant select on table public.posts to authenticated;
-grant insert on table public.posts to authenticated;
+-- 後からこの追加SQLを再実行しても、管理メモ等の内部列を公開しないよう列を限定します。
+revoke select, insert on table public.posts from authenticated;
+grant select (id, user_id, title, body, category, post_type, field_tags, like_count, created_at, updated_at)
+  on table public.posts to authenticated;
+grant insert (user_id, title, body, category, post_type, field_tags)
+  on table public.posts to authenticated;
 grant update (title, body, category, post_type, field_tags) on table public.posts to authenticated;
 
 commit;

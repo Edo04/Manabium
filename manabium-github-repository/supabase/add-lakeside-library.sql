@@ -320,7 +320,10 @@ end;
 $$;
 
 revoke all on table public.lakeside_notes, public.note_comments, public.note_bookmarks from anon, authenticated;
-grant select on table public.lakeside_notes, public.note_comments to authenticated;
+grant select (id, user_id, note_type, title, summary, body, field_tags, feedback_type, external_url, external_site_name, status, moderation_status, published_at, created_at, updated_at)
+  on table public.lakeside_notes to authenticated;
+grant select (id, note_id, user_id, comment_type, body, moderation_status, created_at, updated_at)
+  on table public.note_comments to authenticated;
 grant insert (note_type, title, summary, body, field_tags, feedback_type, external_url, external_site_name, status) on table public.lakeside_notes to authenticated;
 grant update (note_type, title, summary, body, field_tags, feedback_type, external_url, external_site_name, status) on table public.lakeside_notes to authenticated;
 grant delete on table public.lakeside_notes to authenticated;
@@ -331,6 +334,9 @@ grant select, delete on table public.note_bookmarks to authenticated;
 grant insert (note_id) on table public.note_bookmarks to authenticated;
 
 revoke insert on table public.aquarium_reactions from authenticated;
+revoke select on table public.aquarium_reactions from authenticated;
+grant select (id, sender_user_id, target_user_id, post_id, note_id, message_code, created_at)
+  on table public.aquarium_reactions to authenticated;
 grant insert (target_user_id, message_code, post_id, note_id) on table public.aquarium_reactions to authenticated;
 
 do $$

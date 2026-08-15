@@ -1,6 +1,8 @@
 const JSON_HEADERS = {
   "Cache-Control": "no-store",
   "Content-Type": "application/json; charset=utf-8",
+  "Referrer-Policy": "no-referrer",
+  "X-Content-Type-Options": "nosniff",
 };
 
 function json(body, status = 200) {
@@ -8,6 +10,10 @@ function json(body, status = 200) {
 }
 
 async function verifiedAdmin(request, env) {
+  const fetchSite = request.headers.get("Sec-Fetch-Site");
+  if (fetchSite && !["same-origin", "same-site", "none"].includes(fetchSite)) {
+    return { error: json({ error: "Cross-origin request denied." }, 403) };
+  }
   const authorization = request.headers.get("Authorization");
   if (!authorization?.startsWith("Bearer ")) return { error: json({ error: "Authentication required." }, 401) };
   if (!env.SUPABASE_URL || !env.SUPABASE_PUBLISHABLE_KEY) return { error: json({ error: "Admin API is not configured." }, 503) };
@@ -34,6 +40,11 @@ export async function onRequestGet({ request, env }) {
   const end = url.searchParams.get("end") || defaultEnd;
   const granularity = url.searchParams.get("granularity") || "day";
   if (!/^\d{4}-\d{2}-\d{2}$/.test(start) || !/^\d{4}-\d{2}-\d{2}$/.test(end) || !["day", "week", "month"].includes(granularity)) {
+    return json({ error: "Invalid range." }, 400);
+  }
+  const startTime = Date.parse(`${start}T00:00:00Z`);
+  const endTime = Date.parse(`${end}T00:00:00Z`);
+  if (!Number.isFinite(startTime) || !Number.isFinite(endTime) || startTime > endTime || endTime - startTime > 366 * 86400000) {
     return json({ error: "Invalid range." }, 400);
   }
 

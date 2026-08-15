@@ -1,4 +1,4 @@
-import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.3/+esm";
 
 // ------------------------------------------------------------
 // Supabase設定：差し替える場合は、この3行だけを変更してください。
@@ -464,7 +464,34 @@ function createClientUuid() {
   });
 }
 
-  const analyticsContext = (() => {
+function safeAnalyticsLandingPage() {
+  const allowedHashes = new Set(["#lake", "#board", "#library", "#mypage"]);
+  const safeHash = allowedHashes.has(location.hash) ? location.hash : "";
+  return `${location.pathname}${safeHash}`.slice(0, 160);
+}
+
+function clearAuthCallbackSecretsFromUrl() {
+  const url = new URL(location.href);
+  const sensitiveKeys = new Set([
+    "code", "token", "token_hash", "access_token", "refresh_token",
+    "error", "error_code", "error_description", "type",
+  ]);
+  let changed = false;
+  sensitiveKeys.forEach((key) => {
+    if (url.searchParams.has(key)) {
+      url.searchParams.delete(key);
+      changed = true;
+    }
+  });
+  const hashParams = new URLSearchParams(url.hash.startsWith("#") ? url.hash.slice(1) : url.hash);
+  if ([...sensitiveKeys].some((key) => hashParams.has(key))) {
+    url.hash = "";
+    changed = true;
+  }
+  if (changed) history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
+}
+
+const analyticsContext = (() => {
   let visitorId;
   let isFirstVisit = false;
   try {
@@ -504,7 +531,8 @@ function createClientUuid() {
     sessionId,
     isFirstVisit,
     visitCount,
-    landingPage: `${location.pathname}${location.search}${location.hash}`.slice(0, 160),
+    // 認証コードやトークンを分析ログへ残さないため、検索文字列は保存しません。
+    landingPage: safeAnalyticsLandingPage(),
     referrerHost,
     utmSource: params.get("utm_source"),
     utmMedium: params.get("utm_medium"),
@@ -762,8 +790,8 @@ function readableError(error) {
 
   if (lower.includes("invalid login credentials")) return "メールアドレスまたはパスワードが違います。";
   if (lower.includes("email not confirmed")) return "確認メールのリンクを開いてからログインしてください。";
-  if (lower.includes("user already registered")) return "このメールアドレスは登録済みです。";
-  if (lower.includes("password should be")) return "パスワードは8文字以上にしてください。";
+  if (lower.includes("user already registered")) return "登録を完了できませんでした。登録済みの場合はログインをお試しください。";
+  if (lower.includes("password should be")) return "パスワードは10文字以上にしてください。";
   if (lower.includes("post_replies") && lower.includes("schema cache")) return "返信機能のデータ設定が古い状態です。管理者へお知らせください。";
   if (lower.includes("post_bookmarks") && (lower.includes("schema cache") || lower.includes("relation"))) return "「あとで読む」を使うにはSupabaseの追加SQLを実行してください。";
   if (isMissingLibrarySchema(error)) return "湖畔の図書館を使うにはSupabaseの追加SQLを実行してください。";
@@ -2539,13 +2567,13 @@ function subscribeToRealtime() {
   if (state.realtimeChannel) supabase.removeChannel(state.realtimeChannel);
   state.realtimeChannel = supabase
     .channel(`manabium-${state.user.id}`)
-    .on("postgres_changes", { event: "*", schema: "public", table: "posts" }, () => scheduleRealtimeReload("posts"))
-    .on("postgres_changes", { event: "*", schema: "public", table: "post_likes" }, () => scheduleRealtimeReload("posts"))
-    .on("postgres_changes", { event: "*", schema: "public", table: "post_replies" }, () => scheduleRealtimeReload("replies"))
-    .on("postgres_changes", { event: "*", schema: "public", table: "lakeside_notes" }, () => scheduleRealtimeReload("library"))
-    .on("postgres_changes", { event: "*", schema: "public", table: "note_comments" }, () => scheduleRealtimeReload("library"))
-    .on("postgres_changes", { event: "*", schema: "public", table: "aquarium_presence" }, () => scheduleRealtimeReload("aquarium"))
-    .on("postgres_changes", { event: "INSERT", schema: "public", table: "aquarium_reactions" }, () => scheduleRealtimeReload("reactions"))
+    .on("postgres_changes", { event: "*", schema: "public", table: "posts", select: ["id", "user_id", "title", "body", "category", "post_type", "field_tags", "external_url", "external_site_name", "like_count", "moderation_status", "created_at", "updated_at"] }, () => scheduleRealtimeReload("posts"))
+    .on("postgres_changes", { event: "*", schema: "public", table: "post_likes", select: ["post_id", "user_id", "created_at"] }, () => scheduleRealtimeReload("posts"))
+    .on("postgres_changes", { event: "*", schema: "public", table: "post_replies", select: ["id", "post_id", "parent_reply_id", "sender_user_id", "recipient_user_id", "body", "is_read", "moderation_status", "created_at"] }, () => scheduleRealtimeReload("replies"))
+    .on("postgres_changes", { event: "*", schema: "public", table: "lakeside_notes", select: ["id", "user_id", "note_type", "title", "summary", "body", "field_tags", "feedback_type", "external_url", "external_site_name", "status", "moderation_status", "published_at", "created_at", "updated_at"] }, () => scheduleRealtimeReload("library"))
+    .on("postgres_changes", { event: "*", schema: "public", table: "note_comments", select: ["id", "note_id", "user_id", "comment_type", "body", "moderation_status", "created_at", "updated_at"] }, () => scheduleRealtimeReload("library"))
+    .on("postgres_changes", { event: "*", schema: "public", table: "aquarium_presence", select: ["user_id", "status", "focus_topic", "joined_at", "heartbeat_at", "updated_at"] }, () => scheduleRealtimeReload("aquarium"))
+    .on("postgres_changes", { event: "INSERT", schema: "public", table: "aquarium_reactions", select: ["id", "sender_user_id", "target_user_id", "post_id", "note_id", "message_code", "created_at"] }, () => scheduleRealtimeReload("reactions"))
     .subscribe((status) => {
       if (status === "SUBSCRIBED") {
         renderAquariumControls();
@@ -4812,6 +4840,7 @@ async function initialize() {
   window.addEventListener("pagehide", () => listener.subscription.unsubscribe(), { once: true });
 
   const { data, error } = await supabase.auth.getSession();
+  clearAuthCallbackSecretsFromUrl();
   if (error) {
     showToast(readableError(error), "error");
     showOnly("auth");

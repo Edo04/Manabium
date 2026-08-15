@@ -838,25 +838,36 @@ grant select (user_id, grade, major, interests, fish_type, bio, created_at, upda
 grant insert (user_id, grade, major, interests, fish_type, bio) on table public.profiles to authenticated;
 grant update (grade, major, interests, fish_type, bio) on table public.profiles to authenticated;
 
-grant select, insert, delete on table public.posts to authenticated;
+grant select (id, user_id, title, body, category, post_type, field_tags, external_url, external_site_name, like_count, created_at, updated_at)
+  on table public.posts to authenticated;
+grant insert (user_id, title, body, category, post_type, field_tags, external_url, external_site_name)
+  on table public.posts to authenticated;
+grant delete on table public.posts to authenticated;
 grant update (title, body, category, post_type, field_tags, external_url, external_site_name) on table public.posts to authenticated;
 
-grant select, insert, delete on table public.post_likes to authenticated;
+grant select, delete on table public.post_likes to authenticated;
+grant insert (post_id, user_id) on table public.post_likes to authenticated;
 grant select, delete on table public.post_bookmarks to authenticated;
 grant insert (post_id) on table public.post_bookmarks to authenticated;
-grant select, delete on table public.post_replies to authenticated;
+grant select (id, post_id, parent_reply_id, sender_user_id, recipient_user_id, body, is_read, created_at)
+  on table public.post_replies to authenticated;
+grant delete on table public.post_replies to authenticated;
 grant insert (post_id, parent_reply_id, sender_user_id, body) on table public.post_replies to authenticated;
 grant update (body, is_read) on table public.post_replies to authenticated;
 
-grant select, delete on table public.aquarium_presence to authenticated;
+grant select (user_id, status, focus_topic, joined_at, heartbeat_at, updated_at)
+  on table public.aquarium_presence to authenticated;
+grant delete on table public.aquarium_presence to authenticated;
 grant insert (status, focus_topic) on table public.aquarium_presence to authenticated;
 grant update (status, focus_topic, heartbeat_at) on table public.aquarium_presence to authenticated;
 
-grant select on table public.aquarium_preferences to authenticated;
+grant select (user_id, participate_as_fish, receive_reactions, default_status, created_at, updated_at)
+  on table public.aquarium_preferences to authenticated;
 grant insert (participate_as_fish, receive_reactions, default_status) on table public.aquarium_preferences to authenticated;
 grant update (participate_as_fish, receive_reactions, default_status) on table public.aquarium_preferences to authenticated;
 
-grant select on table public.aquarium_reactions to authenticated;
+grant select (id, sender_user_id, target_user_id, post_id, message_code, created_at)
+  on table public.aquarium_reactions to authenticated;
 grant insert (target_user_id, message_code, post_id) on table public.aquarium_reactions to authenticated;
 
 grant select, delete on table public.aquarium_mutes to authenticated;
@@ -1091,10 +1102,8 @@ grant execute on function private.is_active_user(uuid) to authenticated, service
 grant execute on function public.is_current_user_admin() to authenticated;
 grant execute on function public.get_my_profile_analytics_fields() to authenticated;
 
--- この開発者アカウントが存在する場合だけ、初期管理者にします。
-insert into public.app_user_roles (user_id, role)
-select id, 'admin' from auth.users where lower(email) = lower('s25g1095xk@chibatech.ac.jp')
-on conflict (user_id) do update set role = excluded.role;
+-- 管理者は公開リポジトリへメールアドレスを書かず、Auth > Usersで確認したUUIDを使って
+-- SQL Editorから public.app_user_roles へ手動登録してください。
 
 -- ============================================================
 -- 2. 行動ログ・企業掲載
@@ -1602,15 +1611,20 @@ end $$;
 revoke all on table public.app_user_roles, public.user_moderation, public.content_reports,
   public.admin_audit_logs, public.analytics_sessions, public.analytics_events,
   public.enterprise_organizations, public.enterprise_contents from anon, authenticated;
-grant select on table public.user_moderation to authenticated;
 -- 卒業予定年と最終アクセスは通常のプロフィール一覧から取得できないようにします。
 revoke select on table public.profiles from authenticated;
 grant select (user_id, grade, major, interests, fish_type, bio, created_at, updated_at) on table public.profiles to authenticated;
-grant select on table public.app_user_roles, public.admin_audit_logs to authenticated;
-grant select, insert, update, delete on table public.enterprise_organizations, public.enterprise_contents to authenticated;
-grant select, insert (target_type, target_id, reason, detail) on table public.content_reports to authenticated;
+grant insert (target_type, target_id, reason, detail) on table public.content_reports to authenticated;
 grant insert (graduation_year) on table public.profiles to authenticated;
 grant update (graduation_year) on table public.profiles to authenticated;
+
+-- モデレーション用のメモ・管理者IDは、通常の投稿取得へ含めません。
+revoke select on table public.posts from authenticated;
+grant select (id, user_id, title, body, category, post_type, field_tags, external_url, external_site_name, like_count, moderation_status, created_at, updated_at)
+  on table public.posts to authenticated;
+revoke select on table public.post_replies from authenticated;
+grant select (id, post_id, parent_reply_id, sender_user_id, recipient_user_id, body, is_read, moderation_status, created_at)
+  on table public.post_replies to authenticated;
 
 revoke all on function public.record_analytics_events(uuid, uuid, jsonb, text, text, text, text, text, text, text, boolean, boolean) from public;
 grant execute on function public.record_analytics_events(uuid, uuid, jsonb, text, text, text, text, text, text, text, boolean, boolean) to anon, authenticated;
@@ -1949,7 +1963,10 @@ end;
 $$;
 
 revoke all on table public.lakeside_notes, public.note_comments, public.note_bookmarks from anon, authenticated;
-grant select on table public.lakeside_notes, public.note_comments to authenticated;
+grant select (id, user_id, note_type, title, summary, body, field_tags, feedback_type, external_url, external_site_name, status, moderation_status, published_at, created_at, updated_at)
+  on table public.lakeside_notes to authenticated;
+grant select (id, note_id, user_id, comment_type, body, moderation_status, created_at, updated_at)
+  on table public.note_comments to authenticated;
 grant insert (note_type, title, summary, body, field_tags, feedback_type, external_url, external_site_name, status) on table public.lakeside_notes to authenticated;
 grant update (note_type, title, summary, body, field_tags, feedback_type, external_url, external_site_name, status) on table public.lakeside_notes to authenticated;
 grant delete on table public.lakeside_notes to authenticated;
@@ -1960,6 +1977,9 @@ grant select, delete on table public.note_bookmarks to authenticated;
 grant insert (note_id) on table public.note_bookmarks to authenticated;
 
 revoke insert on table public.aquarium_reactions from authenticated;
+revoke select on table public.aquarium_reactions from authenticated;
+grant select (id, sender_user_id, target_user_id, post_id, note_id, message_code, created_at)
+  on table public.aquarium_reactions to authenticated;
 grant insert (target_user_id, message_code, post_id, note_id) on table public.aquarium_reactions to authenticated;
 
 do $$
@@ -1972,6 +1992,36 @@ begin
     end loop;
   end if;
 end $$;
+
+commit;
+
+select pg_notify('pgrst', 'reload schema');
+
+-- ============================================================
+-- 8. Security hardening defaults
+-- ============================================================
+begin;
+
+revoke create on schema public from public, anon, authenticated;
+grant usage on schema public to anon, authenticated;
+alter default privileges for role postgres in schema public revoke all on tables from public, anon, authenticated;
+alter default privileges for role postgres in schema public revoke all on sequences from public, anon, authenticated;
+alter default privileges for role postgres in schema public revoke execute on functions from public, anon, authenticated;
+revoke all on table auth.users, auth.identities from anon, authenticated;
+revoke all on all sequences in schema public from anon, authenticated;
+
+-- Data APIの関数は閉じた状態を既定にし、利用するRPCだけを明示します。
+revoke execute on all functions in schema public from public, anon, authenticated;
+revoke execute on all functions in schema private from public, anon, authenticated;
+grant execute on function private.is_admin(uuid) to authenticated, service_role;
+grant execute on function private.is_active_user(uuid) to authenticated, service_role;
+grant execute on function public.is_current_user_admin() to authenticated;
+grant execute on function public.get_my_profile_analytics_fields() to authenticated;
+grant execute on function public.record_analytics_events(uuid, uuid, jsonb, text, text, text, text, text, text, text, boolean, boolean) to anon, authenticated;
+grant execute on function public.admin_analytics_dashboard(date, date, text) to authenticated;
+grant execute on function public.admin_moderate_content(text, uuid, text, text) to authenticated;
+grant execute on function public.admin_resolve_report(uuid, text, text) to authenticated;
+grant execute on function public.admin_set_user_status(uuid, text, text, timestamptz) to authenticated;
 
 commit;
 

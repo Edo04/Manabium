@@ -15,7 +15,10 @@ on public.post_replies for select
 to authenticated
 using (true);
 
-grant select on table public.post_replies to authenticated;
+-- 管理者向けのモデレーションメモ・管理者IDは一般利用者へ返しません。
+revoke select on table public.post_replies from authenticated;
+grant select (id, post_id, sender_user_id, recipient_user_id, body, is_read, created_at)
+  on table public.post_replies to authenticated;
 
 commit;
 
