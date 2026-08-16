@@ -16,7 +16,9 @@ export async function onRequestPost({ request, env }) {
   if (fetchSite && !["same-origin", "same-site", "none"].includes(fetchSite)) return json({ error: "Cross-origin request denied." }, 403);
   const authorization = request.headers.get("Authorization");
   if (!authorization?.startsWith("Bearer ")) return json({ error: "Authentication required." }, 401);
-  if (!env.SUPABASE_URL || !env.SUPABASE_PUBLISHABLE_KEY) return json({ error: "Admin API is not configured." }, 503);
+  if (!env.SUPABASE_URL || !env.SUPABASE_PUBLISHABLE_KEY || !env.SUPABASE_SECRET_KEY) {
+    return json({ error: "Admin API is not configured." }, 503);
+  }
   const headers = { apikey: env.SUPABASE_PUBLISHABLE_KEY, Authorization: authorization, "Content-Type": "application/json" };
 
   const userResponse = await fetch(`${env.SUPABASE_URL}/auth/v1/user`, { headers });
@@ -46,15 +48,15 @@ export async function onRequestPost({ request, env }) {
   const actions = {
     moderate_content: {
       rpc: "admin_moderate_content",
-      params: { p_target_type: body.target_type, p_target_id: body.target_id, p_status: body.status, p_note: body.note ?? null },
+      params: { p_admin_user_id: user.id, p_target_type: body.target_type, p_target_id: body.target_id, p_status: body.status, p_note: body.note ?? null },
     },
     resolve_report: {
       rpc: "admin_resolve_report",
-      params: { p_report_id: body.report_id, p_status: body.status, p_note: body.note ?? null },
+      params: { p_admin_user_id: user.id, p_report_id: body.report_id, p_status: body.status, p_note: body.note ?? null },
     },
     set_user_status: {
       rpc: "admin_set_user_status",
-      params: { p_user_id: body.user_id, p_status: body.status, p_reason: body.reason ?? null, p_until: body.until ?? null },
+      params: { p_admin_user_id: user.id, p_user_id: body.user_id, p_status: body.status, p_reason: body.reason ?? null, p_until: body.until ?? null },
     },
   };
   const selected = actions[body.action];
@@ -62,7 +64,7 @@ export async function onRequestPost({ request, env }) {
 
   const response = await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/${selected.rpc}`, {
     method: "POST",
-    headers,
+    headers: { apikey: env.SUPABASE_SECRET_KEY, "Content-Type": "application/json" },
     body: JSON.stringify(selected.params),
   });
   if (!response.ok) {

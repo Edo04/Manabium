@@ -138,7 +138,7 @@ create or replace function public.is_current_user_admin()
 returns boolean
 language sql
 stable
-security definer
+security invoker
 set search_path = ''
 as $$
   select private.is_admin(auth.uid());
@@ -337,7 +337,8 @@ declare
   previous_end_ts timestamptz;
   result jsonb;
 begin
-  if not private.is_admin(auth.uid()) then raise exception 'Admin access required' using errcode = '42501'; end if;
+  -- 呼び出し元ユーザーの判定はCloudflare側で行い、このRPC自体はserver secret専用にします。
+  if auth.role() <> 'service_role' then raise exception 'Server access required' using errcode = '42501'; end if;
   if p_start_date is null or p_end_date is null or p_end_date < p_start_date or p_end_date - p_start_date > 366 then
     raise exception 'Invalid analytics range';
   end if;
@@ -557,8 +558,9 @@ begin
 end;
 $$;
 
+drop function if exists public.admin_moderate_content(text, uuid, text, text);
 create or replace function public.admin_moderate_content(
-  p_target_type text, p_target_id uuid, p_status text, p_note text default null
+  p_admin_user_id uuid, p_target_type text, p_target_id uuid, p_status text, p_note text default null
 )
 returns void
 language plpgsql
@@ -566,50 +568,52 @@ security definer
 set search_path = ''
 as $$
 begin
-  if not private.is_admin(auth.uid()) then raise exception 'Admin access required' using errcode = '42501'; end if;
+  if auth.role() <> 'service_role' or not private.is_admin(p_admin_user_id) then raise exception 'Admin access required' using errcode = '42501'; end if;
   if p_status not in ('visible', 'hidden') then raise exception 'Invalid moderation status'; end if;
   if p_target_type = 'post' then
-    update public.posts set moderation_status = p_status, moderation_note = left(p_note, 1000), moderated_by = auth.uid(), moderated_at = now() where id = p_target_id;
+    update public.posts set moderation_status = p_status, moderation_note = left(p_note, 1000), moderated_by = p_admin_user_id, moderated_at = now() where id = p_target_id;
   elsif p_target_type = 'reply' then
-    update public.post_replies set moderation_status = p_status, moderation_note = left(p_note, 1000), moderated_by = auth.uid(), moderated_at = now() where id = p_target_id;
+    update public.post_replies set moderation_status = p_status, moderation_note = left(p_note, 1000), moderated_by = p_admin_user_id, moderated_at = now() where id = p_target_id;
   else raise exception 'Invalid target type'; end if;
   insert into public.admin_audit_logs (admin_user_id, action, target_type, target_id, detail)
-  values (auth.uid(), 'moderate_content', p_target_type, p_target_id, jsonb_build_object('status', p_status, 'note', p_note));
+  values (p_admin_user_id, 'moderate_content', p_target_type, p_target_id, jsonb_build_object('status', p_status, 'note', p_note));
 end;
 $$;
 
-create or replace function public.admin_resolve_report(p_report_id uuid, p_status text, p_note text default null)
+drop function if exists public.admin_resolve_report(uuid, text, text);
+create or replace function public.admin_resolve_report(p_admin_user_id uuid, p_report_id uuid, p_status text, p_note text default null)
 returns void
 language plpgsql
 security definer
 set search_path = ''
 as $$
 begin
-  if not private.is_admin(auth.uid()) then raise exception 'Admin access required' using errcode = '42501'; end if;
+  if auth.role() <> 'service_role' or not private.is_admin(p_admin_user_id) then raise exception 'Admin access required' using errcode = '42501'; end if;
   if p_status not in ('reviewing', 'resolved', 'dismissed') then raise exception 'Invalid report status'; end if;
-  update public.content_reports set status = p_status, admin_note = left(p_note, 1000), reviewed_by = auth.uid(), reviewed_at = now() where id = p_report_id;
+  update public.content_reports set status = p_status, admin_note = left(p_note, 1000), reviewed_by = p_admin_user_id, reviewed_at = now() where id = p_report_id;
   insert into public.admin_audit_logs (admin_user_id, action, target_type, target_id, detail)
-  values (auth.uid(), 'resolve_report', 'report', p_report_id, jsonb_build_object('status', p_status, 'note', p_note));
+  values (p_admin_user_id, 'resolve_report', 'report', p_report_id, jsonb_build_object('status', p_status, 'note', p_note));
 end;
 $$;
 
-create or replace function public.admin_set_user_status(p_user_id uuid, p_status text, p_reason text default null, p_until timestamptz default null)
+drop function if exists public.admin_set_user_status(uuid, text, text, timestamptz);
+create or replace function public.admin_set_user_status(p_admin_user_id uuid, p_user_id uuid, p_status text, p_reason text default null, p_until timestamptz default null)
 returns void
 language plpgsql
 security definer
 set search_path = ''
 as $$
 begin
-  if not private.is_admin(auth.uid()) then raise exception 'Admin access required' using errcode = '42501'; end if;
-  if p_user_id = auth.uid() then raise exception 'Cannot suspend your own admin account'; end if;
+  if auth.role() <> 'service_role' or not private.is_admin(p_admin_user_id) then raise exception 'Admin access required' using errcode = '42501'; end if;
+  if p_user_id = p_admin_user_id then raise exception 'Cannot suspend your own admin account'; end if;
   if private.is_admin(p_user_id) then raise exception 'Cannot suspend an admin account'; end if;
   if p_status not in ('active', 'suspended') then raise exception 'Invalid user status'; end if;
   insert into public.user_moderation (user_id, status, reason, suspended_until, updated_by, updated_at)
-  values (p_user_id, p_status, left(p_reason, 500), p_until, auth.uid(), now())
+  values (p_user_id, p_status, left(p_reason, 500), p_until, p_admin_user_id, now())
   on conflict (user_id) do update set status = excluded.status, reason = excluded.reason,
     suspended_until = excluded.suspended_until, updated_by = excluded.updated_by, updated_at = now();
   insert into public.admin_audit_logs (admin_user_id, action, target_type, target_id, detail)
-  values (auth.uid(), 'set_user_status', 'user', p_user_id, jsonb_build_object('status', p_status, 'reason', p_reason, 'until', p_until));
+  values (p_admin_user_id, 'set_user_status', 'user', p_user_id, jsonb_build_object('status', p_status, 'reason', p_reason, 'until', p_until));
 end;
 $$;
 
@@ -693,14 +697,14 @@ grant select (id, post_id, parent_reply_id, sender_user_id, recipient_user_id, b
 revoke all on function public.record_analytics_events(uuid, uuid, jsonb, text, text, text, text, text, text, text, boolean, boolean) from public;
 revoke execute on function public.record_analytics_events(uuid, uuid, jsonb, text, text, text, text, text, text, text, boolean, boolean) from anon;
 grant execute on function public.record_analytics_events(uuid, uuid, jsonb, text, text, text, text, text, text, text, boolean, boolean) to authenticated;
-revoke all on function public.admin_analytics_dashboard(date, date, text) from public;
-revoke all on function public.admin_moderate_content(text, uuid, text, text) from public;
-revoke all on function public.admin_resolve_report(uuid, text, text) from public;
-revoke all on function public.admin_set_user_status(uuid, text, text, timestamptz) from public;
-grant execute on function public.admin_analytics_dashboard(date, date, text) to authenticated;
-grant execute on function public.admin_moderate_content(text, uuid, text, text) to authenticated;
-grant execute on function public.admin_resolve_report(uuid, text, text) to authenticated;
-grant execute on function public.admin_set_user_status(uuid, text, text, timestamptz) to authenticated;
+revoke all on function public.admin_analytics_dashboard(date, date, text) from public, anon, authenticated;
+revoke all on function public.admin_moderate_content(uuid, text, uuid, text, text) from public, anon, authenticated;
+revoke all on function public.admin_resolve_report(uuid, uuid, text, text) from public, anon, authenticated;
+revoke all on function public.admin_set_user_status(uuid, uuid, text, text, timestamptz) from public, anon, authenticated;
+grant execute on function public.admin_analytics_dashboard(date, date, text) to service_role;
+grant execute on function public.admin_moderate_content(uuid, text, uuid, text, text) to service_role;
+grant execute on function public.admin_resolve_report(uuid, uuid, text, text) to service_role;
+grant execute on function public.admin_set_user_status(uuid, uuid, text, text, timestamptz) to service_role;
 
 -- 管理者関数以外から原始ログ・企業別個票へアクセスする権限は付与しません。
 -- 企業向け集計は admin_analytics_dashboard 内で5人未満の属性セルを除外します。

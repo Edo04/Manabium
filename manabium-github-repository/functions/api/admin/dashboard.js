@@ -16,7 +16,9 @@ async function verifiedAdmin(request, env) {
   }
   const authorization = request.headers.get("Authorization");
   if (!authorization?.startsWith("Bearer ")) return { error: json({ error: "Authentication required." }, 401) };
-  if (!env.SUPABASE_URL || !env.SUPABASE_PUBLISHABLE_KEY) return { error: json({ error: "Admin API is not configured." }, 503) };
+  if (!env.SUPABASE_URL || !env.SUPABASE_PUBLISHABLE_KEY || !env.SUPABASE_SECRET_KEY) {
+    return { error: json({ error: "Admin API is not configured." }, 503) };
+  }
 
   const headers = { apikey: env.SUPABASE_PUBLISHABLE_KEY, Authorization: authorization, "Content-Type": "application/json" };
   const userResponse = await fetch(`${env.SUPABASE_URL}/auth/v1/user`, { headers });
@@ -25,7 +27,7 @@ async function verifiedAdmin(request, env) {
   if (!user.id) return { error: json({ error: "Invalid session." }, 401) };
   const roleResponse = await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/is_current_user_admin`, { method: "POST", headers, body: "{}" });
   if (!roleResponse.ok || await roleResponse.json() !== true) return { error: json({ error: "Admin access required." }, 403) };
-  return { headers };
+  return { user };
 }
 
 export async function onRequestGet({ request, env }) {
@@ -50,7 +52,7 @@ export async function onRequestGet({ request, env }) {
 
   const response = await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/admin_analytics_dashboard`, {
     method: "POST",
-    headers: { ...verified.headers, "Content-Type": "application/json" },
+    headers: { apikey: env.SUPABASE_SECRET_KEY, "Content-Type": "application/json" },
     body: JSON.stringify({ p_start_date: start, p_end_date: end, p_granularity: granularity }),
   });
   if (!response.ok) {

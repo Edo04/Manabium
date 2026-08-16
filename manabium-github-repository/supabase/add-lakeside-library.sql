@@ -294,8 +294,9 @@ alter table public.content_reports
   add constraint content_reports_target_type_check
   check (target_type in ('post', 'reply', 'user', 'note', 'note_comment'));
 
+drop function if exists public.admin_moderate_content(text, uuid, text, text);
 create or replace function public.admin_moderate_content(
-  p_target_type text, p_target_id uuid, p_status text, p_note text default null
+  p_admin_user_id uuid, p_target_type text, p_target_id uuid, p_status text, p_note text default null
 )
 returns void
 language plpgsql
@@ -303,19 +304,19 @@ security definer
 set search_path = ''
 as $$
 begin
-  if not private.is_admin(auth.uid()) then raise exception 'Admin access required' using errcode = '42501'; end if;
+  if auth.role() <> 'service_role' or not private.is_admin(p_admin_user_id) then raise exception 'Admin access required' using errcode = '42501'; end if;
   if p_status not in ('visible', 'hidden') then raise exception 'Invalid moderation status'; end if;
   if p_target_type = 'post' then
-    update public.posts set moderation_status = p_status, moderation_note = left(p_note, 1000), moderated_by = auth.uid(), moderated_at = now() where id = p_target_id;
+    update public.posts set moderation_status = p_status, moderation_note = left(p_note, 1000), moderated_by = p_admin_user_id, moderated_at = now() where id = p_target_id;
   elsif p_target_type = 'reply' then
-    update public.post_replies set moderation_status = p_status, moderation_note = left(p_note, 1000), moderated_by = auth.uid(), moderated_at = now() where id = p_target_id;
+    update public.post_replies set moderation_status = p_status, moderation_note = left(p_note, 1000), moderated_by = p_admin_user_id, moderated_at = now() where id = p_target_id;
   elsif p_target_type = 'note' then
-    update public.lakeside_notes set moderation_status = p_status, moderation_note = left(p_note, 1000), moderated_by = auth.uid(), moderated_at = now() where id = p_target_id;
+    update public.lakeside_notes set moderation_status = p_status, moderation_note = left(p_note, 1000), moderated_by = p_admin_user_id, moderated_at = now() where id = p_target_id;
   elsif p_target_type = 'note_comment' then
-    update public.note_comments set moderation_status = p_status, moderation_note = left(p_note, 1000), moderated_by = auth.uid(), moderated_at = now() where id = p_target_id;
+    update public.note_comments set moderation_status = p_status, moderation_note = left(p_note, 1000), moderated_by = p_admin_user_id, moderated_at = now() where id = p_target_id;
   else raise exception 'Invalid target type'; end if;
   insert into public.admin_audit_logs (admin_user_id, action, target_type, target_id, detail)
-  values (auth.uid(), 'moderate_content', p_target_type, p_target_id, jsonb_build_object('status', p_status, 'note', p_note));
+  values (p_admin_user_id, 'moderate_content', p_target_type, p_target_id, jsonb_build_object('status', p_status, 'note', p_note));
 end;
 $$;
 
