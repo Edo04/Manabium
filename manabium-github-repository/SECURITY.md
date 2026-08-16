@@ -10,6 +10,8 @@
 
 管理者向けRPCは`authenticated`から直接実行できません。ブラウザからCloudflare Pages Functionsへ利用者のBearerトークンを送り、Functionsが管理者判定を行った後だけ、Cloudflareの暗号化Secretである`SUPABASE_SECRET_KEY`を`apikey`ヘッダーに設定して呼び出します。`SUPABASE_SECRET_KEY`にはSupabaseの`sb_secret_...`キーを設定し、ブラウザ、Git、SQLファイル、チャットへ貼り付けません。
 
+本人の卒業予定年を取得する公開RPCは`SECURITY INVOKER`で実行します。列権限を迂回する必要がある最小限の読み取り処理は、Data APIのExposed schemasへ追加しない`private`スキーマに置き、入力値を受け取らず`auth.uid()`本人の行だけを返します。
+
 ## テスト公開前の必須作業
 
 1. Supabase SQL Editorで`supabase/security-hardening.sql`を実行し、最後の4項目がすべて`false`になることを確認する。
@@ -20,6 +22,7 @@
 6. Supabase、Cloudflare、GitHubの運営アカウントへ多要素認証を設定する。
 7. 管理者権限はAuth > Usersで対象者のUUIDを確認し、SQL Editorから`app_user_roles`へ手動登録する。メールアドレスをSQLファイルへ保存しない。
 8. Cloudflare PagesのProduction環境へ`SUPABASE_SECRET_KEY`を暗号化Secretとして登録し、`supabase/restrict-admin-rpcs-to-server.sql`を実行してから再デプロイする。
+9. Supabase SQL Editorで`supabase/make-profile-analytics-rpc-invoker.sql`を実行し、API SettingsのExposed schemasに`private`が含まれていないことを確認する。
 
 ## 回帰テスト
 

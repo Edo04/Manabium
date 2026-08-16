@@ -117,6 +117,7 @@ revoke execute on all functions in schema private from public, anon, authenticat
 
 grant execute on function private.is_admin(uuid) to authenticated, service_role;
 grant execute on function private.is_active_user(uuid) to authenticated, service_role;
+grant execute on function private.get_my_profile_analytics_fields() to authenticated;
 grant execute on function public.is_current_user_admin() to authenticated;
 grant execute on function public.get_my_profile_analytics_fields() to authenticated;
 grant execute on function public.record_analytics_events(uuid, uuid, jsonb, text, text, text, text, text, text, text, boolean, boolean)
@@ -139,6 +140,15 @@ begin
     or has_column_privilege('authenticated', 'public.profiles', 'graduation_year', 'select')
     or has_column_privilege('authenticated', 'public.profiles', 'last_accessed_at', 'select') then
     raise exception 'Security check failed: private profile columns are readable';
+  end if;
+  if exists (
+    select 1 from pg_proc p
+    join pg_namespace n on n.oid = p.pronamespace
+    where n.nspname = 'public'
+      and p.proname = 'get_my_profile_analytics_fields'
+      and p.prosecdef
+  ) then
+    raise exception 'Security check failed: public profile analytics RPC is SECURITY DEFINER';
   end if;
   if has_column_privilege('authenticated', 'public.posts', 'moderation_note', 'select')
     or has_column_privilege('authenticated', 'public.post_replies', 'moderation_note', 'select')

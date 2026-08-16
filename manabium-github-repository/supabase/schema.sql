@@ -1079,26 +1079,43 @@ as $$
   select private.is_admin(auth.uid());
 $$;
 
-create or replace function public.get_my_profile_analytics_fields()
+-- graduation_yearはコミュニティ向け列権限から除外しているため、本人行だけを読む
+-- 最小限のSECURITY DEFINER処理はData APIに公開しないprivateスキーマへ置きます。
+create or replace function private.get_my_profile_analytics_fields()
 returns jsonb
 language sql
 stable
 security definer
 set search_path = ''
 as $$
-  select coalesce(
-    (select jsonb_build_object('graduation_year', p.graduation_year)
-     from public.profiles p where p.user_id = auth.uid()),
-    '{}'::jsonb
-  );
+  select case
+    when auth.role() <> 'authenticated' or auth.uid() is null then '{}'::jsonb
+    else coalesce(
+      (select jsonb_build_object('graduation_year', p.graduation_year)
+       from public.profiles p where p.user_id = auth.uid()),
+      '{}'::jsonb
+    )
+  end;
+$$;
+
+create or replace function public.get_my_profile_analytics_fields()
+returns jsonb
+language sql
+stable
+security invoker
+set search_path = ''
+as $$
+  select private.get_my_profile_analytics_fields();
 $$;
 
 revoke all on function private.is_admin(uuid) from public;
 revoke all on function private.is_active_user(uuid) from public;
+revoke all on function private.get_my_profile_analytics_fields() from public, anon, authenticated;
 revoke all on function public.is_current_user_admin() from public;
-revoke all on function public.get_my_profile_analytics_fields() from public;
+revoke all on function public.get_my_profile_analytics_fields() from public, anon, authenticated;
 grant execute on function private.is_admin(uuid) to authenticated, service_role;
 grant execute on function private.is_active_user(uuid) to authenticated, service_role;
+grant execute on function private.get_my_profile_analytics_fields() to authenticated;
 grant execute on function public.is_current_user_admin() to authenticated;
 grant execute on function public.get_my_profile_analytics_fields() to authenticated;
 
@@ -2020,6 +2037,7 @@ revoke execute on all functions in schema public from public, anon, authenticate
 revoke execute on all functions in schema private from public, anon, authenticated;
 grant execute on function private.is_admin(uuid) to authenticated, service_role;
 grant execute on function private.is_active_user(uuid) to authenticated, service_role;
+grant execute on function private.get_my_profile_analytics_fields() to authenticated;
 grant execute on function public.is_current_user_admin() to authenticated;
 grant execute on function public.get_my_profile_analytics_fields() to authenticated;
 grant execute on function public.record_analytics_events(uuid, uuid, jsonb, text, text, text, text, text, text, text, boolean, boolean) to authenticated;
