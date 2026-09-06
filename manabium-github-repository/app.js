@@ -165,6 +165,8 @@ const state = {
   selectedPostId: null,
   editingReplyId: null,
   replyingToReplyId: null,
+  writingDrafts: new Map(),
+  noteComposerDraft: null,
   realtimeChannel: null,
   aquariumHeartbeatId: null,
   aquariumExpiryTimerId: null,
@@ -412,11 +414,11 @@ function initializeBottleGuide() {
 }
 
 function applyPostSearch(value, resetCategory = false) {
-  state.postSearchQuery = String(value ?? "").trim();
+  state.postSearchQuery = String(value ?? "");
   const input = $("#postSearchInput");
   const clearButton = $("#clearPostSearchButton");
-  input.value = state.postSearchQuery;
-  clearButton.hidden = !state.postSearchQuery;
+  if (input.value !== state.postSearchQuery) input.value = state.postSearchQuery;
+  clearButton.hidden = !state.postSearchQuery.length;
 
   if (resetCategory) {
     state.selectedCategory = "all";
@@ -425,6 +427,86 @@ function applyPostSearch(value, resetCategory = false) {
     });
   }
   renderPosts();
+}
+
+function syncFilterButtons(container, attribute, selected) {
+  $$(`[data-${attribute}]`, container).forEach((button) => {
+    const active = button.getAttribute(`data-${attribute}`) === selected;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-pressed", String(active));
+    if (attribute === "library-shelf") {
+      if (active) button.setAttribute("aria-current", "page");
+      else button.removeAttribute("aria-current");
+    }
+  });
+}
+
+function resetPostFilters() {
+  state.selectedCategory = "all";
+  state.postOwnership = "all";
+  applyPostSearch("");
+}
+
+function resetNoteFilters() {
+  state.selectedNoteType = "all";
+  state.noteSearchQuery = "";
+  $("#noteSearchInput").value = "";
+  $("#clearNoteSearchButton").hidden = true;
+  renderNotes();
+}
+
+// Drafts live only in this signed-in tab and are never sent until submission.
+function writingDraftKey(kind, contentId) {
+  return state.user?.id && contentId ? `${state.user.id}:${kind}:${contentId}` : "";
+}
+
+function rememberTextDraft(field) {
+  const key = field?.dataset.writingDraft;
+  if (key) state.writingDrafts.set(key, field.value);
+}
+
+function attachTextDraft(field, kind, contentId, fallback = "") {
+  const key = writingDraftKey(kind, contentId);
+  if (!field || !key) return;
+  if (field.dataset.writingDraft === key) return;
+  rememberTextDraft(field);
+  field.dataset.writingDraft = key;
+  field.value = state.writingDrafts.get(key) ?? fallback;
+}
+
+function clearTextDraft(kind, contentId) {
+  const key = writingDraftKey(kind, contentId);
+  state.writingDrafts.delete(key);
+  $$('[data-writing-draft]').forEach((field) => {
+    if (field.dataset.writingDraft !== key) return;
+    delete field.dataset.writingDraft;
+    field.value = "";
+  });
+}
+
+function updateComposerDraftHint() {
+  const hint = $("#composerDraftHint");
+  if (!hint) return;
+  hint.hidden = ![$("#postTitle"), $("#postBody"), $("#postFields"), $("#postExternalUrl")].some((field) => field.value.trim());
+  hint.textContent = "閉じても入力は残ります。再読み込み・ログアウトすると消えます。";
+}
+
+const NOTE_DRAFT_FIELDS = ["noteType", "noteFeedbackType", "noteFieldTags", "noteTitle", "noteSummary", "noteBody", "noteExternalUrl", "noteExternalSiteName"];
+
+function rememberNoteComposerDraft() {
+  if (!state.user) return;
+  state.noteComposerDraft = {
+    key: writingDraftKey("note-compose", state.editingNoteId ?? "new"),
+    fields: Object.fromEntries(NOTE_DRAFT_FIELDS.map((id) => [id, $(`#${id}`).value])),
+  };
+  updateNoteDraftHint();
+}
+
+function updateNoteDraftHint() {
+  const hint = $("#noteDraftHint");
+  if (!hint) return;
+  hint.hidden = !state.noteComposerDraft;
+  hint.textContent = "閉じてもこのノートの入力は残ります。長く残すなら「下書き保存」を。";
 }
 
 function normalizeProfile(profile) {
@@ -1311,7 +1393,7 @@ function bindStaticEvents() {
     renderNotes();
   });
   $("#noteSearchInput").addEventListener("input", (event) => {
-    state.noteSearchQuery = event.currentTarget.value.trim();
+    state.noteSearchQuery = event.currentTarget.value;
     $("#clearNoteSearchButton").hidden = !state.noteSearchQuery;
     renderNotes();
   });
@@ -1324,6 +1406,9 @@ function bindStaticEvents() {
   });
   $("#noteList").addEventListener("click", handleNoteListClick);
   $("#noteForm").addEventListener("submit", submitNote);
+  $("#noteForm").addEventListener("input", rememberNoteComposerDraft);
+  $("#noteForm").addEventListener("change", rememberNoteComposerDraft);
+  $("#resetNoteFiltersButton")?.addEventListener("click", resetNoteFilters);
   $("#saveNoteDraftButton").addEventListener("click", () => {
     state.noteSubmitStatus = "draft";
     $("#noteForm").requestSubmit($("#publishNoteButton"));
@@ -1355,6 +1440,8 @@ function bindStaticEvents() {
 
   $("#openComposerButton").addEventListener("click", openComposer);
   $("#postForm").addEventListener("submit", submitPost);
+  $("#postForm").addEventListener("input", updateComposerDraftHint);
+  $("#resetPostFiltersButton")?.addEventListener("click", resetPostFilters);
   $("#postExternalUrl").addEventListener("input", (event) => validateExternalUrlInput(event.currentTarget));
   $("#postExternalSiteName").addEventListener("input", () => validateExternalUrlInput($("#postExternalUrl")));
   $("#postBody").addEventListener("input", () => {
@@ -1427,6 +1514,9 @@ function bindStaticEvents() {
   $("#replyList").addEventListener("click", handleReplyListClick);
   $("#replyList").addEventListener("submit", saveEditedReply);
   $("#replyList").addEventListener("submit", submitNestedReply);
+  document.addEventListener("input", (event) => {
+    if (event.target.matches("[data-writing-draft]")) rememberTextDraft(event.target);
+  });
   $("#editProfileButton").addEventListener("click", openProfileEditor);
   $("#logoutButton").addEventListener("click", logout);
 
@@ -1439,6 +1529,10 @@ function bindStaticEvents() {
     });
     dialog.addEventListener("close", syncBodyModalState);
   });
+  syncFilterButtons($("#postOwnershipFilters"), "ownership", state.postOwnership);
+  syncFilterButtons($("#categoryFilters"), "category", state.selectedCategory);
+  syncFilterButtons($("#libraryShelves"), "library-shelf", state.selectedLibraryShelf);
+  syncFilterButtons($("#noteTypeFilters"), "note-type", state.selectedNoteType);
 
   ["pointerdown", "keydown", "touchstart"].forEach((eventName) => {
     window.addEventListener(eventName, noteAquariumActivity, { passive: true });
@@ -1598,6 +1692,17 @@ async function routeSession(session) {
 }
 
 function cleanupSignedInState() {
+  state.writingDrafts.clear();
+  state.noteComposerDraft = null;
+  $$('[data-writing-draft]').forEach((field) => {
+    delete field.dataset.writingDraft;
+    field.value = "";
+  });
+  $("#postForm").reset();
+  $("#postCharacterCount").textContent = "0";
+  resetNoteForm();
+  updateComposerDraftHint();
+  updateNoteDraftHint();
   state.profile = null;
   state.isAdmin = false;
   state.adminData = null;
@@ -1649,6 +1754,10 @@ function cleanupSignedInState() {
   $$(".ownership-chip", $("#postOwnershipFilters")).forEach((chip) => {
     chip.classList.toggle("active", chip.dataset.ownership === "all");
   });
+  syncFilterButtons($("#postOwnershipFilters"), "ownership", "all");
+  syncFilterButtons($("#categoryFilters"), "category", "all");
+  syncFilterButtons($("#libraryShelves"), "library-shelf", "all");
+  syncFilterButtons($("#noteTypeFilters"), "note-type", "all");
   stopAquariumTimers();
   if (state.realtimeChannel) {
     supabase.removeChannel(state.realtimeChannel);
@@ -2982,8 +3091,12 @@ function openFishDrawer(presence) {
 }
 
 function renderPosts() {
+  syncFilterButtons($("#postOwnershipFilters"), "ownership", state.postOwnership);
+  syncFilterButtons($("#categoryFilters"), "category", state.selectedCategory);
   const searchTerms = normalizeSearchText(state.postSearchQuery).split(" ").filter(Boolean);
-  const visiblePosts = state.posts.filter((post) => {
+  const sourcePosts = state.postOwnership === "saved" ? state.savedPosts
+    : state.postOwnership === "mine" ? state.myPosts : state.posts;
+  const visiblePosts = sourcePosts.filter((post) => {
     if (state.selectedCategory !== "all" && post.category !== state.selectedCategory) return false;
     const isOwn = post.user_id === state.user?.id;
     if (state.postOwnership === "mine" && !isOwn) return false;
@@ -2995,15 +3108,18 @@ function renderPosts() {
   const boardIsVisible = $("#appView").dataset.activePage === "board";
   const summary = $("#postResultsSummary");
   const hasFilters = state.selectedCategory !== "all" || state.postOwnership !== "all" || searchTerms.length > 0;
+  const resetButton = $("#resetPostFiltersButton");
+  if (resetButton) resetButton.hidden = !hasFilters;
   list.replaceChildren();
   $("#postEmpty").hidden = visiblePosts.length > 0;
   summary.textContent = hasFilters
     ? `${visiblePosts.length}件のボトルが見つかりました`
     : `${visiblePosts.length}件のボトルが流れています`;
-  $("#postEmptyTitle").textContent = state.posts.length ? "条件に合うボトルがありません" : "まだボトルがありません";
-  $("#postEmptyMessage").textContent = state.posts.length
-    ? "検索する言葉や絞り込み条件を変えてみてください。"
-    : "最初のメッセージを湖へ流してみましょう。";
+  const emptySaved = state.postOwnership === "saved" && !sourcePosts.length;
+  $("#postEmptyTitle").textContent = emptySaved ? "保存したボトルはまだありません" : sourcePosts.length || hasFilters ? "条件に合うボトルがありません" : "まだボトルがありません";
+  $("#postEmptyMessage").textContent = emptySaved
+    ? "気になるボトルのしおりマークを押すと、ここで読み返せます。"
+    : sourcePosts.length || hasFilters ? "検索する言葉や絞り込み条件を変えてみてください。" : "最初のメッセージを湖へ流してみましょう。";
 
   visiblePosts.forEach((post) => {
     const card = document.createElement("article");
@@ -3079,6 +3195,7 @@ async function handlePostListClick(event) {
 
 function openComposer() {
   $("#postExternalUrl").setCustomValidity("");
+  updateComposerDraftHint();
   openDialog("composerDialog");
   window.setTimeout(() => $("#postTitle").focus(), 50);
 }
@@ -3137,6 +3254,7 @@ async function submitPost(event) {
       state.myPosts.unshift(post);
       form.reset();
       $("#postCharacterCount").textContent = "0";
+      updateComposerDraftHint();
       closeDialog("composerDialog");
       renderPosts();
       renderBottles();
@@ -3158,6 +3276,7 @@ async function submitPost(event) {
     await persistPostMutation(payload);
     form.reset();
     $("#postCharacterCount").textContent = "0";
+    updateComposerDraftHint();
     closeDialog("composerDialog");
     await Promise.all([loadPosts(), loadMyData()]);
     showToast(
@@ -3182,6 +3301,7 @@ async function submitPost(event) {
 function openPost(postId, show = true) {
   const post = findKnownPost(postId);
   if (!post) return;
+  attachTextDraft($("#replyBody"), "post-reply", post.id);
   if (show || state.selectedPostId !== post.id) {
     state.editingReplyId = null;
     state.replyingToReplyId = null;
@@ -3408,6 +3528,11 @@ function renderReplies(postId) {
     .filter((reply) => reply.post_id === postId)
     .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
   const container = $("#replyList");
+  const activeField = document.activeElement;
+  const focusedDraft = container.contains(activeField) && activeField.matches("textarea[data-writing-draft]")
+    ? { key: activeField.dataset.writingDraft, start: activeField.selectionStart, end: activeField.selectionEnd, direction: activeField.selectionDirection, scrollTop: activeField.scrollTop }
+    : null;
+  $$("textarea[data-writing-draft]", container).forEach(rememberTextDraft);
   container.replaceChildren();
   $("#detailReplyCount").textContent = `${replies.length}件`;
 
@@ -3488,11 +3613,21 @@ function renderReplies(postId) {
           </form>` : ""}`;
     }
     container.append(item);
+    if (isEditing) attachTextDraft($("[data-reply-editor]", item), "reply-edit", reply.id, reply.body);
+    if (isReplying) attachTextDraft($("[data-nested-reply-body]", item), "nested-reply", reply.id);
     (childrenByParent.get(reply.id) ?? []).forEach((child) => appendReply(child, depth + 1));
   };
 
   roots.forEach((reply) => appendReply(reply));
   replies.forEach((reply) => appendReply(reply));
+  if (focusedDraft) {
+    const restored = $$("textarea[data-writing-draft]", container).find((field) => field.dataset.writingDraft === focusedDraft.key);
+    if (restored) {
+      restored.focus({ preventScroll: true });
+      restored.setSelectionRange(focusedDraft.start, focusedDraft.end, focusedDraft.direction);
+      restored.scrollTop = focusedDraft.scrollTop;
+    }
+  }
 }
 
 function ownReply(replyId) {
@@ -3549,6 +3684,7 @@ function handleReplyListClick(event) {
   }
 
   if (button.dataset.replyAction === "cancel") {
+    clearTextDraft("reply-edit", ownedReply.id);
     state.editingReplyId = null;
     renderReplies(ownedReply.post_id);
     return;
@@ -3600,8 +3736,9 @@ async function submitNestedReply(event) {
       await loadReplies();
     }
 
-    state.replyingToReplyId = null;
-    renderReplies(parentReply.post_id);
+    clearTextDraft("nested-reply", parentReply.id);
+    if (state.replyingToReplyId === parentReply.id) state.replyingToReplyId = null;
+    if (state.selectedPostId === parentReply.post_id) renderReplies(parentReply.post_id);
     renderPosts();
     renderBottles();
     renderMyPosts();
@@ -3644,8 +3781,9 @@ async function saveEditedReply(event) {
       if (error) throw error;
       await loadReplies();
     }
-    state.editingReplyId = null;
-    renderReplies(reply.post_id);
+    clearTextDraft("reply-edit", reply.id);
+    if (state.editingReplyId === reply.id) state.editingReplyId = null;
+    if (state.selectedPostId === reply.post_id) renderReplies(reply.post_id);
     showToast("返信を更新しました。", "success");
   } catch (error) {
     showToast(readableError(error), "error");
@@ -3677,6 +3815,8 @@ async function deleteOwnReply(reply) {
     }
     if (state.editingReplyId === reply.id) state.editingReplyId = null;
     if (state.replyingToReplyId === reply.id) state.replyingToReplyId = null;
+    clearTextDraft("reply-edit", reply.id);
+    clearTextDraft("nested-reply", reply.id);
     renderReplies(reply.post_id);
     renderPosts();
     renderBottles();
@@ -3708,7 +3848,7 @@ async function submitReply(event) {
     if (IS_PREVIEW_MODE) {
       state.replies.unshift({
         id: `preview-reply-${Date.now()}`,
-        post_id: state.selectedPostId,
+        post_id: selectedPost.id,
         parent_reply_id: null,
         sender_user_id: state.user.id,
         recipient_user_id: selectedPost.user_id,
@@ -3719,7 +3859,7 @@ async function submitReply(event) {
       });
     } else {
       const { error } = await supabase.from("post_replies").insert({
-        post_id: state.selectedPostId,
+        post_id: selectedPost.id,
         sender_user_id: state.user.id,
         body,
       });
@@ -3727,8 +3867,11 @@ async function submitReply(event) {
       await loadReplies();
     }
 
-    $("#replyBody").value = "";
-    renderReplies(state.selectedPostId);
+    clearTextDraft("post-reply", selectedPost.id);
+    if (state.selectedPostId === selectedPost.id) {
+      attachTextDraft($("#replyBody"), "post-reply", selectedPost.id);
+      renderReplies(selectedPost.id);
+    }
     renderPosts();
     renderBottles();
     renderMyPosts();
@@ -4234,6 +4377,10 @@ function currentShelfNotes() {
 function renderNotes() {
   const list = $("#noteList");
   if (!list) return;
+  syncFilterButtons($("#libraryShelves"), "library-shelf", state.selectedLibraryShelf);
+  syncFilterButtons($("#noteTypeFilters"), "note-type", state.selectedNoteType);
+  const resetButton = $("#resetNoteFiltersButton");
+  if (resetButton) resetButton.hidden = state.selectedNoteType === "all" && !state.noteSearchQuery.trim();
   const shelfCopy = {
     all: ["COMMUNITY NOTES", "みんなの本棚"],
     mine: ["MY WRITING DESK", "わたしの本棚"],
@@ -4318,10 +4465,13 @@ function openNoteComposer(noteId = null) {
     showToast("湖畔の図書館を使うにはSupabaseの追加SQLを実行してください。", "info");
     return;
   }
+  const note = noteId ? findKnownNote(noteId) : null;
+  if (noteId && (!note || note.user_id !== state.user?.id)) return;
+  const draftKey = writingDraftKey("note-compose", noteId ?? "new");
+  if (state.noteComposerDraft?.key !== draftKey) state.noteComposerDraft = null;
   resetNoteForm();
   state.editingNoteId = noteId;
-  const note = noteId ? findKnownNote(noteId) : null;
-  if (note && note.user_id !== state.user?.id) return;
+  state.noteSubmitStatus = "published";
   $("#noteComposerEyebrow").textContent = note ? "EDIT LAKESIDE NOTE" : "NEW LAKESIDE NOTE";
   $("#noteComposerTitle").textContent = note ? "ノートを書き直す" : "湖畔にノートを残す";
   if (note) {
@@ -4341,6 +4491,12 @@ function openNoteComposer(noteId = null) {
     $("#saveNoteDraftButton").hidden = false;
     $("#publishNoteButton .button-label").textContent = "本棚へ置く";
   }
+  if (state.noteComposerDraft) {
+    NOTE_DRAFT_FIELDS.forEach((id) => { $(`#${id}`).value = state.noteComposerDraft.fields[id] ?? ""; });
+    $("#noteSummaryCharacterCount").textContent = String($("#noteSummary").value.length);
+    $("#noteBodyCharacterCount").textContent = String($("#noteBody").value.length);
+  }
+  updateNoteDraftHint();
   closeDialog("noteDialog");
   openDialog("noteComposerDialog");
   window.setTimeout(() => $("#noteTitle").focus(), 50);
@@ -4354,6 +4510,7 @@ async function submitNote(event) {
   if (externalSiteName && !externalUrl && !$("#noteExternalUrl").value.trim()) $("#noteExternalUrl").setCustomValidity("サイト名を入力した場合はURLも入力してください。");
   if (!form.reportValidity()) return;
   const status = state.noteSubmitStatus === "draft" ? "draft" : "published";
+  const editingNoteId = state.editingNoteId;
   const button = status === "draft" ? $("#saveNoteDraftButton") : $("#publishNoteButton");
   setButtonLoading(button, true);
   const payload = {
@@ -4369,7 +4526,7 @@ async function submitNote(event) {
   };
   try {
     if (IS_PREVIEW_MODE) {
-      const existing = state.editingNoteId ? findKnownNote(state.editingNoteId) : null;
+      const existing = editingNoteId ? findKnownNote(editingNoteId) : null;
       const next = normalizeNote({
         ...existing,
         ...payload,
@@ -4382,16 +4539,21 @@ async function submitNote(event) {
       });
       state.notes = [next, ...state.notes.filter((note) => note.id !== next.id)];
     } else {
-      const mutation = state.editingNoteId
-        ? supabase.from("lakeside_notes").update(payload).eq("id", state.editingNoteId).eq("user_id", state.user.id)
+      const mutation = editingNoteId
+        ? supabase.from("lakeside_notes").update(payload).eq("id", editingNoteId).eq("user_id", state.user.id)
         : supabase.from("lakeside_notes").insert(payload);
       const { error } = await mutation;
       if (error) throw error;
       await loadLibraryData();
     }
-    closeDialog("noteComposerDialog");
-    state.editingNoteId = null;
-    state.noteSubmitStatus = "published";
+    if (state.editingNoteId === editingNoteId) {
+      closeDialog("noteComposerDialog");
+      state.noteComposerDraft = null;
+      state.editingNoteId = null;
+      state.noteSubmitStatus = "published";
+      resetNoteForm();
+      updateNoteDraftHint();
+    }
     state.selectedLibraryShelf = status === "draft" ? "mine" : "all";
     $$("[data-library-shelf]", $("#libraryShelves")).forEach((item) => item.classList.toggle("active", item.dataset.libraryShelf === state.selectedLibraryShelf));
     renderNotes();
@@ -4425,6 +4587,7 @@ function renderNoteExternalLink(note) {
 function openNote(noteId, show = true) {
   const note = findKnownNote(noteId);
   if (!note) return;
+  attachTextDraft($("#noteCommentBody"), "note-comment", note.id);
   const isOwner = note.user_id === state.user?.id;
   if (note.status !== "published" && !isOwner) return;
   state.selectedNoteId = note.id;
@@ -4485,8 +4648,11 @@ async function submitNoteComment(event) {
       if (error) throw error;
       await loadLibraryData();
     }
-    $("#noteCommentBody").value = "";
-    renderNoteComments(note);
+    clearTextDraft("note-comment", note.id);
+    if (state.selectedNoteId === note.id) {
+      attachTextDraft($("#noteCommentBody"), "note-comment", note.id);
+      renderNoteComments(note);
+    }
     renderNotes();
     showToast("書き込みをノートへ残しました。", "success");
   } catch (error) {

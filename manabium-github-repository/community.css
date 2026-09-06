@@ -1,0 +1,420 @@
+/* Manabium — lakeside edition.
+   One visual layer for the existing app; no changes to its lake/identity model. */
+:root {
+  --ink: #243e3a;
+  --ink-soft: #5d7069;
+  --lake: #7eaa97;
+  --lake-dark: #315c50;
+  --lake-pale: #e9efE8;
+  --foam: #fafaf6;
+  --coral: #b7684d;
+  --coral-dark: #995239;
+  --line: #d6ddd4;
+  --shadow: 0 14px 36px rgb(36 62 58 / 9%);
+  --shadow-small: 0 3px 12px rgb(36 62 58 / 5%);
+  --radius-xl: 14px;
+  --radius-lg: 10px;
+  --radius-md: 7px;
+}
+body { background: #f5f4ef; }
+.ambient { display: none; }
+button, a { touch-action: manipulation; }
+button:focus-visible, a:focus-visible, summary:focus-visible {
+  outline: 2px solid #315c50; outline-offset: 4px;
+}
+.app-shell { background: #f5f4ef; }
+.app-header {
+  width: 188px; padding: 32px 20px 24px; background: #f0f1e9;
+  box-shadow: none; border-right: 1px solid #d6ddd4; backdrop-filter: none;
+}
+.app-header .brand { align-items: flex-start; gap: 12px; font-size: 19px; text-align: left; }
+.app-header .brand-mark { width: 48px; height: 48px; border: 0; border-radius: 0; box-shadow: none; background: transparent; }
+.app-header .brand-word { font-weight: 500; letter-spacing: -.02em; }
+.desktop-nav { margin-top: 56px; gap: 8px; }
+.nav-link {
+  min-height: 48px; padding: 12px 14px; flex-direction: row; justify-content: flex-start;
+  gap: 13px; font-size: 13px; border-radius: 5px; color: #63766b; font-weight: 500;
+}
+.nav-link i { font-size: 21px; }
+.nav-link.active { color: #243e3a; background: #e0e7db; box-shadow: none; font-weight: 700; }
+.nav-link:hover { background: #e6eadd; transform: none; }
+.header-actions { justify-content: flex-start; }
+.user-fish-button { width: 48px; height: 48px; box-shadow: none; background: #e5e7da; border: 1px solid #cfd8ca; }
+.page-container { margin-left: 188px; }
+.page:not(#aquariumPage) { width: min(calc(100% - 88px), 1100px); padding: 42px 0 72px; }
+.eyebrow { color: #667b6d; font-size: 10px; letter-spacing: .19em; font-weight: 700; }
+.page-intro { margin-bottom: 30px; align-items: flex-end; gap: 24px; }
+.page-intro h1, .board-intro h1, .profile-intro h1, .library-hero h1 {
+  color: var(--ink); font-size: clamp(27px, 2.5vw, 38px); font-weight: 500;
+  line-height: 1.5; letter-spacing: .015em; margin: 8px 0 10px; text-wrap: balance;
+}
+.page-intro > div > p:last-child { font-size: 14px; color: var(--ink-soft); line-height: 1.8; margin-bottom: 0; }
+.button, .library-write-button, .lake-message-button {
+  min-height: 46px; border-radius: 6px; padding: 12px 20px; font-size: 14px;
+  font-weight: 700; box-shadow: none; letter-spacing: .02em;
+}
+.button-primary, .library-write-button, .lake-message-button { color: #fff; background: #315c50; border: 1px solid #315c50; }
+.button-primary:hover, .library-write-button:hover, .lake-message-button:hover { background: #24483e; box-shadow: none; transform: none; }
+.button-ghost { border: 1px solid #cdd6ca; color: #3e5c4e; background: transparent; }
+.button-ghost:hover { background: #e9eee5; }
+.button:disabled, .library-write-button:disabled { opacity: .5; }
+
+/* The lake comes first. Controls are a compact strip, not a second hero. */
+#appView[data-active-page="aquarium"] #aquariumPage {
+  height: auto; min-height: 100dvh; width: 100%; padding: 32px 34px 48px;
+  overflow: visible; background: #f5f4ef;
+}
+.aquarium-community-header { width: 100%; max-width: 1180px; margin-bottom: 22px; gap: 20px; }
+.aquarium-community-header h1 { max-width: none; color: #243e3a; font-size: clamp(26px, 2.8vw, 38px); line-height: 1.45; font-weight: 500; letter-spacing: .02em; margin: 5px 0; }
+.aquarium-community-header > div:first-child > p:last-child { max-width: 38em; font-size: 13px; color: #617268; line-height: 1.7; }
+.aquarium-live-counts { gap: 15px; padding-bottom: 4px; }
+.aquarium-live-counts > div { flex: none; min-height: auto; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; backdrop-filter: none; gap: 5px; }
+.aquarium-live-counts strong { color: #315c50; font-size: 22px; font-weight: 500; }
+.aquarium-live-counts span:last-child { font-size: 11px; font-weight: 500; white-space: nowrap; }
+.aquarium-live-counts > div + div { border-left: 1px solid #cdd6ca; padding-left: 15px; }
+.presence-dot, .status-orb { box-shadow: none; width: 6px; height: 6px; }
+.aquarium-control-deck {
+  display: flex; position: relative; z-index: 12; max-width: 1180px; width: 100%;
+  padding: 10px 0; margin-bottom: 0; justify-content: space-between; align-items: center;
+  gap: 14px; background: transparent; border: 0; border-top: 1px solid #cdd6ca;
+  border-radius: 0; box-shadow: none; backdrop-filter: none;
+}
+.aquarium-status-control { display: flex; gap: 18px; }
+.aquarium-status-control h2 { font: 500 12px var(--font-body); color: #667b6d; white-space: nowrap; }
+.aquarium-status-options { display: flex; gap: 6px; }
+.status-choice { min-height: 40px; min-width: 80px; padding: 8px 12px; font-size: 12px; background: transparent; border: 1px solid transparent; border-radius: 5px; box-shadow: none; color: #617268; }
+.status-choice.active { background: #e5eadd; color: #2a4d3d; border-color: #bcccb8; box-shadow: none; transform: none; }
+.status-choice:hover { background: #e9eee4; box-shadow: none; transform: none; }
+.aquarium-participation-control { display: block; position: relative; padding: 0; }
+.aquarium-settings { padding: 0; margin: 0; border: 0; }
+.aquarium-settings summary { min-height: 40px; display: flex; align-items: center; gap: 6px; font-size: 12px; color: #617268; cursor: pointer; list-style: none; }
+.aquarium-settings[open] { position: absolute; right: 0; top: -20px; width: 310px; padding: 0 16px 16px; background: #fafbf6; border: 1px solid #cdd6ca; border-radius: 6px; box-shadow: var(--shadow); }
+.aquarium-settings[open] summary { border-bottom: 1px solid #d6ddd4; margin-bottom: 12px; }
+.aquarium-auto-join-note { display: block; padding: 0; margin-bottom: 12px; background: none; border: 0; border-radius: 0; box-shadow: none; color: #617268; font-size: 12px; line-height: 1.7; }
+#appView[data-active-page="aquarium"] #aquariumPage .lake-card {
+  position: relative; inset: auto; width: 100%; max-width: 1180px; height: auto;
+  margin: 0 auto; overflow: visible; background: #fafbf7; border: 1px solid #cdd6ca;
+  border-radius: 8px; box-shadow: none;
+}
+#appView[data-active-page="aquarium"] #aquariumPage .lake-toolbar {
+  position: relative; display: flex; inset: auto; width: 100%; min-height: 60px;
+  padding: 10px 20px; align-items: center; gap: 12px; background: #fafbf7;
+  border-radius: 8px 8px 0 0; border-bottom: 1px solid #d6ddd4;
+}
+#appView[data-active-page="aquarium"] #aquariumPage .lake-toolbar > div { width: auto; }
+#appView[data-active-page="aquarium"] #aquariumPage .lake-toolbar > .lake-toolbar-actions { display: flex; gap: 10px; margin-left: auto; }
+.lake-toolbar h2 { font: 500 15px var(--font-body); color: #344f42; margin: 0; }
+.presence-connection-status { font-size: 10px; color: #61786b; margin: 0 0 3px; }
+.icon-text-button { min-height: 40px; padding: 8px 12px; border: 1px solid #d3ddcf; border-radius: 5px; background: transparent; box-shadow: none; font-size: 12px; }
+.reply-inbox-button { min-height: 42px; padding: 4px 10px; gap: 7px; background: #eaf0e2; border: 1px solid #ced9c5; border-radius: 5px; box-shadow: none; }
+.reply-inbox-plant { width: 30px; height: 30px; }
+.reply-inbox-copy small { font-size: 10px; }
+.reply-inbox-copy strong { font-size: 12px; }
+#appView[data-active-page="aquarium"] #aquariumPage .lake-surface {
+  position: relative; inset: auto; width: 100%; height: clamp(340px, 48dvh, 560px); min-height: 340px;
+  border-radius: 0; background-position: center; overflow: hidden;
+}
+.fish-label { border-radius: 6px; box-shadow: 0 2px 6px rgb(35 64 49 / 7%); }
+.aquarium-message-dock { position: relative; display: flex; padding: 15px 20px; justify-content: space-between; gap: 15px; background: #fafbf7; border: 0; border-top: 1px solid #d6ddd4; }
+.aquarium-message-dock-copy { gap: 10px; }
+.message-dock-icon { width: auto; height: auto; background: transparent; border: 0; }
+.aquarium-message-dock-copy strong { font-size: 14px; color: #315c50; }
+.aquarium-message-dock-copy small { font-size: 11px; color: #6b7d70; }
+.aquarium-message-dock-actions { display: flex; gap: 10px; }
+.shared-bottles-button { min-height: 44px; border-radius: 5px; padding: 9px 12px; background: transparent; border: 1px solid #cdd6ca; font-size: 12px; box-shadow: none; }
+.lake-help { border-top: 1px solid #e0e5dc; padding: 0 20px; }
+.lake-help > summary { min-height: 42px; display: flex; align-items: center; gap: 7px; list-style: none; cursor: pointer; color: #697c6e; font-size: 11px; }
+.lake-help > summary::after { content: '+'; margin-left: auto; font-size: 17px; }
+.lake-help[open] > summary::after { content: '−'; }
+.lake-help .lake-community-guide { display: grid; padding: 12px 0; border: 0; background: transparent; gap: 20px; }
+.lake-help .lake-community-guide p { padding: 0; border: 0; background: transparent; border-radius: 0; box-shadow: none; }
+.lake-community-guide strong { font-size: 12px; }
+.lake-community-guide small, .lake-help-note { font-size: 11px; color: #667b6d; }
+.lake-help-note { padding-bottom: 12px; margin: 0; }
+.library-door-label { border-radius: 5px; }
+.library-door-tip { border-radius: 6px; font-size: 10px; }
+#appView #replyLily { display: none; }
+#libraryDoorTip { opacity: 0; animation: none; pointer-events: none; }
+#libraryDoor:hover #libraryDoorTip, #libraryDoor:focus-visible #libraryDoorTip { opacity: 1; }
+#openComposerButton { border-radius: 6px; }
+#postList .post-excerpt { font-size: 14px; }
+#aquariumPage .lake-toolbar #lakeTitle { font: 500 15px/1.5 var(--font-body); margin: 0; }
+#appView[data-active-page="aquarium"] #aquariumPage .fish-drawer {
+  position: fixed; inset: auto 24px 24px auto; width: min(380px, calc(100vw - 32px));
+  max-height: calc(100dvh - 48px); overflow-y: auto; background: #fafbf6; border: 1px solid #cdd6ca;
+  border-radius: 10px; padding: 26px; box-shadow: 0 12px 60px rgb(22 47 39 / 18%); z-index: 70;
+}
+.drawer-name { font-size: 22px; }
+.drawer-meta, .drawer-bio { font-size: 14px; }
+.drawer-reaction-buttons button { min-height: 44px; border-radius: 5px; background: #edf1e7; font-size: 12px; }
+
+/* Bottles read like letters: quiet frames, crisp metadata, generous leading. */
+.board-tools { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 18px; }
+.post-search { flex: 1 1 280px; }
+.post-search input, .library-search input { height: 48px; background: #fafbf7; border: 1px solid #cbd6c8; border-radius: 5px; box-shadow: none; font-size: 14px; }
+.post-ownership-filters { display: flex; background: transparent; padding: 0; gap: 2px; border-bottom: 1px solid #cbd6c8; border-radius: 0; }
+.ownership-chip { min-height: 48px; padding: 10px 15px; color: #617567; border: 0; border-radius: 0; background: transparent; font-size: 12px; font-weight: 500; box-shadow: none; }
+.ownership-chip.active { color: #315c50; background: transparent; box-shadow: inset 0 -2px #315c50; font-weight: 700; }
+.ownership-chip:hover { background: #edf0e7; }
+.category-filters { display: flex; padding: 0 0 16px; gap: 8px; border-radius: 0; background: transparent; border-bottom: 1px solid #d6ddd4; }
+.category-chip { min-height: 38px; padding: 7px 15px; background: transparent; border: 1px solid #cfd8cb; color: #617268; box-shadow: none; border-radius: 4px; font-size: 12px; }
+.category-chip.active { color: #fafbf7; border-color: #315c50; background: #315c50; box-shadow: none; }
+.post-results-summary { font-size: 12px; color: #728271; margin: 18px 0 12px; }
+.post-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.post-card, .post-card.is-own-post {
+  padding: 24px; min-height: 250px; border: 1px solid #d5dccf; border-radius: 6px;
+  box-shadow: none; background: #fffef9; transition: border-color 180ms, background 180ms;
+}
+.post-card::before, .post-card::after, .post-card.is-own-post::before { display: none; }
+.post-card:hover { transform: none; background: #fff; border-color: #8bA38a; box-shadow: none; }
+.post-card h2 { margin: 17px 0 10px; font: 700 19px/1.6 var(--font-body); letter-spacing: .005em; color: #294639; }
+.post-excerpt { font-size: 14px; line-height: 1.9; color: #657166; -webkit-line-clamp: 3; }
+.post-badge, .post-badge.type, .post-badge.own, .post-badge.link { font-size: 10px; border-radius: 3px; padding: 3px 7px; font-weight: 500; }
+.post-field-tags { gap: 6px; margin: 0 0 18px; }
+.post-field-tags button, .post-field-tags span { padding: 3px 7px; font-size: 10px; border-radius: 3px; background: #edf1e8; color: #5c735c; }
+.post-footer { padding-top: 13px; border-top: 1px solid #e4e8dd; }
+.post-meta { font-size: 11px; color: #697a6c; }
+.bookmark-button, .like-button { min-height: 40px; min-width: 40px; border-radius: 5px; box-shadow: none; font-size: 12px; }
+.bookmark-button.saved { background: #315c50; color: #fff; }
+.empty-card, .library-empty { background: transparent; border: 1px dashed #c8d4c0; border-radius: 6px; box-shadow: none; padding: 40px 24px; }
+.empty-card p, .library-empty p { font-size: 14px; }
+.empty-card .button, .library-empty .button { margin-top: 20px; }
+
+/* A real reading room, rather than another dashboard. */
+.library-page::before, .library-hero::before, .library-hero::after { display: none; }
+.library-hero { min-height: 0; padding: 0 0 26px; margin-bottom: 24px; background: transparent; color: var(--ink); border: 0; border-bottom: 1px solid #cdd6ca; border-radius: 0; box-shadow: none; gap: 20px; }
+.library-hero .eyebrow { color: #667b6d; }
+.library-hero p:last-child { color: #617268; font-size: 14px; line-height: 1.8; }
+.library-write-button { flex-shrink: 0; }
+.library-shelf-tabs { display: grid; gap: 0; grid-template-columns: repeat(3, minmax(0, 1fr)); border-bottom: 1px solid #cdd6ca; margin-bottom: 22px; }
+.library-shelf-tab { min-height: 66px; padding: 12px; min-width: 0; color: #617268; background: transparent; border: 0; border-radius: 0; box-shadow: none; gap: 10px; }
+.library-shelf-tab.active { background: transparent; box-shadow: inset 0 -3px #315c50; color: #315c50; }
+.library-shelf-tab:hover { background: #edf0e5; transform: none; }
+.shelf-tab-icon { width: auto; height: auto; background: transparent; color: inherit; }
+.library-shelf-tab strong { font: 700 14px var(--font-body); }
+.library-shelf-tab small { font-size: 11px; color: #728271; }
+.library-tools { display: flex; flex-wrap: wrap; gap: 16px; padding: 0; border: 0; border-radius: 0; background: transparent; }
+.library-search { width: 100%; }
+.note-type-filters { gap: 6px; flex-wrap: wrap; overflow: visible; }
+.note-type-filters button { min-height: 38px; padding: 7px 12px; border: 1px solid #ced8c9; border-radius: 4px; background: transparent; color: #617268; font-size: 12px; font-weight: 500; }
+.note-type-filters button.active { background: #315c50; color: #fff; box-shadow: none; }
+.library-shelf-heading { margin: 24px 0 16px; }
+.library-shelf-heading h2 { font-size: 22px; }
+.library-shelf-heading > p { font-size: 12px; color: #687d68; }
+.library-bookcase { display: none; }
+.note-grid { background: transparent; border: 0; border-radius: 0; box-shadow: none; padding: 0; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+.note-open-button { min-height: 300px; padding: 24px 22px 20px 27px; border-radius: 2px 6px 6px 2px; box-shadow: inset 5px 0 var(--note-accent), 3px 4px 0 #e3e4d8; }
+.note-open-button::before { display: none; }
+.note-open-button:hover, .note-open-button:focus-visible { transform: translateY(-3px); box-shadow: inset 5px 0 var(--note-accent), 3px 7px 0 #e3e4d8; }
+.note-cover-mark { background: transparent; width: 32px; height: 32px; margin-bottom: 20px; }
+.note-cover-mark i { font-size: 28px; }
+.note-type-label { font-size: 10px; }
+.note-card h3 { font: 500 19px/1.65 var(--font-display); color: #294639; }
+.note-card-summary { font-size: 13px; color: #657166; line-height: 1.9; }
+.note-card-tags span { font-size: 10px; border-radius: 3px; }
+.note-card-footer { font-size: 11px; }
+.note-card-bookmark { border-radius: 3px; min-height: 44px; width: 40px; box-shadow: none; }
+.note-hover-preview { border-radius: 6px; }
+.note-hover-preview > span { font-size: 13px; }
+
+/* Personal corner & forms share the same restrained paper palette. */
+.profile-card, .history-card, .admin-panel { border-radius: 8px; box-shadow: none; background: #fafbf6; border: 1px solid #d5dccf; }
+.profile-card::before, .profile-card::after, .history-card::before, .history-card::after { display: none; }
+.stat-row { border-radius: 0; background: transparent; }
+.stat-row strong { color: #315c50; font: 500 30px var(--font-display); }
+.stat-row span { color: #667b6d; font-size: 12px; }
+.history-item { border-bottom: 1px solid #e0e6d9; border-radius: 0; box-shadow: none; }
+.modal { border: 1px solid #cbd6c8; border-radius: 10px; background: #fafbf6; box-shadow: 0 24px 80px rgb(19 41 31 / 22%); }
+.modal::backdrop { background: rgb(28 48 38 / 40%); backdrop-filter: blur(3px); }
+.modal > form, .modal > article { padding: 32px; background: #fafbf6; }
+.modal-heading h2 { font-size: 25px; font-weight: 500; line-height: 1.5; }
+.modal-close, .drawer-close { min-width: 44px; min-height: 44px; border-radius: 5px; background: #eef1e7; color: #315c50; }
+.modal label > span, .modal label, .modal .subtle { font-size: 14px; }
+.modal input, .modal select, .modal textarea, #profileForm input, #profileForm select, #profileForm textarea {
+  font-size: 16px; background: #fffefa; color: #2f493b; border: 1px solid #cbd6c8; border-radius: 5px; box-shadow: none;
+}
+.modal small, .modal label small { font-size: 11px; color: #6b7d70; }
+.modal-actions { padding-top: 20px; border-top: 1px solid #d6ddd4; }
+.draft-hint { border-left: 2px solid #7d9572; padding: 8px 12px; font-size: 12px; color: #59704f; background: #edf1e4; }
+.link-attachment, .note-safety-banner, .note-publish-note { border-radius: 6px; background: #edf1e7; }
+.link-attachment legend { font-size: 14px; }
+.link-attachment p { font-size: 12px; }
+#detailTitle { font-size: 26px; line-height: 1.6; font-weight: 700; text-wrap: balance; }
+.detail-body, .note-detail-body { font-size: 16px; line-height: 2; color: #3a5143; }
+.detail-external-link { border-radius: 6px; }
+.reply-item, .note-comment-item { border-radius: 5px; background: #f0f2e9; }
+.reply-item p, .note-comment-item p { font-size: 14px; line-height: 1.9; }
+.reply-action-button { min-height: 40px; border-radius: 4px; }
+.note-detail-header h2 { font-size: 30px; text-wrap: balance; }
+.note-detail-summary { font: 500 15px/1.9 var(--font-body); border-radius: 0; }
+.note-comment-form { border-radius: 5px; background: #eef1e7; }
+.note-comment-form label > span { font-size: 12px; }
+.lake-message-categories { gap: 0; border-bottom: 1px solid #cbd6c8; }
+.lake-message-categories button { border-radius: 0; background: transparent; min-height: 58px; box-shadow: none; font-size: 12px; }
+.lake-message-categories button.active { color: #315c50; background: #e7edde; box-shadow: inset 0 -2px #315c50; }
+.lake-message-panel button { border-radius: 5px; min-height: 44px; box-shadow: none; }
+
+/* Homepage: retain living water, let typography carry the invitation. */
+#authView { background: #f5f4ef; --public-ink: #243e3a; }
+#authView .public-header { background: rgb(245 244 239 / 95%); box-shadow: none; border-bottom: 1px solid #d6ddd4; }
+#authView .public-brand img { border-radius: 0; box-shadow: none; }
+#authView .public-button { background: #315c50; color: #fff; border-radius: 5px; box-shadow: none; font-weight: 500; }
+#authView .public-hero { background: #e7eee4; }
+#authView .public-kicker { border: 0; border-radius: 0; background: transparent; padding-left: 0; box-shadow: none; color: #34583f; }
+#authView .public-hero h1 { font-size: clamp(34px, 4.6vw, 66px); line-height: 1.6; letter-spacing: .015em; font-weight: 500; }
+#authView .public-hero h1 em { color: #315c50; }
+#authView .public-lead { font-size: 15px; line-height: 2.1; }
+#authView .public-lake-card { border-radius: 7px; border: 1px solid #bdcdbc; box-shadow: 12px 15px 0 rgb(66 96 71 / 9%); }
+#authView .public-lake-card-head, #authView .public-lake-card-foot { background: #f9faf4; }
+#authView .public-lake-card-head small { font-size: 10px; }
+#authView .public-section-heading h2, #authView .public-section h2 { font-weight: 500; letter-spacing: .01em; }
+#authView .public-quiet-band { background: #315c50; }
+#authView .public-quiet-band p, #authView .public-quiet-band strong { color: #f3f4e8; }
+#authView .public-need-card { border-radius: 0; border: 0; border-top: 1px solid #becdb7; background: transparent; box-shadow: none; }
+#authView .public-need-card::before, #authView .public-need-card::after { display: none; }
+#authView .public-need-card:hover { transform: none; box-shadow: none; background: #eef1e6; }
+#authView .public-need-card > i { background: transparent; border-radius: 0; color: #537153; }
+#authView .public-need-card p { color: #5d7061; }
+#authView #authDialog { border: 1px solid #cad5c3; border-radius: 10px; background: #fafbf6; box-shadow: 0 24px 80px rgb(19 41 31 / 22%); }
+#authDialog::backdrop { background: rgb(28 48 38 / 40%); backdrop-filter: blur(3px); }
+#authDialog .auth-card { padding: 38px; background: #fafbf6; border-radius: 0; box-shadow: none; text-align: left; }
+#authDialog .auth-modal-brand { justify-content: flex-start; margin-bottom: 28px; }
+#authDialog #authHeading { color: #243e3a; font-weight: 500; font-size: 29px; text-align: left; }
+#authDialog .subtle { text-align: left; font-size: 13px; color: #617268; }
+#authDialog .segmented { padding: 0; border: 0; border-bottom: 1px solid #cad5c3; border-radius: 0; background: transparent; box-shadow: none; }
+#authDialog .segment { border-radius: 0; min-height: 46px; font-size: 13px; }
+#authDialog .segment.active { color: #315c50; background: transparent; box-shadow: inset 0 -2px #315c50; }
+#authDialog .auth-input-wrap input { font-size: 16px; min-height: 48px; border: 1px solid #cbd6c8; border-radius: 5px; background: #fffefa; box-shadow: none; }
+#authDialog .button-primary { background: #315c50; border-color: #315c50; border-radius: 5px; box-shadow: none; }
+#authDialog .auth-modal-close { width: 44px; height: 44px; border-radius: 5px; color: #315c50; background: #edf1e7; }
+#authDialog .auth-note { font-size: 11px; line-height: 1.8; text-align: left; }
+.onboarding-shell { background: #f5f4ef; }
+.onboarding-card { background: #fafbf6; border: 1px solid #cbd6c8; border-radius: 10px; box-shadow: none; }
+.onboarding-card .step-chip { border-radius: 3px; background: #e5ebdd; color: #315c50; }
+.onboarding-card h1 { font-weight: 500; text-wrap: balance; }
+.fish-choice { border-radius: 5px; box-shadow: none; }
+
+@media (max-width: 1100px) and (min-width: 761px) {
+  .app-header { width: 150px; padding-inline: 14px; }
+  .app-header .brand { font-size: 17px; }
+  .page-container { margin-left: 150px; }
+  .page:not(#aquariumPage) { width: calc(100% - 48px); }
+  #appView[data-active-page="aquarium"] #aquariumPage { padding-inline: 24px; }
+  .aquarium-community-header { align-items: flex-start; flex-direction: column; gap: 10px; }
+  .note-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .aquarium-message-dock-copy small { display: none; }
+}
+
+@media (max-width: 760px) {
+  :root { --mobile-header-height: 56px; --mobile-nav-height: 64px; --mobile-gutter: 20px; }
+  .app-header, .app-shell[data-active-page="aquarium"] .app-header {
+    position: fixed; inset: 0 0 auto; width: 100%; height: 56px; padding: 8px 20px;
+    display: flex; flex-direction: row; align-items: center; justify-content: space-between;
+    border: 0; border-bottom: 1px solid #d6ddd4; background: #f5f4ef;
+  }
+  .app-header .brand { flex-direction: row; align-items: center; gap: 8px; font-size: 17px; }
+  .app-header .brand-mark { width: 32px; height: 32px; }
+  .desktop-nav { display: none; }
+  .header-actions { width: auto; margin: 0; }
+  .user-fish-button { width: 38px; height: 38px; padding: 5px; }
+  .page-container, #appView[data-active-page="aquarium"] .page-container { width: 100%; margin: 0; padding: 0; }
+  .page:not(#aquariumPage) { width: 100%; padding: 80px 20px calc(90px + env(safe-area-inset-bottom)); margin: 0; }
+  .page-intro { margin-bottom: 24px; gap: 18px; flex-direction: column; align-items: stretch; }
+  .page-intro h1, .board-intro h1, .profile-intro h1, .library-hero h1 { font-size: 27px; line-height: 1.55; margin: 7px 0; letter-spacing: 0; }
+  .page-intro > div > p:last-child { font-size: 13px; }
+  .page-intro > .button { align-self: flex-start; width: auto; }
+  #appView[data-active-page="aquarium"] #aquariumPage { min-height: 100dvh; padding: 76px 16px calc(86px + env(safe-area-inset-bottom)); }
+  .aquarium-community-header { display: flex; flex-direction: column; align-items: flex-start; gap: 12px; margin: 0 4px 14px; width: auto; }
+  .aquarium-community-header h1 { font-size: 26px; line-height: 1.5; }
+  .aquarium-community-header > div:first-child > p:last-child { font-size: 12px; max-width: 28em; }
+  .aquarium-community-header .eyebrow { font-size: 9px; margin-bottom: 3px; }
+  .aquarium-live-counts { gap: 14px; padding: 0; width: auto; }
+  .aquarium-live-counts strong { font-size: 19px; }
+  .aquarium-live-counts span:last-child { font-size: 11px; }
+  .aquarium-control-deck { display: flex; padding: 7px 0; gap: 5px; }
+  .aquarium-status-control { gap: 0; }
+  .aquarium-status-control > div:first-child { display: none; }
+  .aquarium-status-options { gap: 3px; }
+  .status-choice { min-width: 0; min-height: 42px; font-size: 11px; padding: 9px 10px; gap: 5px; }
+  .aquarium-settings summary { width: 42px; min-height: 42px; overflow: hidden; font-size: 0; justify-content: center; }
+  .aquarium-settings summary i { font-size: 20px; }
+  .aquarium-settings[open] { top: -21px; width: min(310px, calc(100vw - 32px)); }
+  .aquarium-settings[open] summary { width: 100%; font-size: 12px; justify-content: flex-start; }
+  #appView[data-active-page="aquarium"] #aquariumPage .lake-toolbar { padding: 9px 12px; min-height: 60px; gap: 6px; }
+  .lake-toolbar h2 { font-size: 13px; }
+  .presence-connection-status { font-size: 9px; }
+  #appView[data-active-page="aquarium"] #aquariumPage .lake-toolbar > .lake-toolbar-actions { gap: 5px; }
+  .reply-inbox-button { padding: 4px 7px; min-height: 40px; }
+  .reply-inbox-plant, .reply-inbox-copy small, .reply-inbox-button > i { display: none; }
+  .reply-inbox-copy strong { font-size: 11px; }
+  #refreshLakeButton { min-height: 40px; min-width: 40px; padding: 5px; font-size: 11px; }
+  #appView[data-active-page="aquarium"] #aquariumPage .lake-surface { height: 340px; min-height: 340px; background-position: 52% center; }
+  #aquariumPage .lake-toolbar #lakeTitle { font-size: 13px; }
+  #libraryDoorTip { display: none; }
+  .aquarium-message-dock { padding: 12px; flex-direction: column; gap: 10px; }
+  .aquarium-message-dock-copy { display: none; }
+  .aquarium-message-dock-actions { display: grid; width: 100%; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .shared-bottles-button, .lake-message-button { width: 100%; min-height: 44px; font-size: 11px; padding: 9px 5px; gap: 5px; white-space: nowrap; }
+  .lake-help { padding: 0 12px; }
+  .lake-help > summary { min-height: 40px; }
+  .lake-help .lake-community-guide { grid-template-columns: 1fr; }
+  #appView[data-active-page="aquarium"] #aquariumPage .fish-drawer { inset: auto 12px calc(76px + env(safe-area-inset-bottom)); width: auto; max-height: calc(100dvh - 150px); padding: 22px; }
+  .mobile-nav { position: fixed; inset: auto 0 0; width: 100%; min-height: calc(64px + env(safe-area-inset-bottom)); display: flex; padding: 6px 12px calc(6px + env(safe-area-inset-bottom)); border-radius: 0; background: #f9faf4; border: 0; border-top: 1px solid #ccd7c5; box-shadow: 0 -2px 10px rgb(22 40 28 / 4%); backdrop-filter: none; z-index: 50; }
+  .mobile-nav-link { flex: 1; min-width: 0; min-height: 50px; padding: 4px 2px; border-radius: 4px; color: #71806c; font-size: 10px; background: transparent; gap: 2px; }
+  .mobile-nav-link i { font-size: 22px; }
+  .mobile-nav-link.active { color: #2f563c; background: #e8eddf; box-shadow: none; }
+  .mobile-nav-link.active::before, .mobile-nav-link::after { display: none; }
+  .board-tools { display: flex; gap: 14px; }
+  .post-search { flex-basis: 100%; }
+  .post-ownership-filters { width: 100%; justify-content: space-between; }
+  .ownership-chip { flex: 1; min-width: max-content; padding: 8px 7px; font-size: 11px; }
+  .category-filters { flex-wrap: wrap; gap: 6px; padding-bottom: 14px; }
+  .category-chip { min-height: 40px; padding: 7px 12px; font-size: 11px; }
+  .post-grid { grid-template-columns: 1fr; gap: 13px; }
+  .post-card, .post-card.is-own-post { padding: 20px; min-height: 0; }
+  .post-card h2 { font-size: 18px; }
+  .post-excerpt { font-size: 13px; }
+  .post-footer { gap: 6px; flex-wrap: wrap; }
+  .library-hero { flex-direction: column; align-items: flex-start; padding-bottom: 22px; min-height: 0; }
+  .library-hero p:last-child { font-size: 13px; }
+  .library-write-button { width: auto; }
+  .library-shelf-tabs { display: grid; width: 100%; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; padding: 0; overflow: visible; }
+  .library-shelf-tab { min-width: 0; min-height: 66px; padding: 10px 2px; flex-direction: column; align-items: center; gap: 5px; text-align: center; }
+  .shelf-tab-icon { width: auto; height: auto; }
+  .shelf-tab-icon i { font-size: 20px; }
+  .library-shelf-tab strong { font-size: 11px; letter-spacing: 0; white-space: nowrap; }
+  .library-shelf-tab small { display: none; }
+  .library-tools { padding: 0; gap: 12px; }
+  .note-type-filters { gap: 6px; }
+  .note-type-filters button { padding: 7px 10px; font-size: 11px; min-height: 40px; }
+  .library-shelf-heading h2 { font-size: 22px; }
+  .note-grid { grid-template-columns: 1fr; gap: 17px; padding: 0 3px 0 0; }
+  .note-open-button { min-height: 250px; padding: 20px 23px 18px 26px; }
+  .note-cover-mark { margin-bottom: 12px; }
+  .note-card h3 { font-size: 20px; }
+  .note-card-summary { font-size: 13px; }
+  .profile-grid, .history-grid { grid-template-columns: 1fr; }
+  .profile-card, .history-card { padding: 22px; }
+  .modal, .note-composer-modal, .note-detail-modal { width: calc(100% - 16px); max-height: calc(100dvh - 24px); border-radius: 9px; }
+  .modal > form, .modal > article { padding: 22px 18px; }
+  .modal-heading { gap: 10px; }
+  .modal-heading h2 { font-size: 22px; }
+  .modal-actions { gap: 10px; }
+  .modal-actions > button { font-size: 13px; padding-inline: 12px; }
+  .note-detail-header h2, #detailTitle { font-size: 23px; }
+  .note-detail-body, .detail-body { font-size: 15px; line-height: 2; }
+  .note-detail-summary { font-size: 14px; }
+  .note-comment-form { grid-template-columns: 1fr; }
+  .lake-message-categories button { font-size: 11px; min-width: 0; padding: 8px 2px; }
+  #authView .public-hero h1 { font-size: clamp(30px, 8vw, 42px); line-height: 1.65; }
+  #authView .public-lead { font-size: 13px; }
+  #authView .public-heading-line { text-wrap: pretty; }
+  #authView .public-lake-card { box-shadow: 6px 8px 0 rgb(66 96 71 / 9%); }
+  #authDialog .auth-card { padding: 28px 22px; }
+  #authDialog #authHeading { font-size: 26px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .post-card, .note-open-button, .nav-link, .button { transition: none; animation: none; }
+  .note-open-button:hover { transform: none; }
+}

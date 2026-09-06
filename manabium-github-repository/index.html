@@ -28,7 +28,8 @@
       href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.2/src/regular/style.css"
     />
     <link rel="stylesheet" href="./style.css?v=20260815-library-entrance-2" />
-    <script type="module" src="./app.js?v=20260815-security-hardening-2"></script>
+    <link rel="stylesheet" href="./community.css?v=20260906-1" />
+    <script type="module" src="./app.js?v=20260906-community-1"></script>
   </head>
   <body>
     <div class="ambient ambient-one" aria-hidden="true"></div>
@@ -91,7 +92,7 @@
             <div class="public-hero-copy" data-reveal>
               <p class="public-kicker"><span></span>理工系女子のためのコミュニティ</p>
               <h1 id="publicHeroTitle">
-                <span class="public-heading-line">迷ったとき、</span><span class="public-heading-line"><em>同じ分野の誰か</em>がいる。</span>
+                <span class="public-heading-line">迷ったとき、</span><span class="public-heading-line"><em>同じ分野の</em></span><span class="public-heading-line">誰かがいる。</span>
               </h1>
               <p class="public-lead">
                 <span class="public-lead-line">授業、研究、進路の小さな疑問を、ひとりで抱え込まないために。</span><span class="public-lead-line">Manabiumは、理工系を学ぶ女性たちが静かにつながる湖です。</span>
@@ -115,8 +116,8 @@
 
             <aside id="publicLakeCard" class="public-lake-card" data-reveal aria-label="Manabiumの湖のイメージ">
               <div class="public-lake-card-head">
-                <span><i></i>湖につながっています</span>
-                <small>LIVE COMMUNITY</small>
+                <span><i></i>湖で過ごすひととき</span>
+                <small>体験イメージ</small>
               </div>
               <div class="public-lake-card-scene" aria-hidden="true">
                 <span class="public-scene-touch"><i class="ph ph-cursor-click"></i> 水面に触れてみて</span>
@@ -215,7 +216,7 @@
           </div>
           <div class="public-experience-copy" data-reveal>
             <p class="public-section-label">THE BOTTLE</p>
-            <h2><span class="public-heading-line">言葉はボトルに。</span><span class="public-heading-line">返事は睡蓮の便りに。</span></h2>
+            <h2><span class="public-heading-line">言葉はボトルに。</span><span class="public-heading-line">返事は、あなたのもとへ。</span></h2>
             <p>
               今すぐ同じ時間にいなくても、相談や情報は湖に残ります。カテゴリと分野で探せて、返信は会話の流れごと確認できます。
             </p>
@@ -261,7 +262,7 @@
             <div class="public-safety-grid">
               <article data-reveal><i class="ph ph-user-circle-minus" aria-hidden="true"></i><h3>個人を特定しない</h3><p>固定の公開ユーザー名は使いません。正確な学校名・住所・連絡先も公開しません。</p></article>
               <article data-reveal><i class="ph ph-chat-slash" aria-hidden="true"></i><h3>自由なDMなし</h3><p>湖では定型リアクション、相談は公開されたボトルの返信で行います。</p></article>
-              <article data-reveal><i class="ph ph-eye-slash" aria-hidden="true"></i><h3>距離を選べる</h3><p>魚として参加せずに見る、相手の表示やリアクションをミュートする選択肢があります。</p></article>
+              <article data-reveal><i class="ph ph-eye-slash" aria-hidden="true"></i><h3>距離を選べる</h3><p>個別リアクションを受け取らない「見るだけ」や、相手をミュートする選択肢があります。</p></article>
               <article data-reveal><i class="ph ph-heart" aria-hidden="true"></i><h3>尊重から始める</h3><p>登録時にコミュニティルールへ同意。安心を損なう使い方を前提にしません。</p></article>
             </div>
           </div>
@@ -520,9 +521,9 @@
         <section id="aquariumPage" class="page" data-page="aquarium" aria-labelledby="aquariumTitle" hidden>
           <header class="aquarium-community-header">
             <div>
-              <p class="eyebrow">MANABIUM COMMUNITY LAKE</p>
-              <h1 id="aquariumTitle">いま、同じ湖にいる。</h1>
-              <p>魚は今ここにいる仲間、ボトルは時間を越えて届く相談や情報。理工系女子が安心して集まれる湖です。</p>
+              <p class="eyebrow">THE LAKE / 01</p>
+              <h1 id="aquariumTitle">いつもの湖で、ひと息。</h1>
+              <p>話しても、眺めるだけでも。ここにいる仲間と、あなたのペースで。</p>
             </div>
             <div class="aquarium-live-counts" aria-label="現在の湖の人数">
               <div><span class="presence-dot" aria-hidden="true"></span><strong id="aquariumUserCount">0</strong><span>人が湖にいます</span></div>
@@ -533,8 +534,7 @@
           <section class="aquarium-control-deck" aria-labelledby="aquariumStatusTitle">
             <div class="aquarium-status-control">
               <div>
-                <p class="eyebrow">MY STATUS</p>
-                <h2 id="aquariumStatusTitle">今の過ごし方</h2>
+                <h2 id="aquariumStatusTitle">今の気分</h2>
               </div>
               <div id="aquariumStatusOptions" class="aquarium-status-options" role="group" aria-label="湖での状態">
                 <button class="status-choice active" type="button" data-aquarium-status="social"><span class="status-orb status-social"></span>交流OK</button>
@@ -543,9 +543,9 @@
               </div>
             </div>
             <div class="aquarium-participation-control">
-              <p class="aquarium-auto-join-note"><i class="ph ph-fish-simple" aria-hidden="true"></i><span><strong>湖を開くと自動で参加</strong><small>別の画面へ移動すると魚はいなくなります</small></span></p>
               <details class="aquarium-settings">
                 <summary><i class="ph ph-sliders-horizontal" aria-hidden="true"></i> 表示・通知の設定</summary>
+                <p class="aquarium-auto-join-note">この画面を開いている間だけ、あなたの魚が湖にいます。</p>
                 <label class="aquarium-switch-row compact" for="receiveReactionsToggle">
                   <span><strong>リアクションを受け取る</strong><small>オフなら吹き出しを表示しません</small></span>
                   <span class="toggle-switch"><input id="receiveReactionsToggle" type="checkbox" checked /><span aria-hidden="true"></span></span>
@@ -567,7 +567,7 @@
             <div class="lake-toolbar">
               <div>
                 <p id="presenceConnectionStatus" class="presence-connection-status"><span></span>湖につながっています</p>
-                <h2 id="lakeTitle">今ここにいる仲間</h2>
+                <h2 id="lakeTitle">今、ここにいる仲間</h2>
               </div>
               <div class="lake-toolbar-actions">
                 <button id="replyInboxButton" class="reply-inbox-button" type="button" hidden>
@@ -628,7 +628,7 @@
             <div id="aquariumMessageDock" class="aquarium-message-dock" aria-label="湖で交流する">
               <div class="aquarium-message-dock-copy">
                 <span class="message-dock-icon"><i class="ph ph-chat-circle-dots" aria-hidden="true"></i></span>
-                <span><strong>湖のみんなと話す</strong><small>カテゴリから安心な定型文を選べます</small></span>
+                <span><strong>ひとこと、届けてみる？</strong><small>あいさつや、おすすめのボトルを共有できます</small></span>
               </div>
               <div class="aquarium-message-dock-actions">
                 <button id="openSharedBottlesButton" class="shared-bottles-button" type="button">
@@ -637,14 +637,18 @@
                   <b id="sharedBottlesCount" hidden>0</b>
                 </button>
                 <button id="openLakeMessageButton" class="lake-message-button" type="button">
-                  <i class="ph ph-paper-plane-tilt" aria-hidden="true"></i> メッセージ
+                  <i class="ph ph-chat-circle-dots" aria-hidden="true"></i> ひとこと送る
                 </button>
               </div>
             </div>
-            <div class="lake-community-guide" aria-label="湖の使い方">
+            <details class="lake-help">
+              <summary><i class="ph ph-question" aria-hidden="true"></i> はじめての湖・使い方</summary>
+              <div class="lake-community-guide" aria-label="湖の使い方">
               <p><i class="ph ph-fish-simple" aria-hidden="true"></i><span><strong>魚は、今この湖にいる仲間</strong><small>タップするとプロフィールと定型リアクションを確認できます</small></span></p>
               <p><i class="ph ph-envelope-simple-open" aria-hidden="true"></i><span><strong>ボトルは、届いた相談や情報</strong><small>タップすると内容を読み、返信できます</small></span></p>
-            </div>
+              </div>
+              <p class="lake-help-note">湖を離れると、あなたの魚もいなくなります。「見るだけ」は魚を表示したまま、個別のリアクションを受け取らない状態です。</p>
+            </details>
           </section>
 
           <aside id="fishDrawer" class="fish-drawer" aria-live="polite" hidden>
@@ -678,12 +682,12 @@
         <section id="boardPage" class="page" data-page="board" aria-labelledby="boardTitle" hidden>
           <div class="page-intro board-intro">
             <div>
-              <p class="eyebrow">BOTTLE MESSAGE</p>
-              <h1 id="boardTitle">ボトルメッセージ</h1>
-              <p>誰かの経験が、いまのあなたのヒントになるかもしれません。</p>
+              <p class="eyebrow">BOTTLE LETTERS / 02</p>
+              <h1 id="boardTitle">届いたことば、つながる話。</h1>
+              <p>授業の疑問も、進路の迷いも。ボトルにのせて、同じ分野の誰かへ。</p>
             </div>
             <button id="openComposerButton" class="button button-primary" type="button">
-              <i class="ph ph-paper-plane-tilt" aria-hidden="true"></i> メッセージを流す
+              <i class="ph ph-pencil-line" aria-hidden="true"></i> ボトルを書く
             </button>
           </div>
 
@@ -696,10 +700,11 @@
                 <i class="ph ph-x" aria-hidden="true"></i>
               </button>
             </div>
-            <div id="postOwnershipFilters" class="post-ownership-filters" role="group" aria-label="投稿者で絞り込む">
+            <div id="postOwnershipFilters" class="post-ownership-filters" role="group" aria-label="ボトルの表示を切り替える">
               <button class="ownership-chip active" type="button" data-ownership="all">すべて</button>
               <button class="ownership-chip" type="button" data-ownership="others">みんな</button>
               <button class="ownership-chip" type="button" data-ownership="mine">自分</button>
+              <button class="ownership-chip" type="button" data-ownership="saved"><i class="ph ph-bookmark-simple" aria-hidden="true"></i> 保存したもの</button>
             </div>
           </section>
           <div id="categoryFilters" class="category-filters" role="group" aria-label="カテゴリーで絞り込む">
@@ -716,15 +721,16 @@
             <span aria-hidden="true">✉</span>
             <h2 id="postEmptyTitle">まだボトルがありません</h2>
             <p id="postEmptyMessage">このカテゴリーの最初のメッセージを流してみましょう。</p>
+            <button id="resetPostFiltersButton" class="button button-ghost" type="button" hidden>検索・絞り込みをリセット</button>
           </div>
         </section>
 
         <section id="libraryPage" class="page library-page" data-page="library" aria-labelledby="libraryTitle" hidden>
           <header class="library-hero">
             <div>
-              <p class="eyebrow">LAKESIDE LIBRARY</p>
+              <p class="eyebrow">LAKESIDE LIBRARY / 03</p>
               <h1 id="libraryTitle">湖畔の図書館</h1>
-              <p>経験や技術、つくったものを匿名のノートとして残し、次の誰かへ手渡す場所です。</p>
+              <p>試したこと、つくったもの、歩んだ道。誰かの経験を、次の一歩のヒントに。</p>
             </div>
             <button id="openNoteComposerButton" class="button library-write-button" type="button">
               <i class="ph ph-pencil-line" aria-hidden="true"></i> ノートを書く
@@ -772,13 +778,14 @@
             <span aria-hidden="true"><i class="ph ph-book-open"></i></span>
             <h2 id="noteEmptyTitle">まだノートがありません</h2>
             <p id="noteEmptyMessage">最初の一冊を湖畔へ残してみませんか。</p>
+            <button id="resetNoteFiltersButton" class="button button-ghost" type="button" hidden>検索・絞り込みをリセット</button>
           </div>
         </section>
 
         <section id="mypagePage" class="page" data-page="mypage" aria-labelledby="mypageTitle" hidden>
           <div class="page-intro profile-intro">
             <div>
-              <p class="eyebrow">MY PAGE</p>
+              <p class="eyebrow">YOUR CORNER / 04</p>
               <h1 id="mypageTitle">マイページ</h1>
               <p>プロフィールと、コミュニティでのやり取りを確認できます。</p>
             </div>
@@ -994,6 +1001,7 @@
           <button class="modal-close" type="button" data-close-dialog="composerDialog" aria-label="閉じる">×</button>
         </div>
         <p class="subtle">学校名・研究室名・氏名など、個人を特定できる情報は書かないでください。</p>
+        <p id="composerDraftHint" class="draft-hint" role="status" hidden></p>
 
         <div class="two-column">
           <label>
@@ -1108,7 +1116,7 @@
                 <span class="spinner" aria-hidden="true"></span>
               </button>
             </div>
-            <p class="reply-delivery-note"><i class="ph ph-drop" aria-hidden="true"></i> 返信内容はここで全員が確認でき、返信ボトルは投稿を書いた人の湖だけに届きます。</p>
+            <p class="reply-delivery-note"><i class="ph ph-drop" aria-hidden="true"></i> 返信はログイン中の利用者が読めます。相手には届いた返事としてお知らせします。</p>
           </form>
         </section>
       </article>
@@ -1124,6 +1132,7 @@
           <button class="modal-close" type="button" data-close-dialog="noteComposerDialog" aria-label="閉じる">×</button>
         </div>
         <div class="note-safety-banner"><i class="ph ph-shield-check" aria-hidden="true"></i><p><strong>匿名で公開されます</strong><span>氏名・学校名・研究室名・連絡先・守秘義務のある内容は書かないでください。</span></p></div>
+        <p id="noteDraftHint" class="draft-hint" role="status" hidden></p>
         <div class="two-column">
           <label><span>ノートの種類</span><select id="noteType" required><option value="internship">インターン・就活体験</option><option value="technology">技術・研究</option><option value="project">制作物・活動記録</option><option value="learning">学び・進路の体験談</option></select></label>
           <label><span>ほしい反応</span><select id="noteFeedbackType" required><option value="impressions">感想がほしい</option><option value="questions">質問を受けたい</option><option value="advice">アドバイスがほしい</option><option value="same_experience">同じ経験を聞きたい</option><option value="none">読むだけでOK</option></select></label>
