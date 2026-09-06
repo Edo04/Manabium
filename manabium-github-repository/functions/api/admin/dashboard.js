@@ -1,36 +1,7 @@
-const JSON_HEADERS = {
-  "Cache-Control": "no-store",
-  "Content-Type": "application/json; charset=utf-8",
-  "Referrer-Policy": "no-referrer",
-  "X-Content-Type-Options": "nosniff",
-};
-
-function json(body, status = 200) {
-  return new Response(JSON.stringify(body), { status, headers: JSON_HEADERS });
-}
-
-async function verifiedAdmin(request, env) {
-  const fetchSite = request.headers.get("Sec-Fetch-Site");
-  if (fetchSite && !["same-origin", "same-site", "none"].includes(fetchSite)) {
-    return { error: json({ error: "Cross-origin request denied." }, 403) };
-  }
-  const authorization = request.headers.get("Authorization");
-  if (!authorization?.startsWith("Bearer ")) return { error: json({ error: "Authentication required." }, 401) };
-  if (!env.SUPABASE_URL || !env.SUPABASE_PUBLISHABLE_KEY || !env.SUPABASE_SECRET_KEY) {
-    return { error: json({ error: "Admin API is not configured." }, 503) };
-  }
-
-  const headers = { apikey: env.SUPABASE_PUBLISHABLE_KEY, Authorization: authorization, "Content-Type": "application/json" };
-  const userResponse = await fetch(`${env.SUPABASE_URL}/auth/v1/user`, { headers });
-  if (!userResponse.ok) return { error: json({ error: "Invalid session." }, 401) };
-  const user = await userResponse.json();
-  if (!user.id) return { error: json({ error: "Invalid session." }, 401) };
-  const roleResponse = await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/is_current_user_admin`, { method: "POST", headers, body: "{}" });
-  if (!roleResponse.ok || await roleResponse.json() !== true) return { error: json({ error: "Admin access required." }, 403) };
-  return { user };
-}
+import { JSON_HEADERS, json, verifiedAdmin, rpcFailure } from "../../_lib/admin.js";
 
 export async function onRequestGet({ request, env }) {
+  try {
   const verified = await verifiedAdmin(request, env);
   if (verified.error) return verified.error;
 
@@ -52,13 +23,12 @@ export async function onRequestGet({ request, env }) {
 
   const response = await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/admin_analytics_dashboard`, {
     method: "POST",
-    headers: { apikey: env.SUPABASE_SECRET_KEY, "Content-Type": "application/json" },
+    headers: verified.privilegedHeaders,
     body: JSON.stringify({ p_start_date: start, p_end_date: end, p_granularity: granularity }),
   });
-  if (!response.ok) {
-    const detail = await response.text();
-    console.error("Admin dashboard RPC failed", response.status, detail);
-    return json({ error: response.status === 403 ? "Admin access required." : "Could not load dashboard." }, response.status === 403 ? 403 : 400);
-  }
+  if (!response.ok) return rpcFailure(response.status);
   return new Response(await response.text(), { status: 200, headers: JSON_HEADERS });
+  } catch {
+    return json({ error: "Admin service unavailable.", code: "ADMIN_UNAVAILABLE" }, 503);
+  }
 }

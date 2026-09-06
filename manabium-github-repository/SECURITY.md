@@ -24,6 +24,12 @@
 8. Cloudflare PagesのProduction環境へ`SUPABASE_SECRET_KEY`を暗号化Secretとして登録し、`supabase/restrict-admin-rpcs-to-server.sql`を実行してから再デプロイする。
 9. Supabase SQL Editorで`supabase/make-profile-analytics-rpc-invoker.sql`を実行し、API SettingsのExposed schemasに`private`が含まれていないことを確認する。
 
+## 運営室に「Admin API is not configured.」と出るとき
+
+SQLを削除したり、管理者RPCを一般ユーザーへ開放したりしないでください。これはCloudflare側の環境設定不足です。CloudflareでManabiumのSettings → Variables and Secretsを開き、Production環境の`SUPABASE_URL`、`SUPABASE_PUBLISHABLE_KEY`を確認し、`SUPABASE_SECRET_KEY`をSecretとして登録して再デプロイします。値は同じSupabaseプロジェクトのAPI Keysにある`sb_secret_...`キーです。秘密鍵はチャット・Git・ブラウザ用コードに貼らないでください。
+
+旧形式のservice_role JWTが既に設定されている環境では`SUPABASE_SERVICE_ROLE_KEY`もサーバー内のみ受け付けます。新しいSecret keyはapikeyだけ、旧JWTはapikeyとAuthorizationに設定します。利用者のBearerトークンを特権リクエストへ流用することはありません。[Supabase公式API key仕様](https://supabase.com/docs/guides/getting-started/api-keys)
+
 ## 回帰テスト
 
 - 未ログイン状態で`profiles`、`posts`、`post_replies`、`lakeside_notes`をREST APIから取得できない。

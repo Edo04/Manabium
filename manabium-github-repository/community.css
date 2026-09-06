@@ -17,6 +17,10 @@
   --radius-md: 7px;
 }
 body { background: #f5f4ef; }
+.admin-error { display: flex; gap: 16px; padding: 24px; background: #fff5ee; border: 1px solid #d7ac90; margin: 20px 0; border-radius: 8px; }
+.admin-error > i { font-size: 28px; flex: none; }
+.admin-error h2 { font: 700 18px/1.6 var(--font-body); }
+.admin-error p { max-width: 62em; overflow-wrap: anywhere; font-size: 14px; }
 .ambient { display: none; }
 button, a { touch-action: manipulation; }
 button:focus-visible, a:focus-visible, summary:focus-visible {

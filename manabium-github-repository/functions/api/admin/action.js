@@ -1,32 +1,12 @@
-const JSON_HEADERS = {
-  "Cache-Control": "no-store",
-  "Content-Type": "application/json; charset=utf-8",
-  "Referrer-Policy": "no-referrer",
-  "X-Content-Type-Options": "nosniff",
-};
+import { json, verifiedAdmin, rpcFailure } from "../../_lib/admin.js";
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-function json(body, status = 200) {
-  return new Response(JSON.stringify(body), { status, headers: JSON_HEADERS });
-}
-
 export async function onRequestPost({ request, env }) {
-  const fetchSite = request.headers.get("Sec-Fetch-Site");
-  if (fetchSite && !["same-origin", "same-site", "none"].includes(fetchSite)) return json({ error: "Cross-origin request denied." }, 403);
-  const authorization = request.headers.get("Authorization");
-  if (!authorization?.startsWith("Bearer ")) return json({ error: "Authentication required." }, 401);
-  if (!env.SUPABASE_URL || !env.SUPABASE_PUBLISHABLE_KEY || !env.SUPABASE_SECRET_KEY) {
-    return json({ error: "Admin API is not configured." }, 503);
-  }
-  const headers = { apikey: env.SUPABASE_PUBLISHABLE_KEY, Authorization: authorization, "Content-Type": "application/json" };
-
-  const userResponse = await fetch(`${env.SUPABASE_URL}/auth/v1/user`, { headers });
-  if (!userResponse.ok) return json({ error: "Invalid session." }, 401);
-  const user = await userResponse.json();
-  if (!user.id) return json({ error: "Invalid session." }, 401);
-  const roleResponse = await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/is_current_user_admin`, { method: "POST", headers, body: "{}" });
-  if (!roleResponse.ok || await roleResponse.json() !== true) return json({ error: "Admin access required." }, 403);
+  try {
+  const verified = await verifiedAdmin(request, env);
+  if (verified.error) return verified.error;
+  const { user } = verified;
 
   let body;
   try {
@@ -64,13 +44,12 @@ export async function onRequestPost({ request, env }) {
 
   const response = await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/${selected.rpc}`, {
     method: "POST",
-    headers: { apikey: env.SUPABASE_SECRET_KEY, "Content-Type": "application/json" },
+    headers: verified.privilegedHeaders,
     body: JSON.stringify(selected.params),
   });
-  if (!response.ok) {
-    const detail = await response.text();
-    console.error("Admin action failed", response.status, detail);
-    return json({ error: response.status === 403 ? "Admin access required." : "Could not complete action." }, response.status === 403 ? 403 : 400);
-  }
+  if (!response.ok) return rpcFailure(response.status);
   return json({ ok: true });
+  } catch {
+    return json({ error: "Admin service unavailable.", code: "ADMIN_UNAVAILABLE" }, 503);
+  }
 }

@@ -857,6 +857,10 @@
           </form>
 
           <div id="adminLoading" class="admin-loading" hidden><span class="spinner" aria-hidden="true"></span> 集計しています</div>
+          <section id="adminError" class="admin-error" role="alert" hidden>
+            <i class="ph ph-warning-circle" aria-hidden="true"></i>
+            <div><h2>運営室に接続できませんでした</h2><p id="adminErrorMessage"></p><button id="retryAdminButton" class="button button-ghost" type="button">もう一度接続する</button></div>
+          </section>
           <div id="adminDashboard" hidden>
             <section class="admin-kpi-grid" aria-label="主要指標">
               <article><span>ユーザー数</span><strong id="adminTotalUsers">0</strong><small>累計登録</small></article>

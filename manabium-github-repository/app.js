@@ -1499,6 +1499,7 @@ function bindStaticEvents() {
     event.preventDefault();
     void loadAdminDashboard(true);
   });
+  $("#retryAdminButton").addEventListener("click", () => void loadAdminDashboard(true));
   $("#adminReportList").addEventListener("click", handleAdminAction);
   $("#adminUserList").addEventListener("click", handleAdminAction);
   $("#adminPostModerationList").addEventListener("click", handleAdminAction);
@@ -4182,31 +4183,54 @@ async function loadAdminDashboard(force = false) {
   const key = `${startInput.value}:${endInput.value}:${$("#adminGranularity").value}`;
   if (!force && state.adminLoadedRange === key && state.adminData) return;
   $("#adminLoading").hidden = false;
+  $("#adminError").hidden = true;
   $("#adminDashboard").hidden = true;
   try {
     const params = new URLSearchParams({ start: startInput.value, end: endInput.value, granularity: $("#adminGranularity").value });
-    const response = await fetch(`/api/admin/dashboard?${params}`, { headers: { Authorization: `Bearer ${state.session.access_token}` } });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || "管理データを取得できませんでした。");
+    const data = await requestAdmin(`/api/admin/dashboard?${params}`);
     state.adminData = data;
     state.adminLoadedRange = key;
     renderAdminDashboard(data);
     $("#adminDashboard").hidden = false;
   } catch (error) {
-    showToast(readableError(error), "error");
+    $("#adminErrorMessage").textContent = error.message || "通信できませんでした。接続を確認して、もう一度お試しください。";
+    $("#adminError").hidden = false;
   } finally {
     $("#adminLoading").hidden = true;
   }
 }
 
 async function adminAction(payload) {
-  const response = await fetch("/api/admin/action", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${state.session.access_token}`, "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
+  return requestAdmin("/api/admin/action", payload);
+}
+
+function adminErrorMessage(data, status) {
+  const messages = {
+    ADMIN_SECRET_MISSING: "運営室の秘密鍵が未設定です。CloudflareのManabium → Settings → Variables and Secretsで、Production環境にSUPABASE_SECRET_KEYをSecretとして追加し、再デプロイしてください。キーは画面やチャットに貼らないでください。",
+    ADMIN_CONFIG_MISSING: "Cloudflare側のSupabase接続設定が不足しています。Production環境のSUPABASE_URL、SUPABASE_PUBLISHABLE_KEYと秘密鍵の設定を確認し、再デプロイしてください。",
+    SESSION_REQUIRED: "ログインの有効期限が切れています。マイページから一度ログアウトし、もう一度ログインしてください。",
+    ADMIN_REQUIRED: "このアカウントに管理者権限がありません。権限のあるアカウントでログインしてください。",
+    ADMIN_ROLE_CHECK_FAILED: "管理者権限を確認できませんでした。接続とSupabaseの管理者判定用SQLを確認してください。",
+    ADMIN_KEY_REJECTED: "Cloudflareの秘密鍵がSupabaseに受け付けられませんでした。同じプロジェクトの有効なキーか確認してください。",
+    ADMIN_DATABASE_SETUP: "運営室のデータベース設定を確認してください。追加SQL restrict-admin-rpcs-to-server.sql が適用されている必要があります。",
+    ADMIN_QUERY_FAILED: "集計を完了できませんでした。期間を短くして再試行してください。解決しない場合はSupabaseのログを確認してください。",
+    ADMIN_UNAVAILABLE: "運営サービスと通信できませんでした。しばらく待って再試行してください。",
+  };
+  if (data?.error === "Admin API is not configured.") return messages[data.code] || messages.ADMIN_CONFIG_MISSING;
+  return messages[data?.code] || (status === 401 ? messages.SESSION_REQUIRED : status === 403 ? messages.ADMIN_REQUIRED : "運営室に接続できませんでした。接続とCloudflareのデプロイ状態を確認してください。");
+}
+
+async function requestAdmin(path, payload) {
+  const { data: sessionData, error } = await supabase.auth.getSession();
+  if (error || !sessionData?.session?.access_token) throw new Error(adminErrorMessage({ code: "SESSION_REQUIRED" }));
+  const response = await fetch(path, {
+    method: payload ? "POST" : "GET",
+    headers: { Authorization: `Bearer ${sessionData.session.access_token}`, "Content-Type": "application/json" },
+    ...(payload ? { body: JSON.stringify(payload) } : {}),
   });
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.error || "操作を完了できませんでした。");
+  const data = await response.json().catch(() => null);
+  if (!response.ok || !data) throw new Error(adminErrorMessage(data, response.status));
+  return data;
 }
 
 async function handleAdminAction(event) {
