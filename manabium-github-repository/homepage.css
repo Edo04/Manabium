@@ -1,0 +1,172 @@
+/* Public homepage: a quiet editorial entrance to the lake. */
+#authView.public-site { background:#f4f3eb; color:#263f35; overflow:clip; padding:0; }
+#authView::before,#authView::after { display:none; }
+.site-header { position:relative; display:flex; align-items:center; justify-content:space-between; gap:24px; padding:24px 4vw; min-height:98px; border-bottom:1px solid #d9dfd1; background:#f4f3eb; z-index:10; }
+.site-brand { display:flex; flex-direction:column; gap:4px; text-decoration:none; color:#274337; font:500 29px/1 var(--font-display); letter-spacing:-.04em; }
+.site-brand span { font:500 9px/1.4 var(--font-body); letter-spacing:.13em; }
+.site-header nav { display:flex; gap:30px; margin-left:auto; }
+.site-header nav a { font-size:12px; font-weight:500; text-decoration:none; color:#62715e; padding:12px 0; border-bottom:1px solid transparent; }
+.site-header nav a:hover { color:#264638; border-color:#264638; }
+.site-header-actions { display:flex; align-items:center; gap:12px; }
+.site-login { min-height:44px; padding:10px; border:0; background:transparent; color:#3a5543; font-size:12px; cursor:pointer; }
+.site-join { min-height:44px; padding:12px 18px; border-radius:4px; border:1px solid #294c3e; background:#294c3e; color:white; font-size:12px; display:flex; align-items:center; gap:22px; cursor:pointer; }
+.site-join i { font-size:18px; }
+.shore-hero { display:grid; grid-template-columns:46% 54%; min-height:calc(100svh - 98px); }
+.shore-hero-copy { padding:clamp(48px,7vw,112px) 4vw 35px; display:flex; flex-direction:column; align-items:flex-start; }
+.shore-overline { margin:0 0 26px; font:700 10px/1.7 var(--font-body); letter-spacing:.18em; color:#6d7e65; }
+.shore-hero h1 { font:500 clamp(34px,4.15vw,67px)/1.65 var(--font-display); margin:0 0 30px; letter-spacing:-.025em; white-space:nowrap; color:#274337; }
+.shore-intro { font-size:16px; line-height:2.2; color:#596952; margin:0 0 32px; }
+.shore-cta { display:inline-flex; align-items:center; justify-content:space-between; gap:40px; min-height:58px; padding:16px 24px; background:#294c3e; border:1px solid #294c3e; border-radius:4px; color:#fff; font-size:14px; font-weight:700; cursor:pointer; transition:background .2s; }
+.shore-cta:hover { background:#173a2b; }
+.shore-cta i { font-size:22px; transition:transform .25s; }
+.shore-cta:hover i { transform:translateX(4px); }
+.shore-registration { margin:14px 0 35px; color:#65745c; font-size:11px; }
+.shore-scroll { margin-top:auto; display:flex; gap:24px; align-items:center; color:#607459; font-size:9px; letter-spacing:.15em; text-decoration:none; min-height:44px; }
+.shore-scroll i { font-size:20px; }
+.shore-scene { position:relative; isolation:isolate; overflow:hidden; min-height:650px; background:#abc8c3; }
+.shore-water { position:absolute; width:100%; height:100%; object-fit:cover; object-position:52% center; inset:0; transform:scale(1.06) translateY(var(--shore-shift,0px)); will-change:transform; }
+.shore-scene::after { position:absolute; content:""; inset:0; background:linear-gradient(180deg,#253d3322,transparent 50%,#173c3555); pointer-events:none; z-index:0; }
+.shore-scene-caption { position:absolute; inset:28px 30px auto; display:flex; justify-content:space-between; color:#264c44; font-size:10px; letter-spacing:.15em; z-index:2; }
+.shore-scene-caption span:last-child { letter-spacing:.06em; }
+.shore-scene-name { position:absolute; left:6%; right:6%; bottom:4%; color:#fafff3bb; font:400 clamp(60px,8.5vw,140px)/1 var(--font-display); letter-spacing:-.045em; pointer-events:none; z-index:1; }
+.shore-demo-fish { position:absolute; top:29%; left:18%; width:125px; border:0; padding:0; background:transparent; cursor:pointer; z-index:3; animation:shore-drift 9s ease-in-out infinite; }
+.shore-demo-fish img { display:block; width:100%; }
+.shore-demo-fish span { display:block; margin:0 auto; width:max-content; padding:8px 13px; background:#fffff2e8; border-radius:12px 12px 12px 0; font-size:12px; color:#496953; }
+.shore-fish-distant { position:absolute; width:83px; top:42%; right:13%; filter:hue-rotate(125deg) saturate(.4); opacity:.8; animation:shore-drift 12s ease-in-out -4s infinite reverse; }
+.shore-demo-bottle { position:absolute; top:58%; left:51%; width:70px; padding:0; border:0; background:transparent; z-index:3; cursor:pointer; animation:shore-bottle 8s ease-in-out infinite; }
+.shore-demo-bottle img { display:block; width:100%; }
+.shore-demo-fish:hover,.shore-demo-fish:focus-visible,.shore-demo-bottle:hover,.shore-demo-bottle:focus-visible { animation-play-state:paused; }
+.shore-demo-hint { position:absolute; inset:auto 12% 19%; padding:13px 18px; margin:0; text-align:center; color:#345a4a; background:#f9fff0de; border:1px solid #ffffffa0; border-radius:5px; font-size:12px; line-height:1.8; z-index:3; }
+.shore-about { padding:110px 8vw 70px; }
+.shore-about-heading { display:grid; grid-template-columns:1.15fr 1fr; align-items:start; gap:8vw; }
+.shore-about h2,.shore-section-heading h2,.shore-safety h2,.shore-invitation h2 { font:500 clamp(29px,3.3vw,49px)/1.65 var(--font-display); letter-spacing:0; margin:0; }
+.shore-about-heading>p { font-size:16px; line-height:2; color:#596952; padding-top:8px; }
+.shore-topics { display:flex; justify-content:space-between; flex-wrap:wrap; gap:18px; padding:44px 0 0; margin-top:44px; border-top:1px solid #cfd8c7; font-size:12px; color:#64745d; }
+.shore-places { padding:70px 8vw 100px; }
+.shore-section-heading { margin-bottom:65px; }
+.shore-place { display:grid; grid-template-columns:42% 1fr; gap:8vw; padding:44px 0; border-top:1px solid #ced7c6; align-items:center; }
+.shore-place:last-child { border-bottom:1px solid #ced7c6; }
+.shore-place-art { min-height:310px; position:relative; display:flex; align-items:center; justify-content:center; background:#e3ecdf; }
+.shore-place-art>img { width:54%; max-height:230px; object-fit:contain; transition:transform .5s ease; }
+.shore-place:hover .shore-place-art>img { transform:translateY(-8px) rotate(-2deg); }
+.shore-place-art>span { position:absolute; bottom:18px; left:22px; color:#607959; font-size:9px; letter-spacing:.15em; }
+.place-bottle .shore-place-art { background:#e9dfd0; }
+.place-bottle .shore-place-art>img { width:90px; height:230px; }
+.place-library .shore-place-art { background:#dce6e1; }
+.shore-library-mark { text-align:center; color:#496954; padding:24px; }
+.shore-library-mark i { font-size:72px; display:block; margin-bottom:20px; }
+.shore-library-mark p { font:500 19px/1.9 var(--font-display); }
+.place-library .shore-place-art>img { width:75%; max-height:235px; mix-blend-mode:multiply; }
+.shore-place-copy .shore-overline { font-size:11px; letter-spacing:.08em; margin-bottom:17px; }
+.shore-place-copy h3 { font:500 clamp(28px,3vw,40px)/1.5 var(--font-display); margin:0 0 23px; }
+.shore-place-copy>p:not(.shore-overline) { font-size:16px; line-height:2.1; color:#596952; max-width:31em; }
+.shore-feature-note { display:block; margin-top:24px; color:#597653; font-size:11px; }
+.shore-safety { display:grid; grid-template-columns:1fr 1.1fr; gap:8vw; padding:100px 8vw; background:#244638; color:#f5f6e9; }
+.shore-safety .shore-overline { color:#b3c5a7; }
+.shore-safety-heading>p:last-child { margin-top:26px; color:#b4c5ab; font-size:13px; }
+.shore-principles article { display:flex; gap:25px; padding:25px 0; border-top:1px solid #d6e7c632; }
+.shore-principles article>span { color:#b8c9a9; font-size:11px; padding-top:4px; }
+.shore-principles h3 { font:700 17px/1.7 var(--font-body); letter-spacing:0; margin-bottom:10px; }
+.shore-principles p { color:#bfceb5; font-size:13px; line-height:1.9; margin:0; }
+.shore-faq { display:grid; grid-template-columns:1fr 1.35fr; gap:9vw; padding:100px 8vw; }
+.shore-faq h2 { font:500 35px/1.6 var(--font-display); }
+.shore-faq-list details { padding:0; border-top:1px solid #cad6bf; }
+.shore-faq-list details:last-child { border-bottom:1px solid #cad6bf; }
+.shore-faq-list summary { display:flex; align-items:center; justify-content:space-between; gap:22px; padding:23px 0; font-size:14px; font-weight:700; list-style:none; cursor:pointer; }
+.shore-faq-list summary::-webkit-details-marker { display:none; }
+.shore-faq-list summary i { flex:none; font-size:20px; transition:transform .2s; }
+.shore-faq-list details[open] summary i { transform:rotate(45deg); }
+.shore-faq-list details>p { font-size:13px; line-height:2; color:#6d7c62; padding:0 20px 24px 0; margin:0; }
+.shore-invitation { text-align:center; padding:70px 24px 90px; background:#e4ecdc; }
+.shore-invitation>img { width:90px; height:auto; margin-bottom:22px; }
+.shore-invitation .shore-overline { margin-bottom:20px; }
+.shore-invitation h2 { margin-bottom:32px; }
+.shore-signin { display:block; min-height:44px; padding:12px; margin:12px auto 0; border:0; background:transparent; color:#637456; font-size:12px; text-decoration:underline; text-underline-offset:4px; cursor:pointer; }
+.shore-footer { padding:45px 5vw 30px; background:#f4f3eb; }
+.shore-footer>a { display:block; color:#2c4c39; text-decoration:none; font:500 clamp(52px,13vw,190px)/1.25 var(--font-display); letter-spacing:-.055em; }
+.shore-footer>div { display:flex; justify-content:space-between; gap:20px; padding-top:20px; margin-top:22px; border-top:1px solid #d3ddc8; font-size:10px; color:#78866d; }
+.public-site [data-reveal] { opacity:1; transform:none; }
+.public-site.shore-motion [data-reveal]:not(.is-visible) { opacity:0; transform:translateY(22px); }
+.public-site.shore-motion [data-reveal] { transition:opacity .7s ease,transform .7s cubic-bezier(.2,.6,.2,1); }
+#authView #authDialog { border:1px solid #d6dfd2; border-radius:14px; background:#fffef8; box-shadow:0 20px 90px #1b3a3133; }
+#authDialog .auth-card { padding:44px 40px 36px; background:transparent; }
+#authDialog .auth-modal-brand { justify-content:flex-start; font-size:22px; }
+#authDialog #authHeading { font-size:30px; text-align:left; margin:28px 0 10px; }
+#authDialog .auth-card>.subtle { text-align:left; font-size:13px; }
+#authDialog .segmented { border-radius:0; background:transparent; border:0; border-bottom:1px solid #d3ddce; box-shadow:none; padding:0; margin:28px 0; }
+#authDialog .segment { border-radius:0; background:transparent; font-size:13px; box-shadow:none; }
+#authDialog .segment.active { color:#294c3e; background:transparent; box-shadow:inset 0 -2px #294c3e; }
+#authDialog .auth-input-wrap { background:#fffef9; border:1px solid #ced8c7; border-radius:7px; box-shadow:none; }
+#authDialog .auth-input-wrap input { border:0; background:transparent; border-radius:7px; }
+#authDialog .button-primary { background:#294c3e; border-radius:6px; color:#fff; }
+#authDialog .auth-modal-close { border-radius:50%; background:#edf1e6; }
+@keyframes shore-drift { 0%,100% { transform:translate(0,0) rotate(-2deg); } 50% { transform:translate(18px,-16px) rotate(2deg); } }
+@keyframes shore-bottle { 0%,100% { transform:translateY(0) rotate(-8deg); } 50% { transform:translateY(-13px) rotate(3deg); } }
+@media (max-width:1000px) {
+  .site-header { padding:20px 24px; gap:20px; }
+  .site-header nav { gap:18px; }
+  .site-header nav a { font-size:11px; }
+  .shore-hero-copy { padding:60px 28px 28px; }
+  .shore-hero h1 { font-size:36px; }
+  .shore-scene { min-height:640px; }
+  .shore-about,.shore-places,.shore-safety,.shore-faq { padding-left:6vw; padding-right:6vw; }
+  .shore-place { gap:6vw; }
+}
+@media (max-width:760px) {
+  .site-header { min-height:74px; padding:17px 20px; gap:8px; }
+  .site-brand { font-size:23px; gap:4px; }
+  .site-brand span { font-size:8px; letter-spacing:.02em; }
+  .site-header nav { display:none; }
+  .site-header-actions { gap:2px; }
+  .site-login { font-size:11px; padding:8px; }
+  .site-join { font-size:11px; min-height:40px; padding:10px 12px; gap:10px; }
+  .shore-hero { display:flex; flex-direction:column; min-height:0; }
+  .shore-hero-copy { padding:42px 26px 32px; }
+  .shore-overline { font-size:9px; margin-bottom:20px; }
+  .shore-hero h1 { font-size:clamp(30px,8.7vw,46px); line-height:1.65; margin-bottom:23px; }
+  .shore-intro { font-size:13px; line-height:2.05; margin-bottom:24px; }
+  .shore-cta { min-height:53px; padding:14px 21px; font-size:13px; gap:40px; }
+  .shore-registration { font-size:9px; margin:12px 0 0; }
+  .shore-scroll { display:none; }
+  .shore-scene { width:100%; min-height:480px; }
+  .shore-scene-caption { inset:22px 24px auto; font-size:9px; }
+  .shore-scene-name { font-size:16vw; }
+  .shore-demo-fish { width:100px; left:16%; }
+  .shore-demo-bottle { width:57px; }
+  .shore-fish-distant { width:70px; }
+  .shore-demo-hint { font-size:11px; inset:auto 8% 19%; }
+  .shore-about { padding:68px 26px 34px; }
+  .shore-about-heading { grid-template-columns:1fr; gap:25px; }
+  .shore-about h2,.shore-section-heading h2,.shore-safety h2,.shore-invitation h2 { font-size:28px; line-height:1.7; }
+  .shore-about-heading>p { font-size:13px; padding:0; margin:0; }
+  .shore-topics { justify-content:flex-start; gap:16px 24px; margin-top:30px; padding-top:25px; font-size:11px; }
+  .shore-places { padding:42px 26px 60px; }
+  .shore-section-heading { margin-bottom:38px; }
+  .shore-place { grid-template-columns:1fr; gap:27px; padding:28px 0 38px; }
+  .shore-place-art { min-height:240px; }
+  .shore-place-art>img { max-height:180px; width:48%; }
+  .place-bottle .shore-place-art>img { height:170px; width:72px; }
+  .place-library .shore-place-art>img { width:70%; max-height:190px; }
+  .shore-place-copy h3 { font-size:29px; margin-bottom:16px; }
+  .shore-place-copy>p:not(.shore-overline) { font-size:13px; }
+  .shore-feature-note { margin-top:18px; font-size:10px; }
+  .shore-safety { grid-template-columns:1fr; padding:64px 26px; gap:34px; }
+  .shore-principles article { padding:23px 0; gap:18px; }
+  .shore-principles h3 { font-size:15px; }
+  .shore-principles p { font-size:12px; }
+  .shore-faq { grid-template-columns:1fr; padding:64px 26px; gap:18px; }
+  .shore-faq h2 { font-size:29px; }
+  .shore-faq-list summary { font-size:13px; gap:14px; padding:22px 0; }
+  .shore-faq-list details>p { font-size:12px; }
+  .shore-invitation { padding:55px 22px 60px; }
+  .shore-footer { padding:32px 24px; }
+  .shore-footer>div { font-size:9px; flex-wrap:wrap; gap:12px; }
+  #authDialog .auth-card { padding:30px 24px; }
+  #authDialog #authHeading { font-size:26px; }
+}
+@media (prefers-reduced-motion:reduce) {
+  .shore-demo-fish,.shore-fish-distant,.shore-demo-bottle { animation:none; }
+  .shore-water,.shore-place:hover .shore-place-art>img,.shore-cta:hover i { transform:none; will-change:auto; }
+  .public-site.shore-motion [data-reveal]:not(.is-visible) { opacity:1; transform:none; }
+  .public-site.shore-motion [data-reveal],.shore-place-art>img,.shore-cta i { transition:none; }
+}

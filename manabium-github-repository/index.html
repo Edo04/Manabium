@@ -28,8 +28,9 @@
       href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.2/src/regular/style.css"
     />
     <link rel="stylesheet" href="./style.css?v=20260815-library-entrance-2" />
-    <link rel="stylesheet" href="./community.css?v=20260906-1" />
-    <script type="module" src="./app.js?v=20260906-community-1"></script>
+    <link rel="stylesheet" href="./community.css?v=20260907-lakeside-3" />
+    <link rel="stylesheet" href="./homepage.css?v=20260907-3" />
+    <script type="module" src="./app.js?v=20260907-lakeside-3"></script>
   </head>
   <body>
     <div class="ambient ambient-one" aria-hidden="true"></div>
@@ -39,273 +40,58 @@
 
     <main id="authView" class="public-site">
       <a class="public-skip-link" href="#publicMain">本文へ移動</a>
-
-      <header id="publicHeader" class="public-header">
-        <a class="public-brand" href="#publicTop" aria-label="Manabium ホーム">
-          <img src="./assets/manabium-icon.png" alt="" />
-          <span>Manabium</span>
-        </a>
-        <nav class="public-nav" aria-label="ホームページ内の案内">
-          <a href="#publicAbout">湖について</a>
-          <a href="#publicBottle">ボトル</a>
-          <a href="#publicSafety">安心のしくみ</a>
-        </nav>
-        <div class="public-header-actions">
-          <button class="public-login" type="button" data-auth-open="login">ログイン</button>
-          <button class="public-button public-button-small" type="button" data-auth-open="signup">
-            湖へ入る
-          </button>
-        </div>
+      <header id="publicHeader" class="site-header">
+        <a class="site-brand" href="#publicTop">Manabium<span>理工系女子が集まる湖</span></a>
+        <nav aria-label="ホームページの案内"><a href="#publicAbout">この湖について</a><a href="#publicBottle">できること</a><a href="#publicSafety">安心のために</a></nav>
+        <div class="site-header-actions"><button type="button" data-auth-open="login" class="site-login">ログイン</button><button type="button" data-auth-open="signup" class="site-join">湖に入る <i class="ph ph-arrow-up-right" aria-hidden="true"></i></button></div>
       </header>
-
-      <nav id="publicDepthNav" class="public-depth-nav" aria-label="ページ内の現在位置">
-        <a href="#publicTop" data-depth-label="入口"><span></span><b>01</b></a>
-        <a href="#publicAbout" data-depth-label="湖について"><span></span><b>02</b></a>
-        <a href="#publicDiscovery" data-depth-label="仲間との出会い"><span></span><b>03</b></a>
-        <a href="#publicBottle" data-depth-label="ボトル"><span></span><b>04</b></a>
-        <a href="#publicSafety" data-depth-label="安心のしくみ"><span></span><b>05</b></a>
-      </nav>
-
       <div id="publicMain">
-        <section id="publicTop" class="public-hero" aria-labelledby="publicHeroTitle">
-          <div class="public-hero-water" aria-hidden="true">
-            <span class="public-light-ray ray-one"></span>
-            <span class="public-light-ray ray-two"></span>
-            <span class="public-bubble public-bubble-one"></span>
-            <span class="public-bubble public-bubble-two"></span>
-            <span class="public-bubble public-bubble-three"></span>
-            <img
-              class="public-swimmer public-swimmer-one"
-              src="./assets/fish-watercolor.png"
-              alt=""
-            />
-            <img
-              class="public-swimmer public-swimmer-two"
-              src="./assets/fish-watercolor.png"
-              alt=""
-            />
-            <img class="public-floating-bottle" src="./assets/message-bottle.png" alt="" />
+        <section id="publicTop" class="shore-hero" aria-labelledby="publicHeroTitle">
+          <div class="shore-hero-copy">
+            <p class="shore-overline">A PLACE TO FIND YOUR PEOPLE</p>
+            <h1 id="publicHeroTitle">「わたしも」が、<br>見つかる湖。</h1>
+            <p class="shore-intro">好きなことも、まだ迷っていることも。<br>同じ理工系を歩む誰かと、<br>あなたのペースで話せる場所。</p>
+            <button type="button" class="shore-cta" data-auth-open="signup">あなたの魚で、湖へ <i class="ph ph-arrow-right" aria-hidden="true"></i></button>
+            <p class="shore-registration">匿名で参加 · 学校名・公開ユーザー名は不要</p>
+            <a class="shore-scroll" href="#publicAbout"><span>SCROLL TO EXPLORE</span><i class="ph ph-arrow-down" aria-hidden="true"></i></a>
           </div>
-          <canvas id="publicRippleCanvas" class="public-ripple-canvas" aria-hidden="true"></canvas>
-
-          <div class="public-hero-inner">
-            <div class="public-hero-copy" data-reveal>
-              <p class="public-kicker"><span></span>理工系女子のためのコミュニティ</p>
-              <h1 id="publicHeroTitle">
-                <span class="public-heading-line">迷ったとき、</span><span class="public-heading-line"><em>同じ分野の</em></span><span class="public-heading-line">誰かがいる。</span>
-              </h1>
-              <p class="public-lead">
-                <span class="public-lead-line">授業、研究、進路の小さな疑問を、ひとりで抱え込まないために。</span><span class="public-lead-line">Manabiumは、理工系を学ぶ女性たちが静かにつながる湖です。</span>
-              </p>
-              <div class="public-hero-actions">
-                <button class="public-button" type="button" data-auth-open="signup">
-                  <span>無料で湖へ入る</span>
-                  <i class="ph ph-arrow-right" aria-hidden="true"></i>
-                </button>
-                <a class="public-text-link" href="#publicAbout">
-                  Manabiumを知る
-                  <i class="ph ph-arrow-down" aria-hidden="true"></i>
-                </a>
-              </div>
-              <ul class="public-trust-list" aria-label="登録について">
-                <li><i class="ph ph-check-circle" aria-hidden="true"></i>本名・学校名は不要</li>
-                <li><i class="ph ph-check-circle" aria-hidden="true"></i>個別DMなし</li>
-                <li><i class="ph ph-check-circle" aria-hidden="true"></i>無料で参加</li>
-              </ul>
-            </div>
-
-            <aside id="publicLakeCard" class="public-lake-card" data-reveal aria-label="Manabiumの湖のイメージ">
-              <div class="public-lake-card-head">
-                <span><i></i>湖で過ごすひととき</span>
-                <small>体験イメージ</small>
-              </div>
-              <div class="public-lake-card-scene" aria-hidden="true">
-                <span class="public-scene-touch"><i class="ph ph-cursor-click"></i> 水面に触れてみて</span>
-                <span class="public-scene-ripple ripple-one"></span>
-                <span class="public-scene-ripple ripple-two"></span>
-                <img class="public-scene-fish scene-fish-one" src="./assets/fish-watercolor.png" alt="" />
-                <img class="public-scene-fish scene-fish-two" src="./assets/fish-watercolor.png" alt="" />
-                <img class="public-scene-bottle" src="./assets/message-bottle.png" alt="" />
-                <div id="publicSceneSignal" class="public-scene-signal">新しいボトルを流しました！</div>
-              </div>
-              <div class="public-lake-card-foot">
-                <span><b>魚</b> 今ここにいる、近い分野の仲間</span>
-                <span><b>タップ</b> その滞在中の呼び名とプロフィールを確認</span>
-              </div>
-            </aside>
-          </div>
-
-          <a class="public-scroll-cue" href="#publicAbout" aria-label="次のセクションへ">
-            <span>SCROLL</span><i></i>
-          </a>
-        </section>
-
-        <section class="public-quiet-band" aria-label="Manabiumの考え方">
-          <p data-reveal>周りに同じ立場の人が少なくても、<strong>ひとりで進まなくていい。</strong></p>
-        </section>
-
-        <section id="publicAbout" class="public-section public-about">
-          <div class="public-section-heading" data-reveal>
-            <p class="public-section-label">WHEN YOU NEED SOMEONE</p>
-            <h2><span class="public-heading-line">誰に聞けばいいか分からない。</span><span class="public-heading-line">その瞬間を、湖につなぐ。</span></h2>
-            <p>答えだけではなく、「自分と近い誰かがいた」という安心も持ち帰れる場所を目指しています。</p>
-          </div>
-          <div class="public-need-grid">
-            <article class="public-need-card need-study" data-reveal>
-              <span class="public-card-number">01</span>
-              <i class="ph ph-function" aria-hidden="true"></i>
-              <h3>授業・研究</h3>
-              <p>レポート、研究室、探究活動。ちょっと聞きたい疑問を近い分野の仲間へ。</p>
-              <small>「この分野、どこから学んだ？」</small>
-            </article>
-            <article class="public-need-card need-career" data-reveal>
-              <span class="public-card-number">02</span>
-              <i class="ph ph-compass" aria-hidden="true"></i>
-              <h3>進路・キャリア</h3>
-              <p>学部選び、就活、働き方。理工系女性の実体験を匿名で分かち合う。</p>
-              <small>「女性の先輩の話を聞きたい」</small>
-            </article>
-            <article class="public-need-card need-event" data-reveal>
-              <span class="public-card-number">03</span>
-              <i class="ph ph-sparkle" aria-hidden="true"></i>
-              <h3>イベント・つながり</h3>
-              <p>勉強会、コミュニティ、インターン。知らなかった機会と出会える。</p>
-              <small>「こんなイベントがあるよ」</small>
-            </article>
+          <div class="shore-scene" id="homepageLakeDemo" aria-label="湖の体験イメージ">
+            <img class="shore-water" src="./assets/aquarium-background.png" alt="" fetchpriority="high" />
+            <div class="shore-scene-caption"><span>THE LAKE</span><span>体験イメージ</span></div>
+            <button class="shore-demo-fish" type="button" data-demo="fish" aria-label="魚について知る"><img src="./assets/fish-watercolor.png" alt="" /><span>こんにちは。</span></button>
+            <img class="shore-fish-distant" src="./assets/fish-watercolor.png" alt="" />
+            <button class="shore-demo-bottle" type="button" data-demo="bottle" aria-label="ボトルについて知る"><img src="./assets/message-bottle.png" alt="" /></button>
+            <p id="homepageDemoHint" class="shore-demo-hint" aria-live="polite">魚やボトルに、触れてみて。</p>
+            <span class="shore-scene-name" aria-hidden="true">Manabium</span>
           </div>
         </section>
-
-        <section id="publicDiscovery" class="public-section public-discovery" aria-labelledby="publicDiscoveryTitle">
-          <div class="public-discovery-copy" data-reveal>
-            <p class="public-section-label">FROM A FISH TO A STORY</p>
-            <h2 id="publicDiscoveryTitle"><span class="public-heading-line">近い分野の魚と、</span><span class="public-heading-line">安心して出会う。</span></h2>
-            <p>
-              湖がにぎわってきたら、専攻や興味が近い仲間を優先して表示します。魚には湖にいる間だけの呼び名がつき、離れると公開上のつながりは残りません。
-            </p>
-            <ul class="public-discovery-points">
-              <li><span>01</span><div><b>近い分野の魚に出会う</b><small>人数が多いときだけ、専攻・興味の近さを反映。</small></div></li>
-              <li><span>02</span><div><b>その場だけの呼び名で交流</b><small>固定名や公開の投稿履歴を残さず、人の気配を感じる。</small></div></li>
-              <li><span>03</span><div><b>短い合図で知らせる</b><small>新しい投稿や興味分野を、自由入力なしで共有。</small></div></li>
-            </ul>
-          </div>
-          <div class="public-discovery-scene" data-reveal data-parallax-scene aria-label="魚から投稿へつながる新機能のイメージ">
-            <span class="public-discovery-current" aria-hidden="true"></span>
-            <button class="public-discovery-fish" type="button" tabindex="-1" aria-hidden="true">
-              <img src="./assets/fish-watercolor.png" alt="" />
-              <span><b>水色のしずく</b><small>情報・AI</small></span>
-            </button>
-            <div class="public-discovery-profile">
-              <span class="public-discovery-match"><i class="ph ph-sparkle" aria-hidden="true"></i> 興味が近い仲間</span>
-              <strong>湖にいる間だけの呼び名</strong>
-              <article><small>学年</small><b>大学2年</b></article>
-              <article><small>興味</small><b>機械学習・データ分析</b></article>
-              <button type="button" tabindex="-1">定型リアクションを送る <i class="ph ph-arrow-right"></i></button>
-            </div>
-            <p class="public-discovery-signal"><i class="ph ph-megaphone-simple"></i> 新しいボトルを流しました！</p>
+        <section id="publicAbout" class="shore-about">
+          <p class="shore-overline" data-reveal>NOT ALONE, NOT IN A HURRY.</p>
+          <div class="shore-about-heading" data-reveal><h2>会話を急がなくていい。<br>ひとりで抱えなくていい。</h2><p>授業の小さな疑問、研究の行き詰まり、<br>進路を決める前に聞いておきたいこと。<br><br>身近に話せる人がいないとき、<br>ここには、違う場所で同じ道を歩む仲間がいます。</p></div>
+          <div class="shore-topics" aria-label="話せることの例"><span>授業のこと</span><span>研究のこと</span><span>つくったもの</span><span>インターン</span><span>これからのこと</span></div>
+        </section>
+        <section id="publicBottle" class="shore-places" aria-labelledby="shorePlacesTitle">
+          <div class="shore-section-heading" data-reveal><p class="shore-overline">THREE WAYS TO CONNECT</p><h2 id="shorePlacesTitle">その日の気持ちで、<br>過ごす場所を選ぼう。</h2></div>
+          <article class="shore-place place-lake" data-reveal><div class="shore-place-art"><img src="./assets/fish-watercolor.png" alt="" /><span>01 / THE LAKE</span></div><div class="shore-place-copy"><p class="shore-overline">誰かの気配がほしい日は</p><h3>湖で、ひとこと。</h3><p>今、この画面を開いている仲間が魚になって泳ぎます。「こんにちは」から始まる定型メッセージで、気負わず交流。見るだけの日があっても大丈夫。</p><span class="shore-feature-note">リアルタイムの気配 / 定型リアクション</span></div></article>
+          <article class="shore-place place-bottle" data-reveal><div class="shore-place-art"><img src="./assets/message-bottle.png" alt="" /><span>02 / BOTTLE LETTERS</span></div><div class="shore-place-copy"><p class="shore-overline">聞いてみたいことがある日は</p><h3>言葉を、ボトルに。</h3><p>相談や質問、見つけたイベントの情報をボトルに残す。返事はあとから届くので、時間を合わせなくても会話が続きます。</p><span class="shore-feature-note">検索・返信 / リンク添付 / あとで読む</span></div></article>
+          <article class="shore-place place-library" data-reveal><div class="shore-place-art"><div class="shore-library-mark"><i class="ph ph-book-open-text" aria-hidden="true"></i><p>誰かの経験が、<br />次の一歩のしおりになる。</p></div><span>03 / LAKESIDE LIBRARY</span></div><div class="shore-place-copy"><p class="shore-overline">経験を、誰かのヒントにしたい日は</p><h3>図書館に、一冊。</h3><p>インターンの体験、技術の学び、つくったアプリ。少し長い話は湖畔のノートへ。誰かの試行錯誤が、あなたの次の一歩につながります。</p><span class="shore-feature-note">4種類のノート / 本棚 / しおり保存</span></div></article>
+        </section>
+        <section id="publicSafety" class="shore-safety">
+          <div class="shore-safety-heading" data-reveal><p class="shore-overline">A LITTLE DISTANCE, A LITTLE COMFORT.</p><h2>安心できる距離を、<br>大切に。</h2><p>近づくことだけが、つながりではないから。</p></div>
+          <div class="shore-principles" data-reveal><article><span>01</span><div><h3>本名ではなく、あなたの魚で。</h3><p>固定の公開名や学校名は表示しません。プロフィールは学びや興味を中心に。</p></div></article><article><span>02</span><div><h3>会話のペースは、自分で。</h3><p>自由入力のDMはありません。リアクションの受信設定やミュートを選べます。</p></div></article><article><span>03</span><div><h3>困ったことは、運営へ。</h3><p>投稿や返信の通報機能を用意しています。個人情報を書き込まないことも、みんなで大切に。</p></div></article></div>
+        </section>
+        <section class="shore-faq">
+          <div data-reveal><p class="shore-overline">BEFORE YOU DIVE IN</p><h2>はじめる前に。</h2></div>
+          <div class="shore-faq-list" data-reveal>
+            <details><summary>どんな人のための場所ですか？<i class="ph ph-plus" aria-hidden="true"></i></summary><p>理工系を学ぶ女性や、理工系分野に興味のある女性のためのコミュニティです。中高生、大学生、大学院生、既卒の方も、学年や立場に合わせて参加できます。</p></details>
+            <details><summary>うまく話せるか、不安です。<i class="ph ph-plus" aria-hidden="true"></i></summary><p>最初は眺めるだけでも大丈夫です。湖では用意された言葉を選んで送れます。気になるボトルを読んだり、ノートにしおりを挟むところから始めてみてください。</p></details>
+            <details><summary>名前や学校名は公開されますか？<i class="ph ph-plus" aria-hidden="true"></i></summary><p>固定の公開ユーザー名や学校名は表示しません。ただし、投稿本文やプロフィールに自分で書くと他の利用者に見えるため、個人を特定できる情報は書かないでください。</p></details>
+            <details><summary>今は、どのような段階のサービスですか？<i class="ph ph-plus" aria-hidden="true"></i></summary><p>情報系の大学生2人が開発しているテスト公開段階のサービスです。実際に使っていただいた声をもとに、使いやすさと安心できる運営を整えています。</p></details>
           </div>
         </section>
-
-        <section id="publicBottle" class="public-section public-experience">
-          <div class="public-experience-visual" data-reveal data-parallax-scene aria-hidden="true">
-            <div class="public-orbit orbit-one"></div>
-            <div class="public-orbit orbit-two"></div>
-            <img class="public-experience-bottle" src="./assets/message-bottle.png" alt="" />
-            <img class="public-experience-lily" src="./assets/reply-lily.png" alt="" />
-            <span class="public-experience-note note-question">研究室選び、何を見ましたか？</span>
-            <span class="public-experience-note note-reply">新しい返信が届きました</span>
-          </div>
-          <div class="public-experience-copy" data-reveal>
-            <p class="public-section-label">THE BOTTLE</p>
-            <h2><span class="public-heading-line">言葉はボトルに。</span><span class="public-heading-line">返事は、あなたのもとへ。</span></h2>
-            <p>
-              今すぐ同じ時間にいなくても、相談や情報は湖に残ります。カテゴリと分野で探せて、返信は会話の流れごと確認できます。
-            </p>
-            <ol class="public-step-list">
-              <li><span>1</span><div><b>相談を流す</b><small>固定の公開名なしで、授業・研究・進路の疑問を投稿。</small></div></li>
-              <li><span>2</span><div><b>近い話題に出会う</b><small>カテゴリや分野から、自分に合うボトルを見つける。</small></div></li>
-              <li><span>3</span><div><b>返信が便りになる</b><small>誰かの経験が、次に進むための小さな手がかりに。</small></div></li>
-            </ol>
-          </div>
-        </section>
-
-        <section class="public-section public-difference">
-          <div class="public-difference-copy" data-reveal>
-            <p class="public-section-label">A QUIET FIRST STEP</p>
-            <h2><span class="public-heading-line">大きなコミュニティへ入る前の、</span><span class="public-heading-line">小さな入口でありたい。</span></h2>
-            <p>
-              SlackやDiscordの代わりではありません。参加先をまだ知らない人や、いきなり会話へ入るのが不安な人が、興味の近い誰かと出会うための入口です。
-            </p>
-          </div>
-          <div class="public-difference-route" data-reveal aria-label="Manabiumから広がるつながり">
-            <div><i class="ph ph-drop" aria-hidden="true"></i><span><b>Manabium</b><small>匿名で小さく相談</small></span></div>
-            <i class="ph ph-arrow-right route-arrow" aria-hidden="true"></i>
-            <div><i class="ph ph-users-three" aria-hidden="true"></i><span><b>興味の近い仲間</b><small>情報と経験に出会う</small></span></div>
-            <i class="ph ph-arrow-right route-arrow" aria-hidden="true"></i>
-            <div><i class="ph ph-signpost" aria-hidden="true"></i><span><b>次の居場所</b><small>イベントや既存コミュニティへ</small></span></div>
-          </div>
-        </section>
-
-        <section id="publicSafety" class="public-safety">
-          <div class="public-safety-water" data-parallax-scene aria-hidden="true"></div>
-          <div class="public-section public-safety-inner">
-            <div class="public-safety-copy" data-reveal>
-              <p class="public-section-label">SAFE BY DESIGN</p>
-              <h2><span class="public-heading-line">つながるために、</span><span class="public-heading-line">近づきすぎない設計。</span></h2>
-              <p>
-                本名や学校名を出さず、いきなり個別に連絡されない。安心して最初の一言を置ける距離感を大切にしています。
-              </p>
-              <button class="public-button public-button-light" type="button" data-auth-open="signup">
-                安心して湖へ入る
-                <i class="ph ph-arrow-right" aria-hidden="true"></i>
-              </button>
-            </div>
-            <div class="public-safety-grid">
-              <article data-reveal><i class="ph ph-user-circle-minus" aria-hidden="true"></i><h3>個人を特定しない</h3><p>固定の公開ユーザー名は使いません。正確な学校名・住所・連絡先も公開しません。</p></article>
-              <article data-reveal><i class="ph ph-chat-slash" aria-hidden="true"></i><h3>自由なDMなし</h3><p>湖では定型リアクション、相談は公開されたボトルの返信で行います。</p></article>
-              <article data-reveal><i class="ph ph-eye-slash" aria-hidden="true"></i><h3>距離を選べる</h3><p>個別リアクションを受け取らない「見るだけ」や、相手をミュートする選択肢があります。</p></article>
-              <article data-reveal><i class="ph ph-heart" aria-hidden="true"></i><h3>尊重から始める</h3><p>登録時にコミュニティルールへ同意。安心を損なう使い方を前提にしません。</p></article>
-            </div>
-          </div>
-        </section>
-
-        <section class="public-section public-beta">
-          <div class="public-beta-card" data-reveal>
-            <div class="public-beta-copy">
-              <p class="public-section-label">GROWING WITH YOU</p>
-              <h2>この湖は、まだ育っている途中です。</h2>
-              <p>
-                情報系を学ぶ大学2年生の2人が、同世代の声を聞きながら開発しています。今の使い心地を一緒に確かめてくれる方を募集しています。
-              </p>
-              <div class="public-beta-actions">
-                <button class="public-button" type="button" data-auth-open="signup">テスト参加する</button>
-                <button class="public-login" type="button" data-auth-open="login">すでに登録済みの方</button>
-              </div>
-            </div>
-            <img src="./assets/manabium-icon.png" alt="Manabiumの湖のシンボル" />
-          </div>
-        </section>
-
-        <section class="public-final-cta" data-reveal data-parallax-scene>
-          <div class="public-final-ripple" aria-hidden="true"></div>
-          <p>YOUR FIRST RIPPLE</p>
-          <h2><span class="public-heading-line">あなたの小さな疑問から、</span><span class="public-heading-line">湖に波紋を。</span></h2>
-          <button class="public-button" type="button" data-auth-open="signup">
-            無料でManabiumを始める
-            <i class="ph ph-arrow-right" aria-hidden="true"></i>
-          </button>
-          <small>メールアドレスだけで登録できます</small>
-        </section>
+        <section class="shore-invitation" data-reveal><img src="./assets/fish-watercolor.png" alt="" /><p class="shore-overline">YOUR PLACE BY THE WATER</p><h2>今日のあなたで、<br>ふらっとおいで。</h2><button type="button" class="shore-cta" data-auth-open="signup">湖に入ってみる <i class="ph ph-arrow-up-right" aria-hidden="true"></i></button><button type="button" class="shore-signin" data-auth-open="login">すでに登録済みの方はこちら</button></section>
       </div>
-
-      <footer class="public-footer">
-        <a class="public-brand" href="#publicTop">
-          <img src="./assets/manabium-icon.png" alt="" />
-          <span>Manabium</span>
-        </a>
-        <p>理工系女子が、静かにつながるコミュニティの湖。</p>
-        <button type="button" data-auth-open="login">ログイン</button>
-        <small>© 2026 Manabium</small>
-      </footer>
+      <footer class="shore-footer"><a href="#publicTop">Manabium</a><div><span>理工系女子が集まる湖</span><span>© Manabium · テスト公開中</span></div></footer>
 
       <dialog id="authDialog" class="auth-modal" aria-labelledby="authHeading">
         <button class="auth-modal-close" type="button" data-close-dialog="authDialog" aria-label="閉じる">
@@ -521,42 +307,15 @@
         <section id="aquariumPage" class="page" data-page="aquarium" aria-labelledby="aquariumTitle" hidden>
           <header class="aquarium-community-header">
             <div>
-              <p class="eyebrow">THE LAKE / 01</p>
-              <h1 id="aquariumTitle">いつもの湖で、ひと息。</h1>
-              <p>話しても、眺めるだけでも。ここにいる仲間と、あなたのペースで。</p>
+              <p class="eyebrow">OUR LAKE</p>
+              <h1 id="aquariumTitle">湖</h1>
+              <p>ここにいる誰かと、ひと息。</p>
             </div>
             <div class="aquarium-live-counts" aria-label="現在の湖の人数">
               <div><span class="presence-dot" aria-hidden="true"></span><strong id="aquariumUserCount">0</strong><span>人が湖にいます</span></div>
               <div><i class="ph ph-chat-circle-dots" aria-hidden="true"></i><strong id="aquariumSocialCount">0</strong><span>人が交流OK</span></div>
             </div>
           </header>
-
-          <section class="aquarium-control-deck" aria-labelledby="aquariumStatusTitle">
-            <div class="aquarium-status-control">
-              <div>
-                <h2 id="aquariumStatusTitle">今の気分</h2>
-              </div>
-              <div id="aquariumStatusOptions" class="aquarium-status-options" role="group" aria-label="湖での状態">
-                <button class="status-choice active" type="button" data-aquarium-status="social"><span class="status-orb status-social"></span>交流OK</button>
-                <button class="status-choice" type="button" data-aquarium-status="break"><span class="status-orb status-break"></span>休憩中</button>
-                <button class="status-choice" type="button" data-aquarium-status="observe"><span class="status-orb status-observe"></span>見るだけ</button>
-              </div>
-            </div>
-            <div class="aquarium-participation-control">
-              <details class="aquarium-settings">
-                <summary><i class="ph ph-sliders-horizontal" aria-hidden="true"></i> 表示・通知の設定</summary>
-                <p class="aquarium-auto-join-note">この画面を開いている間だけ、あなたの魚が湖にいます。</p>
-                <label class="aquarium-switch-row compact" for="receiveReactionsToggle">
-                  <span><strong>リアクションを受け取る</strong><small>オフなら吹き出しを表示しません</small></span>
-                  <span class="toggle-switch"><input id="receiveReactionsToggle" type="checkbox" checked /><span aria-hidden="true"></span></span>
-                </label>
-                <div class="muted-users-block">
-                  <strong>ミュート中</strong>
-                  <div id="mutedUsersList" class="muted-users-list"><span>いません</span></div>
-                </div>
-              </details>
-            </div>
-          </section>
 
           <div id="aquariumSetupNotice" class="aquarium-setup-notice" hidden>
             <i class="ph ph-database" aria-hidden="true"></i>
@@ -604,12 +363,12 @@
               </div>
               <div id="fishLayer" class="fish-layer"></div>
               <div id="bottleLayer" class="bottle-layer"></div>
-              <button id="libraryDoor" class="library-door" type="button" aria-label="湖底の小径から湖畔の図書館へ入る">
+              <button id="libraryDoor" class="library-door" type="button" aria-label="湖畔の図書館でノートを読む">
                 <span class="library-door-glow" aria-hidden="true"></span>
                 <span class="library-door-stones" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></span>
                 <span class="library-door-reeds" aria-hidden="true"><i></i><i></i><i></i></span>
                 <span class="library-door-panel" aria-hidden="true"><i class="ph ph-book-open-text"></i></span>
-                <span class="library-door-label"><strong>湖畔の図書館</strong><small>本の灯りをたどる</small></span>
+                <span class="library-door-label"><strong>湖畔の図書館</strong><small>ノートを読みに行く</small></span>
                 <span id="libraryDoorTip" class="library-door-tip">岩間に、本の灯りが見えます</span>
               </button>
               <button id="replyLily" class="reply-lily" type="button" hidden>
@@ -625,6 +384,34 @@
                 <p><strong>いまは静かな湖です</strong><span>あなたの魚が最初の一匹として泳ぎます。</span></p>
               </div>
             </div>
+            <div class="lake-bottom-bar">
+          <section class="aquarium-control-deck" aria-labelledby="aquariumStatusTitle">
+            <div class="aquarium-status-control">
+              <div>
+                <h2 id="aquariumStatusTitle">今の気分</h2>
+              </div>
+              <div id="aquariumStatusOptions" class="aquarium-status-options" role="group" aria-label="湖での状態">
+                <button class="status-choice active" type="button" data-aquarium-status="social"><span class="status-orb status-social"></span>交流OK</button>
+                <button class="status-choice" type="button" data-aquarium-status="break"><span class="status-orb status-break"></span>休憩中</button>
+                <button class="status-choice" type="button" data-aquarium-status="observe"><span class="status-orb status-observe"></span>見るだけ</button>
+              </div>
+            </div>
+            <div class="aquarium-participation-control">
+              <details class="aquarium-settings">
+                <summary><i class="ph ph-sliders-horizontal" aria-hidden="true"></i> 表示・通知の設定</summary>
+                <p class="aquarium-auto-join-note">この画面を開いている間だけ、あなたの魚が湖にいます。</p>
+                <label class="aquarium-switch-row compact" for="receiveReactionsToggle">
+                  <span><strong>リアクションを受け取る</strong><small>オフなら吹き出しを表示しません</small></span>
+                  <span class="toggle-switch"><input id="receiveReactionsToggle" type="checkbox" checked /><span aria-hidden="true"></span></span>
+                </label>
+                <div class="muted-users-block">
+                  <strong>ミュート中</strong>
+                  <div id="mutedUsersList" class="muted-users-list"><span>いません</span></div>
+                </div>
+              </details>
+            </div>
+          </section>
+
             <div id="aquariumMessageDock" class="aquarium-message-dock" aria-label="湖で交流する">
               <div class="aquarium-message-dock-copy">
                 <span class="message-dock-icon"><i class="ph ph-chat-circle-dots" aria-hidden="true"></i></span>
@@ -640,6 +427,7 @@
                   <i class="ph ph-chat-circle-dots" aria-hidden="true"></i> ひとこと送る
                 </button>
               </div>
+            </div>
             </div>
             <details class="lake-help">
               <summary><i class="ph ph-question" aria-hidden="true"></i> はじめての湖・使い方</summary>
@@ -682,8 +470,8 @@
         <section id="boardPage" class="page" data-page="board" aria-labelledby="boardTitle" hidden>
           <div class="page-intro board-intro">
             <div>
-              <p class="eyebrow">BOTTLE LETTERS / 02</p>
-              <h1 id="boardTitle">届いたことば、つながる話。</h1>
+              <p class="eyebrow">LETTERS ON THE WATER</p>
+              <h1 id="boardTitle">ボトルの便り</h1>
               <p>授業の疑問も、進路の迷いも。ボトルにのせて、同じ分野の誰かへ。</p>
             </div>
             <button id="openComposerButton" class="button button-primary" type="button">
@@ -728,7 +516,7 @@
         <section id="libraryPage" class="page library-page" data-page="library" aria-labelledby="libraryTitle" hidden>
           <header class="library-hero">
             <div>
-              <p class="eyebrow">LAKESIDE LIBRARY / 03</p>
+              <p class="eyebrow">THE LAKESIDE LIBRARY</p>
               <h1 id="libraryTitle">湖畔の図書館</h1>
               <p>試したこと、つくったもの、歩んだ道。誰かの経験を、次の一歩のヒントに。</p>
             </div>
@@ -785,7 +573,7 @@
         <section id="mypagePage" class="page" data-page="mypage" aria-labelledby="mypageTitle" hidden>
           <div class="page-intro profile-intro">
             <div>
-              <p class="eyebrow">YOUR CORNER / 04</p>
+              <p class="eyebrow">YOUR LITTLE CORNER</p>
               <h1 id="mypageTitle">マイページ</h1>
               <p>プロフィールと、コミュニティでのやり取りを確認できます。</p>
             </div>

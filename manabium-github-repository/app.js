@@ -922,278 +922,54 @@ function openAuthDialog(mode = "signup") {
 }
 
 function initializePublicHomepage() {
-  const publicSite = $("#authView");
-  const publicHeader = $("#publicHeader");
-  if (!publicSite || !publicHeader) return;
-
-  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  publicSite.classList.toggle("public-motion-ready", !reduceMotion);
-
-  const parallaxScenes = $$('[data-parallax-scene]', publicSite);
-  const depthNavLinks = $$('#publicDepthNav a[href^="#"]', publicSite);
-  const depthSections = depthNavLinks
-    .map((link) => document.querySelector(link.getAttribute("href")))
-    .filter(Boolean);
-  let scrollFrame = 0;
-  const updateHeader = () => {
-    publicHeader.classList.toggle("is-scrolled", window.scrollY > 28);
-    const scrollable = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
-    publicHeader.style.setProperty("--public-scroll-progress", String(Math.min(1, window.scrollY / scrollable)));
-    publicSite.style.setProperty("--public-hero-shift", reduceMotion ? "0px" : `${Math.min(48, window.scrollY * 0.065).toFixed(1)}px`);
-
-    if (!reduceMotion) {
-      parallaxScenes.forEach((scene) => {
-        const rect = scene.getBoundingClientRect();
-        const distance = (rect.top + rect.height / 2 - window.innerHeight / 2) / window.innerHeight;
-        const progress = Math.max(-1, Math.min(1, distance));
-        scene.style.setProperty("--public-parallax-slow", `${(progress * -13).toFixed(1)}px`);
-        scene.style.setProperty("--public-parallax-fast", `${(progress * -27).toFixed(1)}px`);
-      });
-    }
-
-    if (depthSections.length) {
-      let activeSection = depthSections[0];
-      depthSections.forEach((section) => {
-        if (section.getBoundingClientRect().top <= window.innerHeight * 0.52) activeSection = section;
-      });
-      depthNavLinks.forEach((link) => {
-        link.classList.toggle("is-current", link.getAttribute("href") === `#${activeSection.id}`);
-      });
-    }
-    scrollFrame = 0;
-  };
-  updateHeader();
-  window.addEventListener("scroll", () => {
-    if (scrollFrame) return;
-    scrollFrame = window.requestAnimationFrame(updateHeader);
-  }, { passive: true });
-
-  const publicNavLinks = $$('a[href^="#"]', publicHeader)
-    .filter((link) => link.getAttribute("href") !== "#publicTop");
-  const publicNavSections = publicNavLinks
-    .map((link) => document.querySelector(link.getAttribute("href")))
-    .filter(Boolean);
-  if ("IntersectionObserver" in window && publicNavSections.length) {
-    const navObserver = new IntersectionObserver((entries) => {
+  const site = $("#authView");
+  const scene = $("#homepageLakeDemo");
+  if (!site || !scene) return;
+  const motion = matchMedia("(prefers-reduced-motion: reduce)");
+  const targets = $$("[data-reveal]", site);
+  if ("IntersectionObserver" in window) {
+    const observer = new IntersectionObserver((entries) => {
       entries.forEach((entry) => {
         if (!entry.isIntersecting) return;
-        publicNavLinks.forEach((link) => {
-          link.classList.toggle("is-current", link.getAttribute("href") === `#${entry.target.id}`);
-        });
+        entry.target.classList.add("is-visible");
+        observer.unobserve(entry.target);
       });
-    }, { rootMargin: "-38% 0px -54%", threshold: 0 });
-    publicNavSections.forEach((section) => navObserver.observe(section));
+    }, { threshold: 0.08 });
+    targets.forEach(target => observer.observe(target));
+    site.classList.toggle("shore-motion", !motion.matches);
   }
 
-  const revealTargets = $$('[data-reveal]', publicSite);
-  if (reduceMotion || !("IntersectionObserver" in window)) {
-    revealTargets.forEach((target) => target.classList.add("is-visible"));
-  } else {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (!entry.isIntersecting) return;
-          entry.target.classList.add("is-visible");
-          observer.unobserve(entry.target);
-        });
-      },
-      { rootMargin: "0px 0px -9%", threshold: 0.12 },
-    );
-    revealTargets.forEach((target) => observer.observe(target));
-  }
-
-  const supportsFinePointer = window.matchMedia("(hover: hover) and (pointer: fine)").matches;
-  if (!reduceMotion && supportsFinePointer) {
-    let animationFrame = 0;
-    publicSite.addEventListener("pointermove", (event) => {
-      if (animationFrame) return;
-      animationFrame = window.requestAnimationFrame(() => {
-        const x = (event.clientX / window.innerWidth - 0.5) * 2;
-        const y = (event.clientY / window.innerHeight - 0.5) * 2;
-        publicSite.style.setProperty("--public-pointer-x", x.toFixed(3));
-        publicSite.style.setProperty("--public-pointer-y", y.toFixed(3));
-        publicSite.style.setProperty("--public-cursor-x", `${event.clientX}px`);
-        publicSite.style.setProperty("--public-cursor-y", `${event.clientY}px`);
-        animationFrame = 0;
-      });
-    });
-
-    const lakeCard = $("#publicLakeCard", publicSite);
-    lakeCard?.addEventListener("pointermove", (event) => {
-      const rect = lakeCard.getBoundingClientRect();
-      const x = Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
-      const y = Math.max(0, Math.min(1, (event.clientY - rect.top) / rect.height));
-      lakeCard.style.setProperty("--public-card-tilt-x", `${((0.5 - y) * 7).toFixed(2)}deg`);
-      lakeCard.style.setProperty("--public-card-tilt-y", `${((x - 0.5) * 8).toFixed(2)}deg`);
-      lakeCard.style.setProperty("--public-card-glow-x", `${(x * 100).toFixed(1)}%`);
-      lakeCard.style.setProperty("--public-card-glow-y", `${(y * 100).toFixed(1)}%`);
-      lakeCard.style.setProperty("--public-card-glow-opacity", "1");
-      lakeCard.style.setProperty("--public-card-layer-x-slow", `${((x - 0.5) * -7).toFixed(1)}px`);
-      lakeCard.style.setProperty("--public-card-layer-y-slow", `${((y - 0.5) * -6).toFixed(1)}px`);
-      lakeCard.style.setProperty("--public-card-layer-x-fast", `${((x - 0.5) * -15).toFixed(1)}px`);
-      lakeCard.style.setProperty("--public-card-layer-y-fast", `${((y - 0.5) * -12).toFixed(1)}px`);
-    });
-    lakeCard?.addEventListener("pointerleave", () => {
-      [
-        "--public-card-tilt-x",
-        "--public-card-tilt-y",
-        "--public-card-layer-x-slow",
-        "--public-card-layer-y-slow",
-        "--public-card-layer-x-fast",
-        "--public-card-layer-y-fast",
-      ].forEach((property) => lakeCard.style.removeProperty(property));
-      lakeCard.style.setProperty("--public-card-glow-opacity", "0");
-    });
-
-    $$(".public-button", publicSite).forEach((button) => {
-      button.addEventListener("pointermove", (event) => {
-        const rect = button.getBoundingClientRect();
-        button.style.setProperty("--magnet-x", `${((event.clientX - rect.left - rect.width / 2) * 0.1).toFixed(1)}px`);
-        button.style.setProperty("--magnet-y", `${((event.clientY - rect.top - rect.height / 2) * 0.13).toFixed(1)}px`);
-      });
-      button.addEventListener("pointerleave", () => {
-        button.style.setProperty("--magnet-x", "0px");
-        button.style.setProperty("--magnet-y", "0px");
-      });
-    });
-
-    $$(".public-need-card, .public-safety-grid article", publicSite).forEach((card) => {
-      card.addEventListener("pointermove", (event) => {
-        const rect = card.getBoundingClientRect();
-        card.style.setProperty("--public-hover-x", `${event.clientX - rect.left}px`);
-        card.style.setProperty("--public-hover-y", `${event.clientY - rect.top}px`);
-      });
-    });
-  }
-
-  $$(".public-button", publicSite).forEach((button) => {
-    button.addEventListener("pointerdown", (event) => {
-      if (reduceMotion) return;
-      const rect = button.getBoundingClientRect();
-      const ripple = document.createElement("span");
-      ripple.className = "public-button-ripple";
-      ripple.style.left = `${event.clientX - rect.left}px`;
-      ripple.style.top = `${event.clientY - rect.top}px`;
-      button.append(ripple);
-      ripple.addEventListener("animationend", () => ripple.remove(), { once: true });
+  const hint = $("#homepageDemoHint");
+  $$("[data-demo]", scene).forEach(button => {
+    button.addEventListener("click", () => {
+      hint.textContent = button.dataset.demo === "fish"
+        ? "魚は、今この湖にいる仲間。タップしてプロフィールや定型リアクションを確認できます。"
+        : "ボトルには、相談や情報が届きます。開いて読んだり、あとから返信したりできます。";
     });
   });
 
-  const rippleCanvas = $("#publicRippleCanvas", publicSite);
-  const hero = $("#publicTop", publicSite);
-  if (rippleCanvas && hero && !reduceMotion) {
-    const context = rippleCanvas.getContext("2d");
-    const ripples = [];
-    let canvasWidth = 0;
-    let canvasHeight = 0;
-    let canvasScale = 1;
-    let heroVisible = true;
-    let rippleFrame = 0;
-    let lastFrameTime = performance.now();
-    let lastTrailAt = 0;
-
-    const resizeRippleCanvas = () => {
-      const rect = hero.getBoundingClientRect();
-      canvasScale = Math.min(window.devicePixelRatio || 1, 1.25);
-      canvasWidth = Math.max(1, Math.round(rect.width));
-      canvasHeight = Math.max(1, Math.round(rect.height));
-      rippleCanvas.width = Math.round(canvasWidth * canvasScale);
-      rippleCanvas.height = Math.round(canvasHeight * canvasScale);
-      context.setTransform(canvasScale, 0, 0, canvasScale, 0, 0);
-    };
-
-    const addWaterRipple = (clientX, clientY, strength = 1) => {
-      const rect = hero.getBoundingClientRect();
-      const x = clientX - rect.left;
-      const y = clientY - rect.top;
-      if (x < 0 || x > rect.width || y < 0 || y > rect.height) return;
-      ripples.push({ x, y, radius: 8, life: 1, speed: 50 + strength * 24, strength });
-      if (ripples.length > 10) ripples.shift();
-    };
-
-    const drawWaterRipples = (time) => {
-      if (time - lastFrameTime < 1000 / 30) {
-        if (heroVisible) rippleFrame = window.requestAnimationFrame(drawWaterRipples);
-        return;
-      }
-      const delta = Math.min(0.034, Math.max(0.001, (time - lastFrameTime) / 1000));
-      lastFrameTime = time;
-      context.clearRect(0, 0, canvasWidth, canvasHeight);
-      context.globalCompositeOperation = "screen";
-      ripples.forEach((ripple) => {
-        ripple.radius += ripple.speed * delta;
-        ripple.life -= delta * (0.29 + ripple.strength * 0.035);
-        const alpha = Math.max(0, ripple.life);
-        for (let ring = 0; ring < 3; ring += 1) {
-          const ringRadius = ripple.radius + ring * 15;
-          context.beginPath();
-          context.ellipse(ripple.x, ripple.y, ringRadius * 1.8, ringRadius * 0.46, 0, 0, Math.PI * 2);
-          context.strokeStyle = ring === 0
-            ? `rgba(78, 139, 149, ${alpha * 0.34})`
-            : `rgba(240, 255, 252, ${alpha * (0.31 - ring * 0.055)})`;
-          context.lineWidth = Math.max(0.7, 1.8 - ring * 0.35);
-          context.shadowColor = `rgba(255, 255, 255, ${alpha * 0.28})`;
-          context.shadowBlur = 7;
-          context.stroke();
-        }
-        context.shadowBlur = 0;
-      });
-      for (let index = ripples.length - 1; index >= 0; index -= 1) {
-        if (ripples[index].life <= 0) ripples.splice(index, 1);
-      }
-      if (heroVisible) rippleFrame = window.requestAnimationFrame(drawWaterRipples);
-    };
-
-    const startRippleCanvas = () => {
-      if (rippleFrame) return;
-      lastFrameTime = performance.now();
-      rippleFrame = window.requestAnimationFrame(drawWaterRipples);
-    };
-    const stopRippleCanvas = () => {
-      window.cancelAnimationFrame(rippleFrame);
-      rippleFrame = 0;
-    };
-
-    resizeRippleCanvas();
-    if ("ResizeObserver" in window) new ResizeObserver(resizeRippleCanvas).observe(hero);
-    new IntersectionObserver((entries) => {
-      heroVisible = entries.some((entry) => entry.isIntersecting);
-      if (heroVisible) startRippleCanvas();
-      else stopRippleCanvas();
-    }, { threshold: 0.01 }).observe(hero);
-
-    hero.addEventListener("pointerdown", (event) => addWaterRipple(event.clientX, event.clientY, 1.4));
-    if (supportsFinePointer) {
-      hero.addEventListener("pointermove", (event) => {
-        if (performance.now() - lastTrailAt < 95) return;
-        lastTrailAt = performance.now();
-        addWaterRipple(event.clientX, event.clientY, 0.45);
-      });
+  let frame = 0;
+  const updateScene = () => {
+    frame = 0;
+    if (motion.matches || site.hidden || document.hidden) return;
+    const rect = scene.getBoundingClientRect();
+    if (rect.bottom < 0 || rect.top > innerHeight) return;
+    scene.style.setProperty("--shore-shift", `${Math.max(-18, Math.min(18, -rect.top * 0.04))}px`);
+  };
+  const schedule = () => {
+    if (!frame && !motion.matches && !site.hidden && !document.hidden) frame = requestAnimationFrame(updateScene);
+  };
+  window.addEventListener("scroll", schedule, { passive: true });
+  motion.addEventListener("change", () => {
+    site.classList.toggle("shore-motion", !motion.matches);
+    scene.style.removeProperty("--shore-shift");
+    if (motion.matches) {
+      cancelAnimationFrame(frame);
+      frame = 0;
+      targets.forEach(target => target.classList.add("is-visible"));
     }
-    window.setInterval(() => {
-      if (!heroVisible) return;
-      const rect = hero.getBoundingClientRect();
-      addWaterRipple(rect.left + rect.width * (0.22 + Math.random() * 0.65), rect.top + rect.height * (0.25 + Math.random() * 0.55), 0.7);
-    }, 2400);
-  }
-
-  const sceneSignal = $("#publicSceneSignal", publicSite);
-  if (sceneSignal && !reduceMotion) {
-    const messages = [
-      "新しいボトルを流しました！",
-      "情報・AIに興味があります",
-      "湖にいる間だけの呼び名です",
-    ];
-    let messageIndex = 0;
-    window.setInterval(() => {
-      sceneSignal.classList.remove("is-changing");
-      window.requestAnimationFrame(() => {
-        messageIndex = (messageIndex + 1) % messages.length;
-        sceneSignal.textContent = messages[messageIndex];
-        sceneSignal.classList.add("is-changing");
-      });
-    }, 4200);
-  }
+  });
+  // Native anchors/details keep navigation and FAQs usable without motion.
 }
 
 function togglePasswordVisibility(button) {
@@ -1307,6 +1083,14 @@ function bindStaticEvents() {
     button.addEventListener("click", () => openAuthDialog(button.dataset.authOpen));
   });
   initializePublicHomepage();
+  // Reflow the lake on phone/tablet rotation without fetching or changing presence.
+  ["(max-width: 760px)", "(max-width: 1000px)"].forEach(query => {
+    window.matchMedia(query).addEventListener("change", () => {
+      if ($("#appView").hidden || $("#appView").dataset.activePage !== "aquarium") return;
+      renderLake();
+      renderBottles();
+    });
+  });
   $$('[data-password-toggle]').forEach((button) => {
     button.addEventListener("click", () => togglePasswordVisibility(button));
   });
@@ -2759,7 +2543,8 @@ function renderLake() {
     const row = Math.floor(index / columns);
     const motionSeed = seed + (index + 1) * 7919;
     const horizontalDirection = column === columns - 1 || column % 2 === 1 ? -1 : 1;
-    const routeDistance = phoneLayout ? 34 + (motionSeed % 20) : 72 + (motionSeed % 54);
+    const compactLayout = window.matchMedia("(max-width: 1000px)").matches;
+    const routeDistance = phoneLayout ? 6 + (motionSeed % 5) : compactLayout ? 16 + (motionSeed % 12) : 44 + (motionSeed % 22);
     const routeHeight = -22 + ((motionSeed * 3) % 45);
     const duration = 27 + (seed % 11);
     const bodyDuration = 5.2 + ((seed % 7) * 0.24);
@@ -2802,7 +2587,7 @@ function renderLake() {
     button.classList.add(status.className);
     button.setAttribute("aria-label", `${visitName}、${status.label}。プロフィールを見る${announcesBottle ? "。ボトルのお知らせがあります" : announcesNote ? "。ノートのお知らせがあります" : ""}`);
     button.style.setProperty("--top", `${phoneLayout ? 18 + row * 19 : 17 + row * 25}%`);
-    button.style.setProperty("--static-left", `${phoneLayout ? 6 + column * 30 : 7 + column * 22}%`);
+    button.style.setProperty("--static-left", `${phoneLayout ? 5 + column * 32 : 7 + column * 22}%`);
     button.style.setProperty("--route-x-one", `${Math.round(horizontalDirection * routeDistance * 0.34)}px`);
     button.style.setProperty("--route-y-one", `${Math.round(routeHeight * 0.36)}px`);
     button.style.setProperty("--route-x-two", `${Math.round(horizontalDirection * routeDistance * 0.7)}px`);
