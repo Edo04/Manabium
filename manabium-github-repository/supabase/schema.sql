@@ -1108,16 +1108,34 @@ as $$
   select private.get_my_profile_analytics_fields();
 $$;
 
+create or replace function public.get_my_session_context()
+returns jsonb
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select case
+    when auth.role() <> 'authenticated' or auth.uid() is null then '{}'::jsonb
+    else jsonb_build_object(
+      'graduation_year', (select p.graduation_year from public.profiles p where p.user_id = auth.uid()),
+      'is_admin', exists (select 1 from public.app_user_roles r where r.user_id = auth.uid() and r.role = 'admin')
+    )
+  end;
+$$;
+
 revoke all on function private.is_admin(uuid) from public;
 revoke all on function private.is_active_user(uuid) from public;
 revoke all on function private.get_my_profile_analytics_fields() from public, anon, authenticated;
 revoke all on function public.is_current_user_admin() from public;
 revoke all on function public.get_my_profile_analytics_fields() from public, anon, authenticated;
+revoke all on function public.get_my_session_context() from public, anon, authenticated;
 grant execute on function private.is_admin(uuid) to authenticated, service_role;
 grant execute on function private.is_active_user(uuid) to authenticated, service_role;
 grant execute on function private.get_my_profile_analytics_fields() to authenticated;
 grant execute on function public.is_current_user_admin() to authenticated;
 grant execute on function public.get_my_profile_analytics_fields() to authenticated;
+grant execute on function public.get_my_session_context() to authenticated;
 
 -- 管理者は公開リポジトリへメールアドレスを書かず、Auth > Usersで確認したUUIDを使って
 -- SQL Editorから public.app_user_roles へ手動登録してください。
@@ -2040,6 +2058,7 @@ grant execute on function private.is_active_user(uuid) to authenticated, service
 grant execute on function private.get_my_profile_analytics_fields() to authenticated;
 grant execute on function public.is_current_user_admin() to authenticated;
 grant execute on function public.get_my_profile_analytics_fields() to authenticated;
+grant execute on function public.get_my_session_context() to authenticated;
 grant execute on function public.record_analytics_events(uuid, uuid, jsonb, text, text, text, text, text, text, text, boolean, boolean) to authenticated;
 grant execute on function public.admin_analytics_dashboard(date, date, text) to service_role;
 grant execute on function public.admin_moderate_content(uuid, text, uuid, text, text) to service_role;

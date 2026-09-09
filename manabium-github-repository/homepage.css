@@ -100,6 +100,12 @@
 #authDialog .auth-input-wrap input { border:0; background:transparent; border-radius:7px; }
 #authDialog .button-primary { background:#294c3e; border-radius:6px; color:#fff; }
 #authDialog .auth-modal-close { border-radius:50%; background:#edf1e6; }
+.auth-route-notice { margin:18px 0 0; padding:12px 14px; border-left:3px solid #66836b; background:#eef2e7; color:#385647; font-size:13px; line-height:1.8; }
+.auth-text-button { justify-self:start; min-height:42px; padding:8px 0; border:0; background:transparent; color:#456b59; font-size:13px; text-decoration:underline; text-underline-offset:4px; cursor:pointer; }
+.password-requirement { display:block; margin-top:6px; color:#5e7162; font-size:12px; }
+.reset-password-modal { width:min(480px,calc(100% - 32px)); max-height:calc(100dvh - 32px); padding:0; border:1px solid #d6dfd2; border-radius:14px; background:#fffef8; box-shadow:0 20px 90px #1b3a3133; overflow:auto; }
+.reset-password-modal .auth-card { padding:44px 40px 36px; }
+.reset-password-modal h2 { margin:28px 0 10px; font:500 28px/1.5 var(--font-display); }
 @keyframes shore-drift { 0%,100% { transform:translate(0,0) rotate(-2deg); } 50% { transform:translate(18px,-16px) rotate(2deg); } }
 @keyframes shore-bottle { 0%,100% { transform:translateY(0) rotate(-8deg); } 50% { transform:translateY(-13px) rotate(3deg); } }
 @media (max-width:1000px) {
@@ -118,15 +124,15 @@
   .site-brand span { font-size:8px; letter-spacing:.02em; }
   .site-header nav { display:none; }
   .site-header-actions { gap:2px; }
-  .site-login { font-size:11px; padding:8px; }
-  .site-join { font-size:11px; min-height:40px; padding:10px 12px; gap:10px; }
+  .site-login { font-size:13px; padding:8px; }
+  .site-join { font-size:12px; min-height:42px; padding:10px 12px; gap:10px; }
   .shore-hero { display:flex; flex-direction:column; min-height:0; }
   .shore-hero-copy { padding:42px 26px 32px; }
   .shore-overline { font-size:9px; margin-bottom:20px; }
   .shore-hero h1 { font-size:clamp(30px,8.7vw,46px); line-height:1.65; margin-bottom:23px; }
   .shore-intro { font-size:13px; line-height:2.05; margin-bottom:24px; }
   .shore-cta { min-height:53px; padding:14px 21px; font-size:13px; gap:40px; }
-  .shore-registration { font-size:9px; margin:12px 0 0; }
+  .shore-registration { font-size:12px; margin:12px 0 0; color:#5c6e55; }
   .shore-scroll { display:none; }
   .shore-scene { width:100%; min-height:480px; }
   .shore-scene-caption { inset:22px 24px auto; font-size:9px; }
@@ -134,7 +140,7 @@
   .shore-demo-fish { width:100px; left:16%; }
   .shore-demo-bottle { width:57px; }
   .shore-fish-distant { width:70px; }
-  .shore-demo-hint { font-size:11px; inset:auto 8% 19%; }
+  .shore-demo-hint { font-size:12px; inset:auto 8% 19%; }
   .shore-about { padding:68px 26px 34px; }
   .shore-about-heading { grid-template-columns:1fr; gap:25px; }
   .shore-about h2,.shore-section-heading h2,.shore-safety h2,.shore-invitation h2 { font-size:28px; line-height:1.7; }
@@ -149,7 +155,7 @@
   .place-library .shore-place-art>img { width:70%; max-height:190px; }
   .shore-place-copy h3 { font-size:29px; margin-bottom:16px; }
   .shore-place-copy>p:not(.shore-overline) { font-size:13px; }
-  .shore-feature-note { margin-top:18px; font-size:10px; }
+  .shore-feature-note { margin-top:18px; font-size:12px; color:#526e4e; }
   .shore-safety { grid-template-columns:1fr; padding:64px 26px; gap:34px; }
   .shore-principles article { padding:23px 0; gap:18px; }
   .shore-principles h3 { font-size:15px; }
@@ -160,7 +166,9 @@
   .shore-faq-list details>p { font-size:12px; }
   .shore-invitation { padding:55px 22px 60px; }
   .shore-footer { padding:32px 24px; }
-  .shore-footer>div { font-size:9px; flex-wrap:wrap; gap:12px; }
+  .shore-footer>div { font-size:12px; color:#607057; flex-wrap:wrap; gap:12px; }
+  .reset-password-modal { width:calc(100% - 16px); max-height:94dvh; margin-bottom:8px; }
+  .reset-password-modal .auth-card { padding:32px 20px 26px; }
   #authDialog .auth-card { padding:30px 24px; }
   #authDialog #authHeading { font-size:26px; }
 }

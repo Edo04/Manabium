@@ -31,9 +31,10 @@ export async function verifiedAdmin(request, env) {
   if (!userResponse.ok) return { error: json({ error: "Invalid session.", code: "SESSION_REQUIRED" }, 401) };
   const user = await userResponse.json();
   if (!user.id) return { error: json({ error: "Invalid session.", code: "SESSION_REQUIRED" }, 401) };
-  const roleResponse = await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/is_current_user_admin`, { method: "POST", headers, body: "{}" });
+  const roleResponse = await fetch(`${env.SUPABASE_URL}/rest/v1/rpc/get_my_session_context`, { method: "POST", headers, body: "{}" });
   if (!roleResponse.ok) return { error: json({ error: "Could not verify admin access.", code: "ADMIN_ROLE_CHECK_FAILED" }, 503) };
-  if (await roleResponse.json() !== true) return { error: json({ error: "Admin access required.", code: "ADMIN_REQUIRED" }, 403) };
+  const sessionContext = await roleResponse.json();
+  if (sessionContext?.is_admin !== true) return { error: json({ error: "Admin access required.", code: "ADMIN_REQUIRED" }, 403) };
   const privilegedHeaders = serverHeaders(env);
   if (!privilegedHeaders) return { error: json({ error: "Admin API is not configured.", code: "ADMIN_SECRET_MISSING" }, 503) };
   return { user, privilegedHeaders };

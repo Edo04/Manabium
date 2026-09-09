@@ -120,6 +120,7 @@ grant execute on function private.is_active_user(uuid) to authenticated, service
 grant execute on function private.get_my_profile_analytics_fields() to authenticated;
 grant execute on function public.is_current_user_admin() to authenticated;
 grant execute on function public.get_my_profile_analytics_fields() to authenticated;
+grant execute on function public.get_my_session_context() to authenticated;
 grant execute on function public.record_analytics_events(uuid, uuid, jsonb, text, text, text, text, text, text, text, boolean, boolean)
   to authenticated;
 grant execute on function public.admin_analytics_dashboard(date, date, text) to service_role;
@@ -149,6 +150,9 @@ begin
       and p.prosecdef
   ) then
     raise exception 'Security check failed: public profile analytics RPC is SECURITY DEFINER';
+  end if;
+  if has_function_privilege('anon', 'public.get_my_session_context()', 'execute') then
+    raise exception 'Security check failed: anon can execute session context RPC';
   end if;
   if has_column_privilege('authenticated', 'public.posts', 'moderation_note', 'select')
     or has_column_privilege('authenticated', 'public.post_replies', 'moderation_note', 'select')

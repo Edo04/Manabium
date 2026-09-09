@@ -10,19 +10,20 @@
 
 管理者向けRPCは`authenticated`から直接実行できません。ブラウザからCloudflare Pages Functionsへ利用者のBearerトークンを送り、Functionsが管理者判定を行った後だけ、Cloudflareの暗号化Secretである`SUPABASE_SECRET_KEY`を`apikey`ヘッダーに設定して呼び出します。`SUPABASE_SECRET_KEY`にはSupabaseの`sb_secret_...`キーを設定し、ブラウザ、Git、SQLファイル、チャットへ貼り付けません。
 
-本人の卒業予定年を取得する公開RPCは`SECURITY INVOKER`で実行します。列権限を迂回する必要がある最小限の読み取り処理は、Data APIのExposed schemasへ追加しない`private`スキーマに置き、入力値を受け取らず`auth.uid()`本人の行だけを返します。
+ログイン直後のセッション文脈は`get_my_session_context()`で一度だけ取得します。このRPCは入力値を受け取らず、JWTの`auth.uid()`本人の卒業予定年と「管理者か否か」だけを返します。`SECURITY DEFINER`ですが`search_path`を空に固定し、`anon`の実行権限を剥奪しています。管理者レコード、他人の卒業予定年、メールアドレスは返しません。一般ユーザーに`app_user_roles`の行がない場合はエラーではなく`is_admin: false`です。
 
 ## テスト公開前の必須作業
 
-1. Supabase SQL Editorで`supabase/security-hardening.sql`を実行し、最後の4項目がすべて`false`になることを確認する。
-2. SupabaseのDatabase > Security Advisorで未解決のRLS・関数・権限警告を確認する。
-3. Authenticationでメール確認を有効にし、パスワード最小長を10文字以上にする。
-4. Authentication > Bot and Abuse ProtectionでCloudflare Turnstileを設定する。設定するまでは招待制テストに限定する。
-5. 本番メールはCustom SMTPを使用し、Authの送信制限を確認する。
-6. Supabase、Cloudflare、GitHubの運営アカウントへ多要素認証を設定する。
-7. 管理者権限はAuth > Usersで対象者のUUIDを確認し、SQL Editorから`app_user_roles`へ手動登録する。メールアドレスをSQLファイルへ保存しない。
-8. Cloudflare PagesのProduction環境へ`SUPABASE_SECRET_KEY`を暗号化Secretとして登録し、`supabase/restrict-admin-rpcs-to-server.sql`を実行してから再デプロイする。
-9. Supabase SQL Editorで`supabase/make-profile-analytics-rpc-invoker.sql`を実行し、API SettingsのExposed schemasに`private`が含まれていないことを確認する。
+1. Supabase SQL Editorで`supabase/fix-private-session-context.sql`を実行し、最後の結果が`true / false / true / false / false`になることを確認する。
+2. `supabase/security-hardening.sql`を実行し、最後の4項目がすべて`false`になることを確認する。
+3. SupabaseのDatabase > Security Advisorで未解決のRLS・関数・権限警告を確認する。
+4. Authenticationでメール確認を有効にし、パスワード最小長を10文字以上にする。
+5. Authentication > Bot and Abuse ProtectionでCloudflare Turnstileを設定する。設定するまでは招待制テストに限定する。
+6. 本番メールはCustom SMTPを使用し、Authの送信制限を確認する。
+7. Supabase、Cloudflare、GitHubの運営アカウントへ多要素認証を設定する。
+8. 管理者権限はAuth > Usersで対象者のUUIDを確認し、SQL Editorから`app_user_roles`へ手動登録する。メールアドレスをSQLファイルへ保存しない。
+9. Cloudflare PagesのProduction環境へ`SUPABASE_SECRET_KEY`を暗号化Secretとして登録し、`supabase/restrict-admin-rpcs-to-server.sql`を実行してから再デプロイする。
+10. API SettingsのExposed schemasに`private`が含まれていないことを確認する。
 
 ## 運営室に「Admin API is not configured.」と出るとき
 

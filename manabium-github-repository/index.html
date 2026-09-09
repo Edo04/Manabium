@@ -28,9 +28,9 @@
       href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.2/src/regular/style.css"
     />
     <link rel="stylesheet" href="./style.css?v=20260815-library-entrance-2" />
-    <link rel="stylesheet" href="./community.css?v=20260907-lakeside-3" />
-    <link rel="stylesheet" href="./homepage.css?v=20260907-3" />
-    <script type="module" src="./app.js?v=20260907-lakeside-3"></script>
+    <link rel="stylesheet" href="./community.css?v=20260909-accessibility-2" />
+    <link rel="stylesheet" href="./homepage.css?v=20260909-accessibility-2" />
+    <script type="module" src="./app.js?v=20260909-accessibility-2"></script>
   </head>
   <body>
     <div class="ambient ambient-one" aria-hidden="true"></div>
@@ -38,7 +38,12 @@
 
     <div id="toastRegion" class="toast-region" aria-live="polite" aria-atomic="true"></div>
 
-    <main id="authView" class="public-site">
+    <main id="sessionGate" class="session-gate" aria-live="polite">
+      <img src="./assets/manabium-icon.png" alt="" />
+      <p><span class="spinner" aria-hidden="true"></span> 湖への入口を確認しています</p>
+    </main>
+
+    <main id="authView" class="public-site" hidden>
       <a class="public-skip-link" href="#publicMain">本文へ移動</a>
       <header id="publicHeader" class="site-header">
         <a class="site-brand" href="#publicTop">Manabium<span>理工系女子が集まる湖</span></a>
@@ -104,6 +109,7 @@
           </div>
           <h2 id="authHeading">湖へようこそ</h2>
           <p class="subtle">メールアドレスとパスワードで始められます。</p>
+          <p id="authRouteNotice" class="auth-route-notice" role="status" hidden></p>
 
           <div class="segmented" role="tablist" aria-label="認証方法">
             <button id="loginTab" class="segment active" type="button" role="tab" aria-selected="true" aria-controls="loginForm">ログイン</button>
@@ -122,11 +128,12 @@
               <span>パスワード</span>
               <span class="auth-input-wrap">
                 <i class="ph ph-lock-key" aria-hidden="true"></i>
-                <input id="loginPassword" name="password" type="password" autocomplete="current-password" minlength="8" placeholder="8文字以上" required />
+                <input id="loginPassword" name="password" type="password" autocomplete="current-password" placeholder="パスワードを入力" required />
                 <button class="password-toggle" type="button" data-password-toggle="loginPassword" aria-label="パスワードを表示" aria-pressed="false"><i class="ph ph-eye" aria-hidden="true"></i></button>
               </span>
             </label>
-            <button class="button button-primary button-wide" type="submit"><span class="button-label">ログインする</span><span class="spinner" aria-hidden="true"></span></button>
+            <button id="forgotPasswordButton" class="auth-text-button" type="button">パスワードを忘れた方</button>
+            <div class="form-actions-sticky"><button class="button button-primary button-wide" type="submit"><span class="button-label">ログインする</span><span class="spinner" aria-hidden="true"></span></button></div>
           </form>
 
           <form id="signupForm" class="auth-form" hidden novalidate>
@@ -144,6 +151,7 @@
                 <input id="signupPassword" name="password" type="password" autocomplete="new-password" minlength="10" placeholder="10文字以上" required />
                 <button class="password-toggle" type="button" data-password-toggle="signupPassword" aria-label="パスワードを表示" aria-pressed="false"><i class="ph ph-eye" aria-hidden="true"></i></button>
               </span>
+              <small class="password-requirement">10文字以上で設定してください。</small>
             </label>
             <label>
               <span>パスワード（確認）</span>
@@ -157,7 +165,7 @@
               <input id="communityAgreement" type="checkbox" required />
               <span>相手を尊重し、個人を特定できる情報を書かないことに同意します</span>
             </label>
-            <button class="button button-primary button-wide" type="submit"><span class="button-label">アカウントを作る</span><span class="spinner" aria-hidden="true"></span></button>
+            <div class="form-actions-sticky"><button class="button button-primary button-wide" type="submit"><span class="button-label">アカウントを作る</span><span class="spinner" aria-hidden="true"></span></button></div>
           </form>
 
           <p class="auth-note">登録後に確認メールが届く場合があります。公開ユーザー名を考える必要はありません。</p>
@@ -265,10 +273,9 @@
             </label>
           </fieldset>
 
-          <button class="button button-primary button-wide" type="submit">
-            <span class="button-label">湖に入る</span>
-            <span class="spinner" aria-hidden="true"></span>
-          </button>
+          <div class="form-actions-sticky onboarding-actions"><button class="button button-primary button-wide" type="submit">
+            <span class="button-label">湖に入る</span><span class="spinner" aria-hidden="true"></span>
+          </button></div>
         </form>
       </section>
     </main>
@@ -399,6 +406,7 @@
             <div class="aquarium-participation-control">
               <details class="aquarium-settings">
                 <summary><i class="ph ph-sliders-horizontal" aria-hidden="true"></i> 表示・通知の設定</summary>
+                <button id="closeAquariumSettings" class="aquarium-settings-close" type="button"><i class="ph ph-x" aria-hidden="true"></i> 閉じる</button>
                 <p class="aquarium-auto-join-note">この画面を開いている間だけ、あなたの魚が湖にいます。</p>
                 <label class="aquarium-switch-row compact" for="receiveReactionsToggle">
                   <span><strong>リアクションを受け取る</strong><small>オフなら吹き出しを表示しません</small></span>
@@ -730,6 +738,18 @@
       </nav>
     </div>
 
+    <dialog id="resetPasswordDialog" class="auth-modal reset-password-modal" aria-labelledby="resetPasswordTitle">
+      <button class="auth-modal-close" type="button" data-close-dialog="resetPasswordDialog" aria-label="閉じる"><i class="ph ph-x" aria-hidden="true"></i></button>
+      <form id="resetPasswordForm" class="auth-card auth-form" novalidate>
+        <div class="auth-modal-brand"><img src="./assets/manabium-icon.png" alt="" /><span>Manabium</span></div>
+        <h2 id="resetPasswordTitle">新しいパスワードを設定</h2>
+        <p class="subtle">これから使うパスワードを10文字以上で入力してください。</p>
+        <label><span>新しいパスワード</span><span class="auth-input-wrap"><i class="ph ph-lock-key" aria-hidden="true"></i><input id="resetPassword" type="password" autocomplete="new-password" minlength="10" placeholder="10文字以上" required /><button class="password-toggle" type="button" data-password-toggle="resetPassword" aria-label="パスワードを表示" aria-pressed="false"><i class="ph ph-eye" aria-hidden="true"></i></button></span></label>
+        <label><span>新しいパスワード（確認）</span><span class="auth-input-wrap"><i class="ph ph-lock-key" aria-hidden="true"></i><input id="resetPasswordConfirm" type="password" autocomplete="new-password" minlength="10" placeholder="同じパスワードを入力" required /><button class="password-toggle" type="button" data-password-toggle="resetPasswordConfirm" aria-label="パスワードを表示" aria-pressed="false"><i class="ph ph-eye" aria-hidden="true"></i></button></span></label>
+        <div class="form-actions-sticky"><button class="button button-primary button-wide" type="submit"><span class="button-label">パスワードを更新する</span><span class="spinner" aria-hidden="true"></span></button></div>
+      </form>
+    </dialog>
+
     <dialog id="lakeMessageDialog" class="modal lake-message-modal">
       <article>
         <div class="modal-heading lake-message-heading">
@@ -853,7 +873,7 @@
           </div>
         </fieldset>
 
-        <div class="modal-actions">
+        <div class="modal-actions form-actions-sticky composer-actions">
           <button class="button button-ghost" type="button" data-close-dialog="composerDialog">キャンセル</button>
           <button id="submitPostButton" class="button button-primary" type="submit">
             <span class="button-label">湖へ流す</span>
@@ -942,7 +962,7 @@
           </div>
         </fieldset>
         <div class="note-publish-note"><i class="ph ph-eye" aria-hidden="true"></i><span><strong>公開すると、みんなの本棚へ並びます</strong><small>下書きは自分の本棚だけに保存されます。</small></span></div>
-        <div class="modal-actions note-composer-actions">
+        <div class="modal-actions note-composer-actions form-actions-sticky">
           <button class="button button-ghost" type="button" data-close-dialog="noteComposerDialog">キャンセル</button>
           <button id="saveNoteDraftButton" class="button button-ghost" type="button"><i class="ph ph-file-dashed" aria-hidden="true"></i><span class="button-label">下書き保存</span><span class="spinner" aria-hidden="true"></span></button>
           <button id="publishNoteButton" class="button library-write-button" type="submit"><i class="ph ph-book-open-text" aria-hidden="true"></i><span class="button-label">本棚へ置く</span><span class="spinner" aria-hidden="true"></span></button>

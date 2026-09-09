@@ -183,6 +183,8 @@ const state = {
   postExternalUrlColumnAvailable: true,
   postExternalSiteNameColumnAvailable: true,
   threadedRepliesAvailable: true,
+  passwordRecoveryPending: new URLSearchParams(location.search).get("type") === "recovery"
+    || new URLSearchParams(location.hash.startsWith("#") ? location.hash.slice(1) : location.hash).get("type") === "recovery",
   routeVersion: 0,
   realtimeReloadTimer: null,
   realtimeReloadKinds: new Set(),
@@ -657,15 +659,21 @@ async function trackAnalyticsEvent(eventType, attributes = {}) {
   }
 }
 
-async function loadAdminRole() {
-  state.isAdmin = false;
-  if (!state.user || IS_PREVIEW_MODE) {
-    $$(".admin-only").forEach((element) => { element.hidden = true; });
-    return;
+async function loadPrivateSessionContext() {
+  if (!state.user || IS_PREVIEW_MODE) return { graduation_year: null, is_admin: false };
+  const { data, error } = await supabase.rpc("get_my_session_context");
+  if (error) throw new Error(`セッション情報の確認に失敗しました: ${readableError(error)}`, { cause: error });
+  if (!data || typeof data !== "object" || typeof data.is_admin !== "boolean") {
+    throw new Error("セッション情報の形式を確認できませんでした。管理者へお知らせください。");
   }
-  const { data, error } = await supabase.rpc("is_current_user_admin");
-  if (!error && data === true) state.isAdmin = true;
-  if (error && !/is_current_user_admin|schema cache|function/i.test(String(error.message ?? ""))) console.error("Admin role lookup failed", error);
+  return {
+    graduation_year: data.graduation_year ?? null,
+    is_admin: data.is_admin,
+  };
+}
+
+function applyAdminRole(isAdmin) {
+  state.isAdmin = isAdmin === true;
   $$(".admin-only").forEach((element) => { element.hidden = !state.isAdmin; });
 }
 
@@ -912,8 +920,24 @@ function setAuthMode(mode) {
   $("#signupTab").setAttribute("aria-selected", String(!isLogin));
 }
 
+function protectedRouteIntent() {
+  const hash = decodeURIComponent(location.hash.slice(1));
+  if (hash.startsWith("post=")) return { label: "ボトル", route: routeFromLocation() };
+  if (hash.startsWith("note=")) return { label: "ノート", route: routeFromLocation() };
+  const labels = { lake: "湖", aquarium: "湖", board: "ボトル一覧", library: "湖畔の図書館", mypage: "マイページ", admin: "運営室" };
+  return labels[hash] ? { label: labels[hash], route: routeFromLocation() } : null;
+}
+
+function updateAuthRouteNotice() {
+  const notice = $("#authRouteNotice");
+  const intent = protectedRouteIntent();
+  notice.hidden = !intent;
+  notice.textContent = intent ? `${intent.label}を見るにはログインが必要です。ログイン後にこの画面へ戻ります。` : "";
+}
+
 function openAuthDialog(mode = "signup") {
   setAuthMode(mode === "login" ? "login" : "signup");
+  updateAuthRouteNotice();
   openDialog("authDialog");
   window.setTimeout(() => {
     const inputId = mode === "login" ? "loginEmail" : "signupEmail";
@@ -987,6 +1011,7 @@ function togglePasswordVisibility(button) {
 }
 
 function showOnly(viewName) {
+  $("#sessionGate").hidden = viewName !== "loading";
   $("#authView").hidden = viewName !== "auth";
   $("#onboardingView").hidden = viewName !== "onboarding";
   $("#appView").hidden = viewName !== "app";
@@ -1096,6 +1121,9 @@ function bindStaticEvents() {
   });
   $("#loginForm").addEventListener("submit", login);
   $("#signupForm").addEventListener("submit", signup);
+  $("#loginEmail").addEventListener("input", (event) => event.currentTarget.setCustomValidity(""));
+  $("#forgotPasswordButton").addEventListener("click", requestPasswordReset);
+  $("#resetPasswordForm").addEventListener("submit", updateRecoveredPassword);
   $("#profileForm").addEventListener("submit", saveInitialProfile);
   $("#editProfileForm").addEventListener("submit", saveEditedProfile);
   $("#profileGrade").addEventListener("change", () => syncEducationFields("profile"));
@@ -1128,6 +1156,16 @@ function bindStaticEvents() {
     button.addEventListener("click", async () => setAquariumStatus(button.dataset.aquariumStatus));
   });
   $("#receiveReactionsToggle").addEventListener("change", handleReactionPreferenceToggle);
+  const aquariumSettings = $(".aquarium-settings");
+  aquariumSettings.addEventListener("toggle", () => {
+    if (aquariumSettings.open && window.matchMedia("(max-width: 760px)").matches) {
+      window.setTimeout(() => $("#closeAquariumSettings").focus({ preventScroll: true }), 0);
+    }
+  });
+  $("#closeAquariumSettings").addEventListener("click", () => {
+    aquariumSettings.open = false;
+    $("summary", aquariumSettings).focus({ preventScroll: true });
+  });
   $("#openLakeMessageButton").addEventListener("click", openLakeMessageDialog);
   $("#openSharedBottlesButton").addEventListener("click", openSharedBottlesDialog);
   $("#lakeMessageCategories").addEventListener("click", handleLakeMessageCategoryClick);
@@ -1266,10 +1304,19 @@ function bindStaticEvents() {
     window.setTimeout(() => $("#postSearchInput").focus(), 50);
   });
   $("#myPostList").addEventListener("click", (event) => {
+    if (event.target.closest('[data-empty-action="compose"]')) {
+      showPage("board");
+      openComposer();
+      return;
+    }
     const button = event.target.closest("[data-post-id]");
     if (button) openPost(button.dataset.postId);
   });
   $("#mySavedPostList").addEventListener("click", (event) => {
+    if (event.target.closest('[data-empty-action="browse"]')) {
+      showPage("board");
+      return;
+    }
     const button = event.target.closest("[data-post-id]");
     if (button) openPost(button.dataset.postId);
   });
@@ -1325,6 +1372,14 @@ function bindStaticEvents() {
   document.addEventListener("visibilitychange", handleAquariumVisibility);
   window.addEventListener("pagehide", () => void leaveAquariumPresence("pagehide"));
   window.addEventListener("hashchange", () => {
+    if (!state.session) {
+      const intent = protectedRouteIntent();
+      if (intent) {
+        showOnly("auth");
+        openAuthDialog("login");
+      }
+      return;
+    }
     const route = routeFromLocation();
     showPage(route.page, false);
     if (route.postId) window.setTimeout(() => openPost(route.postId), 0);
@@ -1345,6 +1400,55 @@ async function login(event) {
     });
     if (error) throw error;
     showToast("おかえりなさい。", "success");
+  } catch (error) {
+    showToast(readableError(error), "error");
+  } finally {
+    setButtonLoading(button, false);
+  }
+}
+
+async function requestPasswordReset() {
+  const emailInput = $("#loginEmail");
+  const email = emailInput.value.trim();
+  emailInput.setCustomValidity(email ? "" : "再設定メールを受け取るメールアドレスを入力してください。");
+  if (!emailInput.reportValidity()) {
+    emailInput.focus();
+    return;
+  }
+  const button = $("#forgotPasswordButton");
+  setButtonLoading(button, true);
+  try {
+    const redirectTo = `${location.origin}${location.pathname}?type=recovery`;
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+    if (error) throw error;
+    showToast("パスワード再設定メールを送りました。メール内のリンクを開いてください。", "success");
+  } catch (error) {
+    showToast(readableError(error), "error");
+  } finally {
+    setButtonLoading(button, false);
+  }
+}
+
+async function updateRecoveredPassword(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  if (!form.reportValidity()) return;
+  const password = $("#resetPassword").value;
+  if (password !== $("#resetPasswordConfirm").value) {
+    showToast("確認用パスワードが一致しません。", "error");
+    return;
+  }
+  const button = $("button[type='submit']", form);
+  setButtonLoading(button, true);
+  try {
+    const { data, error } = await supabase.auth.updateUser({ password });
+    if (error) throw error;
+    state.passwordRecoveryPending = false;
+    form.reset();
+    closeDialog("resetPasswordDialog");
+    clearAuthCallbackSecretsFromUrl();
+    showToast("パスワードを更新しました。", "success");
+    await routeSession(data.user ? state.session : null);
   } catch (error) {
     showToast(readableError(error), "error");
   } finally {
@@ -1422,17 +1526,7 @@ async function fetchOwnProfile(userId) {
       .maybeSingle());
   }
   if (error) throw error;
-  let privateFields = {};
-  if (state.analyticsProfileColumnsAvailable) {
-    const { data: analyticsFields, error: analyticsError } = await supabase.rpc("get_my_profile_analytics_fields");
-    if (analyticsError) {
-      if (/get_my_profile_analytics_fields|schema cache|function/i.test(String(analyticsError.message ?? ""))) state.analyticsProfileColumnsAvailable = false;
-      else console.error("Private profile fields lookup failed", analyticsError);
-    } else {
-      privateFields = analyticsFields ?? {};
-    }
-  }
-  return normalizeProfile({ ...data, ...privateFields });
+  return normalizeProfile(data);
 }
 
 async function routeSession(session) {
@@ -1444,20 +1538,34 @@ async function routeSession(session) {
   if (!session) {
     cleanupSignedInState();
     showOnly("auth");
+    const intent = protectedRouteIntent();
+    if (intent) {
+      updateAuthRouteNotice();
+      openAuthDialog("login");
+    }
+    return;
+  }
+
+  if (state.passwordRecoveryPending) {
+    showOnly("auth");
+    openDialog("resetPasswordDialog");
+    window.setTimeout(() => $("#resetPassword")?.focus({ preventScroll: true }), 50);
     return;
   }
 
   try {
-    const profile = await fetchOwnProfile(session.user.id);
+    const [profile, privateContext] = await Promise.all([
+      fetchOwnProfile(session.user.id),
+      loadPrivateSessionContext(),
+    ]);
     if (routeVersion !== state.routeVersion) return;
 
-    state.profile = profile;
+    state.profile = normalizeProfile({ ...profile, graduation_year: privateContext.graduation_year });
+    applyAdminRole(privateContext.is_admin);
     if (!state.profile?.grade || !state.profile?.fish_type) {
       showOnly("onboarding");
       return;
     }
-
-    await loadAdminRole();
 
     showOnly("app");
     renderProfileIdentity();
@@ -1465,14 +1573,19 @@ async function routeSession(session) {
     if (routeVersion !== state.routeVersion) return;
     const requestedRoute = routeFromLocation();
     const hasDeepLink = Boolean(requestedRoute.postId || requestedRoute.noteId);
-    const destination = enteringSignedInApp && !hasDeepLink ? "aquarium" : requestedRoute.page;
-    showPage(destination, enteringSignedInApp && !hasDeepLink);
+    const hasProtectedIntent = Boolean(protectedRouteIntent());
+    const destination = requestedRoute.page;
+    showPage(destination, enteringSignedInApp && !hasDeepLink && !hasProtectedIntent);
     subscribeToRealtime();
     if (requestedRoute.postId) window.setTimeout(() => openPost(requestedRoute.postId), 0);
     if (requestedRoute.noteId) window.setTimeout(() => openNote(requestedRoute.noteId), 0);
   } catch (error) {
     showOnly("auth");
-    showToast(`初期データを読めませんでした: ${readableError(error)}`, "error");
+    const message = `初期データを読めませんでした: ${readableError(error)}`;
+    openAuthDialog("login");
+    $("#authRouteNotice").hidden = false;
+    $("#authRouteNotice").textContent = `${message} 再読み込みしても続く場合は管理者へお知らせください。`;
+    showToast(message, "error");
   }
 }
 
@@ -3766,7 +3879,7 @@ function renderMyPosts() {
   const container = $("#myPostList");
   container.replaceChildren();
   if (!state.myPosts.length) {
-    container.innerHTML = '<p class="history-empty">投稿したボトルがここに並びます。</p>';
+    container.innerHTML = '<div class="history-empty empty-action"><p>投稿したボトルがここに並びます。</p><button class="button button-primary" type="button" data-empty-action="compose"><i class="ph ph-plus" aria-hidden="true"></i> 最初のボトルを書く</button></div>';
     return;
   }
   state.myPosts.slice(0, 6).forEach((post) => {
@@ -3788,7 +3901,7 @@ function renderMySavedPosts() {
     return;
   }
   if (!state.savedPosts.length) {
-    container.innerHTML = '<p class="history-empty">気になるボトルを「あとで読む」に入れると、ここに並びます。</p>';
+    container.innerHTML = '<div class="history-empty empty-action"><p>気になるボトルを「あとで読む」に入れると、ここに並びます。</p><button class="button button-ghost" type="button" data-empty-action="browse"><i class="ph ph-compass" aria-hidden="true"></i> ボトルを探す</button></div>';
     return;
   }
   state.savedPosts.slice(0, 12).forEach((post) => {
@@ -4812,7 +4925,9 @@ async function initialize() {
     bootstrapPreviewMode();
     return;
   }
-  const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+  const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
+    if (event === "INITIAL_SESSION") return;
+    if (event === "PASSWORD_RECOVERY") state.passwordRecoveryPending = true;
     window.setTimeout(() => routeSession(session), 0);
   });
   window.addEventListener("pagehide", () => listener.subscription.unsubscribe(), { once: true });
