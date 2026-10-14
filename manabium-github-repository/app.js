@@ -904,6 +904,14 @@ function readableError(error) {
   return message;
 }
 
+function isNetworkError(error) {
+  const message = String(error?.message ?? error ?? "").toLowerCase();
+  return error?.name === "AuthRetryableFetchError"
+    || message.includes("failed to fetch")
+    || message.includes("network")
+    || message.includes("load failed");
+}
+
 function setButtonLoading(button, loading) {
   button.disabled = loading;
   button.classList.toggle("is-loading", loading);
@@ -1486,7 +1494,28 @@ async function signup(event) {
       showToast("確認メールを送りました。メール内のリンクを開いてください。", "success");
     }
   } catch (error) {
-    showToast(readableError(error), "error");
+    if (isNetworkError(error)) {
+      // The Auth server may create the user even when the browser loses the
+      // signup response. With email confirmation disabled, signing in here
+      // recovers that successful signup and its session.
+      try {
+        const { data, error: signInError } = await supabase.auth.signInWithPassword({
+          email: $("#signupEmail").value.trim(),
+          password,
+        });
+        if (!signInError && data.session) {
+          form.reset();
+          showToast("登録できました。プロフィールを設定しましょう。", "success");
+          return;
+        }
+      } catch {
+        // Keep the original signup failure as the useful context below.
+      }
+
+      showToast("登録結果を確認できませんでした。アカウントが作成済みの場合は、同じメールアドレスとパスワードでログインしてください。", "error");
+    } else {
+      showToast(readableError(error), "error");
+    }
   } finally {
     setButtonLoading(button, false);
   }
