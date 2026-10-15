@@ -1739,7 +1739,6 @@ async function saveInitialProfile(event) {
     }
 
     state.profile = normalizeProfile({ ...data, graduation_year: profileFields.graduation_year ?? null });
-    await loadAdminRole();
     showOnly("app");
     renderProfileIdentity();
     await loadAll();
