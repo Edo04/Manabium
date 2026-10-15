@@ -1479,9 +1479,20 @@ textarea:focus {
   z-index: 100;
   top: 18px;
   right: 18px;
+  bottom: auto;
+  left: auto;
   display: grid;
   width: min(calc(100% - 36px), 380px);
   gap: 8px;
+}
+
+.toast-region[popover] {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  overflow: visible;
+  color: inherit;
+  background: transparent;
 }
 
 .toast {
@@ -6503,6 +6514,7 @@ textarea {
   .toast-region {
     top: calc(var(--mobile-header-height) + 8px);
     right: 12px;
+    bottom: auto;
     left: 12px;
     width: auto;
   }

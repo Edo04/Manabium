@@ -870,11 +870,30 @@ function visibleLakePosts() {
 }
 
 function showToast(message, type = "info") {
+  const region = $("#toastRegion");
   const toast = document.createElement("div");
   toast.className = `toast ${type}`;
   toast.textContent = message;
-  $("#toastRegion").append(toast);
-  window.setTimeout(() => toast.remove(), 4200);
+  region.append(toast);
+
+  if (typeof region.showPopover === "function") {
+    // Reopen an existing popover so a toast stays above dialogs opened later.
+    if (region.matches(":popover-open")) region.hidePopover();
+    if (region.parentElement !== document.body) document.body.append(region);
+    region.showPopover();
+  } else {
+    // Older browsers keep the toast inside the active dialog's top layer.
+    const dialogs = document.querySelectorAll("dialog[open]");
+    const topDialog = dialogs[dialogs.length - 1];
+    (topDialog ?? document.body).append(region);
+  }
+
+  window.setTimeout(() => {
+    toast.remove();
+    if (region.childElementCount) return;
+    if (typeof region.hidePopover === "function" && region.matches(":popover-open")) region.hidePopover();
+    if (region.closest("dialog")) document.body.append(region);
+  }, 4200);
 }
 
 function readableError(error) {
