@@ -3522,7 +3522,7 @@ function renderReplies(postId) {
       item.classList.add("editing");
       item.innerHTML = `
         <form class="reply-edit-form" data-reply-edit-form="${escapeHTML(reply.id)}">
-          <label class="sr-only" for="reply-editor-${escapeHTML(reply.id)}">返信内容を編集</label>
+          <label for="reply-editor-${escapeHTML(reply.id)}">返信内容を編集</label>
           <textarea id="reply-editor-${escapeHTML(reply.id)}" data-reply-editor="${escapeHTML(reply.id)}" rows="4" maxlength="1000" required>${escapeHTML(reply.body)}</textarea>
           <div class="reply-edit-actions">
             <button type="button" class="reply-action-button cancel" data-reply-action="cancel" data-reply-id="${escapeHTML(reply.id)}">キャンセル</button>
