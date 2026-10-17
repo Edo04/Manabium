@@ -1550,17 +1550,8 @@ textarea:focus {
 
 .floating-bottle.is-highlighted {
   z-index: 8;
-  outline: 2px solid rgba(255, 255, 255, 0.96);
-  outline-offset: 4px;
-  box-shadow: 0 0 0 8px rgba(247, 220, 132, 0.44), 0 0 26px 14px rgba(255, 245, 186, 0.8);
   animation: bob 3.8s ease-in-out infinite alternate, bottle-highlight-glow 1.15s ease-in-out 6;
   animation-delay: var(--delay), 0s;
-}
-
-@keyframes bottle-highlight-glow {
-  50% {
-    box-shadow: 0 0 0 13px rgba(247, 220, 132, 0.6), 0 0 36px 20px rgba(255, 245, 186, 0.95);
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -10982,5 +10973,20 @@ textarea {
 }
 
 @media (prefers-reduced-motion: no-preference) {
+  .floating-bottle.is-highlighted:hover,
   .floating-bottle.is-highlighted:focus-visible { animation-play-state: running; }
+}
+
+/* Keep the spotlight on the bottle's transparent silhouette, not its button box. */
+.floating-bottle.is-highlighted,
+.floating-bottle.is-highlighted.is-similar {
+  outline: none;
+  box-shadow: none;
+  filter: drop-shadow(0 0 5px rgba(255, 249, 215, 0.96)) drop-shadow(0 0 14px rgba(255, 224, 137, 0.78)) drop-shadow(0 11px 14px rgba(48, 83, 86, 0.14));
+}
+
+@keyframes bottle-highlight-glow {
+  50% {
+    filter: drop-shadow(0 0 9px rgba(255, 246, 197, 0.98)) drop-shadow(0 0 22px rgba(255, 225, 142, 0.92)) drop-shadow(0 11px 14px rgba(48, 83, 86, 0.14));
+  }
 }
