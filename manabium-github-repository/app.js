@@ -76,7 +76,6 @@ const NOTE_TYPES = {
   technology: { label: "技術・研究", icon: "ph-code", className: "note-type-technology" },
   project: { label: "制作物・活動", icon: "ph-sparkle", className: "note-type-project" },
   learning: { label: "学び・進路", icon: "ph-compass", className: "note-type-learning" },
-  other: { label: "その他", icon: "ph-dots-three", className: "note-type-other" },
 };
 
 const NOTE_FEEDBACK_TYPES = {
@@ -871,30 +870,11 @@ function visibleLakePosts() {
 }
 
 function showToast(message, type = "info") {
-  const region = $("#toastRegion");
   const toast = document.createElement("div");
   toast.className = `toast ${type}`;
   toast.textContent = message;
-  region.append(toast);
-
-  if (typeof region.showPopover === "function") {
-    // Reopen an existing popover so a toast stays above dialogs opened later.
-    if (region.matches(":popover-open")) region.hidePopover();
-    if (region.parentElement !== document.body) document.body.append(region);
-    region.showPopover();
-  } else {
-    // Older browsers keep the toast inside the active dialog's top layer.
-    const dialogs = document.querySelectorAll("dialog[open]");
-    const topDialog = dialogs[dialogs.length - 1];
-    (topDialog ?? document.body).append(region);
-  }
-
-  window.setTimeout(() => {
-    toast.remove();
-    if (region.childElementCount) return;
-    if (typeof region.hidePopover === "function" && region.matches(":popover-open")) region.hidePopover();
-    if (region.closest("dialog")) document.body.append(region);
-  }, 4200);
+  $("#toastRegion").append(toast);
+  window.setTimeout(() => toast.remove(), 4200);
 }
 
 function readableError(error) {
@@ -1759,6 +1739,7 @@ async function saveInitialProfile(event) {
     }
 
     state.profile = normalizeProfile({ ...data, graduation_year: profileFields.graduation_year ?? null });
+    await loadAdminRole();
     showOnly("app");
     renderProfileIdentity();
     await loadAll();
@@ -2685,8 +2666,8 @@ function renderLake() {
   layer.replaceChildren();
   const presence = activeAquariumPresence();
   const visiblePresence = visibleAquariumPresence();
-  $("#aquariumUserCount").textContent = `${visiblePresence.length} / ${MAX_LAKE_FISH}`;
-  $("#aquariumSocialCount").textContent = `${visiblePresence.filter((item) => item.status === "social").length} / ${MAX_LAKE_FISH}`;
+  $("#aquariumUserCount").textContent = String(presence.length);
+  $("#aquariumSocialCount").textContent = String(presence.filter((item) => item.status === "social").length);
   $("#lakeEmpty").hidden = visiblePresence.length > 0;
   const emptyCopy = $("#lakeEmpty p");
   if (emptyCopy) {
@@ -3523,7 +3504,7 @@ function renderReplies(postId) {
       item.classList.add("editing");
       item.innerHTML = `
         <form class="reply-edit-form" data-reply-edit-form="${escapeHTML(reply.id)}">
-          <label for="reply-editor-${escapeHTML(reply.id)}">返信内容を編集</label>
+          <label class="sr-only" for="reply-editor-${escapeHTML(reply.id)}">返信内容を編集</label>
           <textarea id="reply-editor-${escapeHTML(reply.id)}" data-reply-editor="${escapeHTML(reply.id)}" rows="4" maxlength="1000" required>${escapeHTML(reply.body)}</textarea>
           <div class="reply-edit-actions">
             <button type="button" class="reply-action-button cancel" data-reply-action="cancel" data-reply-id="${escapeHTML(reply.id)}">キャンセル</button>
