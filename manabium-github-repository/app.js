@@ -152,6 +152,7 @@ const state = {
   notes: [],
   noteComments: [],
   noteBookmarkIds: new Set(),
+  noteAnonymityColumnAvailable: true,
   noteBookmarksAvailable: true,
   libraryAvailable: true,
   selectedLibraryShelf: "all",
@@ -500,7 +501,10 @@ function rememberNoteComposerDraft() {
   if (!state.user) return;
   state.noteComposerDraft = {
     key: writingDraftKey("note-compose", state.editingNoteId ?? "new"),
-    fields: Object.fromEntries(NOTE_DRAFT_FIELDS.map((id) => [id, $(`#${id}`).value])),
+    fields: {
+      ...Object.fromEntries(NOTE_DRAFT_FIELDS.map((id) => [id, $(`#${id}`).value])),
+      noteAnonymity: $("input[name='noteAnonymity']:checked")?.value ?? "anonymous",
+    },
   };
   updateNoteDraftHint();
 }
@@ -4285,6 +4289,7 @@ function parseNoteTags(value) {
 function normalizeNote(note) {
   return {
     ...note,
+    is_anonymous: note.is_anonymous !== false,
     note_type: NOTE_TYPES[note.note_type] ? note.note_type : "learning",
     feedback_type: NOTE_FEEDBACK_TYPES[note.feedback_type] ? note.feedback_type : "none",
     field_tags: parseNoteTags(note.field_tags),
@@ -4336,12 +4341,19 @@ async function loadLibraryData() {
     return;
   }
   let notesResponse;
+  const noteFields = "id,user_id,note_type,title,summary,body,field_tags,feedback_type,external_url,external_site_name,status,moderation_status,created_at,updated_at,published_at";
   try {
     notesResponse = await supabase
       .from("lakeside_notes")
-      .select("id,user_id,note_type,title,summary,body,field_tags,feedback_type,external_url,external_site_name,status,moderation_status,created_at,updated_at,published_at")
+      .select(`${noteFields},is_anonymous`)
       .order("created_at", { ascending: false })
       .limit(120);
+    if (notesResponse.error && /is_anonymous/i.test(String(notesResponse.error.message ?? ""))) {
+      state.noteAnonymityColumnAvailable = false;
+      notesResponse = await supabase.from("lakeside_notes").select(noteFields).order("created_at", { ascending: false }).limit(120);
+    } else if (!notesResponse.error) {
+      state.noteAnonymityColumnAvailable = true;
+    }
     if (notesResponse.error) throw notesResponse.error;
   } catch (error) {
     if (!isMissingLibrarySchema(error)) throw error;
@@ -4356,6 +4368,9 @@ async function loadLibraryData() {
 
   state.libraryAvailable = true;
   state.notes = (notesResponse.data ?? []).map(normalizeNote);
+  const publicAuthorIds = state.notes.filter((note) => note.status === "published" && note.is_anonymous === false).map((note) => note.user_id);
+  const authorProfiles = state.noteAnonymityColumnAvailable ? await fetchProfiles(publicAuthorIds) : new Map();
+  state.notes = state.notes.map((note) => ({ ...note, authorProfile: authorProfiles.get(note.user_id) ?? null }));
   const [commentsResponse, bookmarksResponse] = await Promise.all([
     supabase.from("note_comments").select("id,note_id,user_id,comment_type,body,created_at,updated_at").order("created_at", { ascending: true }).limit(500),
     supabase.from("note_bookmarks").select("note_id,created_at").eq("user_id", state.user.id),
@@ -4491,11 +4506,16 @@ function openNoteComposer(noteId = null) {
   const draftKey = writingDraftKey("note-compose", noteId ?? "new");
   if (state.noteComposerDraft?.key !== draftKey) state.noteComposerDraft = null;
   resetNoteForm();
+  $("input[name='noteAnonymity'][value='anonymous']").checked = true;
+  $("input[name='noteAnonymity'][value='profile']").disabled = !state.noteAnonymityColumnAvailable && !IS_PREVIEW_MODE;
+  $("#noteAnonymityMigrationHint").hidden = state.noteAnonymityColumnAvailable || IS_PREVIEW_MODE;
   state.editingNoteId = noteId;
   state.noteSubmitStatus = "published";
   $("#noteComposerEyebrow").textContent = note ? "EDIT LAKESIDE NOTE" : "NEW LAKESIDE NOTE";
   $("#noteComposerTitle").textContent = note ? "ノートを書き直す" : "湖畔にノートを残す";
   if (note) {
+    $("input[name='noteAnonymity'][value='profile']").checked = note.is_anonymous === false;
+    $("input[name='noteAnonymity'][value='anonymous']").checked = note.is_anonymous !== false;
     $("#noteType").value = note.note_type;
     $("#noteFeedbackType").value = note.feedback_type;
     $("#noteFieldTags").value = parseNoteTags(note.field_tags).join("、");
@@ -4514,6 +4534,9 @@ function openNoteComposer(noteId = null) {
   }
   if (state.noteComposerDraft) {
     NOTE_DRAFT_FIELDS.forEach((id) => { $(`#${id}`).value = state.noteComposerDraft.fields[id] ?? ""; });
+    const draftAnonymity = state.noteComposerDraft.fields.noteAnonymity ?? "anonymous";
+    $("input[name='noteAnonymity'][value='profile']").checked = draftAnonymity === "profile";
+    $("input[name='noteAnonymity'][value='anonymous']").checked = draftAnonymity !== "profile";
     $("#noteSummaryCharacterCount").textContent = String($("#noteSummary").value.length);
     $("#noteBodyCharacterCount").textContent = String($("#noteBody").value.length);
   }
@@ -4544,6 +4567,9 @@ async function submitNote(event) {
     external_url: externalUrl || null,
     external_site_name: externalUrl ? externalSiteName || null : null,
     status,
+    ...(state.noteAnonymityColumnAvailable || IS_PREVIEW_MODE
+      ? { is_anonymous: $("input[name='noteAnonymity']:checked")?.value !== "profile" }
+      : {}),
   };
   try {
     if (IS_PREVIEW_MODE) {
@@ -4559,6 +4585,7 @@ async function submitNote(event) {
         published_at: status === "published" ? existing?.published_at ?? new Date().toISOString() : null,
       });
       state.notes = [next, ...state.notes.filter((note) => note.id !== next.id)];
+      next.authorProfile = next.is_anonymous === false ? state.profile : null;
     } else {
       const mutation = editingNoteId
         ? supabase.from("lakeside_notes").update(payload).eq("id", editingNoteId).eq("user_id", state.user.id)
@@ -4616,7 +4643,23 @@ function openNote(noteId, show = true) {
   $("#noteDialog").className = `modal note-detail-modal ${type.className}`;
   $("#noteDetailBadges").innerHTML = `<span class="note-detail-type"><i class="ph ${type.icon}" aria-hidden="true"></i>${escapeHTML(type.label)}</span><span>${escapeHTML(NOTE_FEEDBACK_TYPES[note.feedback_type])}</span>${isOwner ? `<span>${escapeHTML(noteStatusLabel(note))}</span>` : ""}`;
   $("#noteDetailTitle").textContent = note.title;
-  $("#noteDetailMeta").textContent = `${isOwner ? "あなたのノート" : "匿名の書き手"}・${formatRelativeDate(note.published_at ?? note.updated_at ?? note.created_at)}`;
+  $("#noteDetailMeta").textContent = `${isOwner ? "あなたのノート" : note.is_anonymous === false ? "プロフィール公開の書き手" : "匿名の書き手"}・${formatRelativeDate(note.published_at ?? note.updated_at ?? note.created_at)}`;
+  const authorProfileElement = $("#noteDetailAuthorProfile");
+  const authorProfile = note.is_anonymous === false ? (note.authorProfile ?? (isOwner ? state.profile : null)) : null;
+  authorProfileElement.hidden = note.is_anonymous !== false || !authorProfile;
+  authorProfileElement.replaceChildren();
+  if (!authorProfileElement.hidden) {
+    const badge = document.createElement("span");
+    badge.className = "note-author-profile-label";
+    badge.innerHTML = '<i class="ph ph-fish-simple" aria-hidden="true"></i> 書き手のプロフィール';
+    authorProfileElement.append(badge);
+    const details = [authorProfile.grade, authorProfile.major, ...parseInterests(authorProfile.interests), authorProfile.bio].filter(Boolean);
+    if (details.length) {
+      const paragraph = document.createElement("p");
+      paragraph.textContent = details.join(" ・ ");
+      authorProfileElement.append(paragraph);
+    }
+  }
   const tags = parseNoteTags(note.field_tags);
   $("#noteDetailTags").innerHTML = tags.map((tag) => `<button type="button" data-note-search-tag="${escapeHTML(tag)}">${escapeHTML(tag)}</button>`).join("");
   $("#noteDetailTags").hidden = tags.length === 0;
