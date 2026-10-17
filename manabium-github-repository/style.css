@@ -1527,6 +1527,46 @@ textarea:focus {
 .toast.error { background: #a9564e; }
 .toast.success { background: #347c72; }
 
+.toast.has-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.toast-action {
+  flex: 0 0 auto;
+  min-height: 36px;
+  padding: 7px 11px;
+  color: #315f66;
+  background: #fff;
+  border: 0;
+  border-radius: 9px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.floating-bottle.is-highlighted {
+  z-index: 8;
+  outline: 2px solid rgba(255, 255, 255, 0.96);
+  outline-offset: 4px;
+  box-shadow: 0 0 0 8px rgba(247, 220, 132, 0.44), 0 0 26px 14px rgba(255, 245, 186, 0.8);
+  animation: bob 3.8s ease-in-out infinite alternate, bottle-highlight-glow 1.15s ease-in-out 6;
+  animation-delay: var(--delay), 0s;
+}
+
+@keyframes bottle-highlight-glow {
+  50% {
+    box-shadow: 0 0 0 13px rgba(247, 220, 132, 0.6), 0 0 36px 20px rgba(255, 245, 186, 0.95);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .floating-bottle.is-highlighted { animation: none; }
+}
+
 @keyframes toast-in {
   from { opacity: 0; transform: translateY(-8px); }
 }
@@ -10937,4 +10977,8 @@ textarea {
   .library-door.is-entering,
   .library-door:hover,
   .note-open-button:hover { transform: none; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .floating-bottle.is-highlighted:focus-visible { animation-play-state: running; }
 }

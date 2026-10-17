@@ -143,6 +143,7 @@ const state = {
   lastAquariumActivityAt: Date.now(),
   aquariumIdle: false,
   posts: [],
+  highlightedLakePostId: null,
   replies: [],
   myPosts: [],
   likedPostIds: new Set(),
@@ -870,11 +871,54 @@ function visibleLakePosts() {
     .map(({ post }) => post);
 }
 
-function showToast(message, type = "info") {
+function showOwnBottleInLake(postId) {
+  const post = findKnownPost(postId);
+  if (!post || post.user_id !== state.user?.id) {
+    showToast("ボトルを表示できませんでした。湖を開き直してお試しください。", "error");
+    return;
+  }
+
+  state.highlightedLakePostId = postId;
+  showPage("aquarium");
+  renderBottles();
+  window.requestAnimationFrame(() => {
+    const bottle = $$(".floating-bottle", $("#bottleLayer"))
+      .find((item) => item.dataset.lakePostId === postId);
+    bottle?.focus({ preventScroll: true });
+  });
+  window.setTimeout(() => {
+    if (state.highlightedLakePostId !== postId) return;
+    state.highlightedLakePostId = null;
+    if ($("#appView").dataset.activePage === "aquarium") renderBottles();
+  }, 7000);
+}
+
+function showToast(message, type = "info", action = null) {
   const region = $("#toastRegion");
   const toast = document.createElement("div");
   toast.className = `toast ${type}`;
-  toast.textContent = message;
+  const dismissToast = () => {
+    toast.remove();
+    if (region.childElementCount) return;
+    if (typeof region.hidePopover === "function" && region.matches(":popover-open")) region.hidePopover();
+    if (region.closest("dialog")) document.body.append(region);
+  };
+  if (action?.label && typeof action.onClick === "function") {
+    toast.classList.add("has-action");
+    const copy = document.createElement("span");
+    copy.textContent = message;
+    const actionButton = document.createElement("button");
+    actionButton.type = "button";
+    actionButton.className = "toast-action";
+    actionButton.textContent = action.label;
+    actionButton.addEventListener("click", () => {
+      dismissToast();
+      action.onClick();
+    });
+    toast.append(copy, actionButton);
+  } else {
+    toast.textContent = message;
+  }
   region.append(toast);
 
   if (typeof region.showPopover === "function") {
@@ -890,11 +934,8 @@ function showToast(message, type = "info") {
   }
 
   window.setTimeout(() => {
-    toast.remove();
-    if (region.childElementCount) return;
-    if (typeof region.hidePopover === "function" && region.matches(":popover-open")) region.hidePopover();
-    if (region.closest("dialog")) document.body.append(region);
-  }, 4200);
+    dismissToast();
+  }, action ? 8000 : 4200);
 }
 
 function readableError(error) {
@@ -2894,14 +2935,20 @@ function renderBottles() {
   const phoneLayout = window.matchMedia("(max-width: 760px)").matches;
   const timelineSeconds = Date.now() / 1000;
   const occupiedSlots = new Set();
-  visibleLakePosts().slice(0, phoneLayout ? 3 : MAX_LAKE_POSTS).forEach((post, index) => {
+  const posts = visibleLakePosts();
+  const highlightedPost = state.highlightedLakePostId && findKnownPost(state.highlightedLakePostId);
+  if (highlightedPost && !posts.some((post) => post.id === highlightedPost.id)) posts.unshift(highlightedPost);
+  posts.slice(0, phoneLayout ? 3 : MAX_LAKE_POSTS).forEach((post, index) => {
     const seed = Math.abs(hashNumber(post.id));
     const duration = 18 + ((seed % 7) * 1.15);
     const button = document.createElement("button");
     button.type = "button";
     button.className = "floating-bottle";
+    const isHighlighted = post.id === state.highlightedLakePostId;
+    button.classList.toggle("is-highlighted", isHighlighted);
+    button.dataset.lakePostId = post.id;
     button.classList.toggle("is-similar", profileSimilarity(post.profile) >= 22 || postRelevance(post) >= 34);
-    button.setAttribute("aria-label", `投稿「${post.title}」を読む`);
+    button.setAttribute("aria-label", `${isHighlighted ? "あなたが流したボトル。光っています。" : "投稿"}「${post.title}」を読む`);
     const position = lakeBottlePosition(seed, index, phoneLayout, occupiedSlots);
     const left = position.left;
     button.dataset.lakeSlot = String(position.slotIndex);
@@ -3159,9 +3206,9 @@ async function persistPostMutation(payload, postId = null) {
     const nextPayload = availablePostMutationPayload(payload);
     const query = postId
       ? supabase.from("posts").update(nextPayload).eq("id", postId).eq("user_id", state.user.id)
-      : supabase.from("posts").insert(nextPayload);
-    const { error } = await query;
-    if (!error) return;
+      : supabase.from("posts").insert(nextPayload).select("id").single();
+    const { data, error } = await query;
+    if (!error) return data?.id ?? postId;
     if (!disableUnavailablePostColumn(error)) throw error;
   }
   throw new Error("ボトルの保存に必要なデータ構成を確認できませんでした。");
@@ -3206,7 +3253,10 @@ async function submitPost(event) {
       renderBottles();
       renderAquariumControls();
       renderMyPage();
-      showToast("ボトルを湖へ流しました。", "success");
+      showToast("ボトルを湖へ流しました。", "success", {
+        label: "湖で確認",
+        onClick: () => showOwnBottleInLake(post.id),
+      });
       return;
     }
     const payload = {
@@ -3219,12 +3269,15 @@ async function submitPost(event) {
       external_url: externalUrl || null,
       external_site_name: externalUrl ? (externalSiteName || null) : null,
     };
-    await persistPostMutation(payload);
+    const submittedPostId = await persistPostMutation(payload);
     form.reset();
     $("#postCharacterCount").textContent = "0";
     updateComposerDraftHint();
     closeDialog("composerDialog");
     await Promise.all([loadPosts(), loadMyData()]);
+    const savedWithAllDetails = state.postFieldTagsColumnAvailable
+      && (!externalUrl || state.postExternalUrlColumnAvailable)
+      && (!externalSiteName || state.postExternalSiteNameColumnAvailable);
     showToast(
       externalUrl && !state.postExternalUrlColumnAvailable
         ? "ボトルを流しました。公式リンクの保存にはSupabaseの追加SQLが必要です。"
@@ -3233,9 +3286,11 @@ async function submitPost(event) {
         : !state.postFieldTagsColumnAvailable
           ? "ボトルを流しました。関連分野の保存にはSupabaseの追加SQLが必要です。"
           : "ボトルを湖へ流しました。",
-      state.postFieldTagsColumnAvailable
-        && (!externalUrl || state.postExternalUrlColumnAvailable)
-        && (!externalSiteName || state.postExternalSiteNameColumnAvailable) ? "success" : "info",
+      savedWithAllDetails ? "success" : "info",
+      {
+        label: "湖で確認",
+        onClick: () => showOwnBottleInLake(submittedPostId),
+      },
     );
   } catch (error) {
     showToast(readableError(error), "error");
