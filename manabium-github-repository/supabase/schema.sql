@@ -1698,6 +1698,7 @@ create table if not exists public.lakeside_notes (
   feedback_type text not null default 'none'
     check (feedback_type in ('impressions', 'questions', 'advice', 'same_experience', 'none')),
   is_anonymous boolean not null default true,
+  author_name text check (author_name is null or char_length(btrim(author_name)) between 1 and 40),
   external_url text check (
     external_url is null or (char_length(external_url) <= 500 and external_url ~* '^https?://')
   ),
@@ -1714,6 +1715,8 @@ create table if not exists public.lakeside_notes (
 
 alter table public.lakeside_notes
   add column if not exists is_anonymous boolean not null default true;
+alter table public.lakeside_notes
+  add column if not exists author_name text check (author_name is null or char_length(btrim(author_name)) between 1 and 40);
 
 create table if not exists public.note_comments (
   id uuid primary key default gen_random_uuid(),
@@ -2007,12 +2010,12 @@ end;
 $$;
 
 revoke all on table public.lakeside_notes, public.note_comments, public.note_bookmarks from anon, authenticated;
-grant select (id, user_id, note_type, title, summary, body, field_tags, feedback_type, is_anonymous, external_url, external_site_name, status, moderation_status, published_at, created_at, updated_at)
+grant select (id, user_id, note_type, title, summary, body, field_tags, feedback_type, is_anonymous, author_name, external_url, external_site_name, status, moderation_status, published_at, created_at, updated_at)
   on table public.lakeside_notes to authenticated;
 grant select (id, note_id, user_id, comment_type, body, moderation_status, created_at, updated_at)
   on table public.note_comments to authenticated;
-grant insert (note_type, title, summary, body, field_tags, feedback_type, is_anonymous, external_url, external_site_name, status) on table public.lakeside_notes to authenticated;
-grant update (note_type, title, summary, body, field_tags, feedback_type, is_anonymous, external_url, external_site_name, status) on table public.lakeside_notes to authenticated;
+grant insert (note_type, title, summary, body, field_tags, feedback_type, is_anonymous, author_name, external_url, external_site_name, status) on table public.lakeside_notes to authenticated;
+grant update (note_type, title, summary, body, field_tags, feedback_type, is_anonymous, author_name, external_url, external_site_name, status) on table public.lakeside_notes to authenticated;
 grant delete on table public.lakeside_notes to authenticated;
 grant insert (note_id, comment_type, body) on table public.note_comments to authenticated;
 grant update (comment_type, body) on table public.note_comments to authenticated;

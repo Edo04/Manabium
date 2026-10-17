@@ -27,10 +27,10 @@
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/@phosphor-icons/web@2.1.2/src/regular/style.css"
     />
-    <link rel="stylesheet" href="./style.css?v=20261018-note-visibility-2" />
+    <link rel="stylesheet" href="./style.css?v=20261018-note-visibility-3" />
     <link rel="stylesheet" href="./community.css?v=20260909-accessibility-2" />
     <link rel="stylesheet" href="./homepage.css?v=20260909-accessibility-2" />
-    <script type="module" src="./app.js?v=20261018-note-visibility-1"></script>
+    <script type="module" src="./app.js?v=20261018-note-visibility-2"></script>
   </head>
   <body>
     <div class="ambient ambient-one" aria-hidden="true"></div>
@@ -944,13 +944,14 @@
           </div>
           <button class="modal-close" type="button" data-close-dialog="noteComposerDialog" aria-label="閉じる">×</button>
         </div>
-        <div class="note-safety-banner"><i class="ph ph-shield-check" aria-hidden="true"></i><p><strong>公開方法を選べます</strong><span>氏名・学校名・研究室名・連絡先・守秘義務のある内容は書かないでください。</span></p></div>
+        <div class="note-safety-banner"><i class="ph ph-shield-check" aria-hidden="true"></i><p><strong>公開方法を選べます</strong><span>本文には氏名・学校名・研究室名・連絡先・守秘義務のある内容を書かないでください。</span></p></div>
         <fieldset class="note-visibility-choice">
           <legend>公開時の表示</legend>
           <label><input type="radio" name="noteAnonymity" value="anonymous" checked /><span><strong>匿名で公開</strong><small>プロフィールを表示せず、書き手として表示します。</small></span></label>
-          <label><input type="radio" name="noteAnonymity" value="profile" /><span><strong>魚のプロフィールと一緒に公開</strong><small>学年・分野・興味・自己紹介をノートに表示します。本名や学校名は表示しません。</small></span></label>
+          <label><input type="radio" name="noteAnonymity" value="named" /><span><strong>名前をつけて公開</strong><small>入力した表示名をノートに表示します。</small></span></label>
         </fieldset>
-        <small id="noteAnonymityMigrationHint" class="note-visibility-migration-hint" hidden>この設定を有効にするには、Supabaseで匿名設定用の追加SQLを実行してください。</small>
+        <small id="noteAnonymityMigrationHint" class="note-visibility-migration-hint" hidden>名前の保存を有効にするには、Supabaseでノートの公開設定用追加SQLを実行してください。</small>
+        <label id="noteAuthorNameField" class="note-author-name-field" hidden><span>公開する名前</span><input id="noteAuthorName" type="text" maxlength="40" autocomplete="nickname" placeholder="例：みずたま" /><small>本名ではなく、公開してよいニックネームを入力してください。</small></label>
         <p id="noteDraftHint" class="draft-hint" role="status" hidden></p>
         <div class="two-column">
           <label><span>ノートの種類</span><select id="noteType" required><option value="internship">インターン・就活体験</option><option value="technology">技術・研究</option><option value="project">制作物・活動記録</option><option value="learning">学び・進路の体験談</option><option value="other">その他</option></select></label>

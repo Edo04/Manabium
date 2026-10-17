@@ -10865,6 +10865,9 @@ textarea {
 .note-visibility-choice small,
 .note-visibility-migration-hint { color: #829390; font-size: .55rem; line-height: 1.6; }
 .note-visibility-migration-hint { display: block; margin: -11px 0 16px; }
+.note-author-name-field { max-width: 460px; }
+.note-author-name-field > span { color: #526f6e; font-size: .67rem; font-weight: 850; }
+.note-composer-modal .note-author-name-field small { color: #829390; font-size: .55rem; font-weight: 500; text-align: left; }
 .note-link-attachment { margin-top: 17px; }
 .note-publish-note { margin-top: 15px; }
 .note-composer-actions { flex-wrap: wrap; }
