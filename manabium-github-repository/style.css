@@ -2711,6 +2711,7 @@ textarea:focus {
 }
 
 .link-attachment-grid label {
+  align-content: start;
   min-width: 0;
   margin: 0;
 }
