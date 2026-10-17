@@ -2720,6 +2720,10 @@ textarea:focus {
   font-size: 0.68rem;
 }
 
+.link-attachment-grid label > small {
+  text-align: left;
+}
+
 /* Bottle hover summary: available to mouse and keyboard without blocking the bottle click. */
 .bottle-hover-preview {
   position: absolute;
