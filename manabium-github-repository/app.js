@@ -2683,10 +2683,9 @@ function createLakeRipple(source) {
 function renderLake() {
   const layer = $("#fishLayer");
   layer.replaceChildren();
-  const presence = activeAquariumPresence();
   const visiblePresence = visibleAquariumPresence();
-  $("#aquariumUserCount").textContent = String(presence.length);
-  $("#aquariumSocialCount").textContent = String(presence.filter((item) => item.status === "social").length);
+  $("#aquariumUserCount").textContent = `${visiblePresence.length} / ${MAX_LAKE_FISH}`;
+  $("#aquariumSocialCount").textContent = `${visiblePresence.filter((item) => item.status === "social").length} / ${MAX_LAKE_FISH}`;
   $("#lakeEmpty").hidden = visiblePresence.length > 0;
   const emptyCopy = $("#lakeEmpty p");
   if (emptyCopy) {
