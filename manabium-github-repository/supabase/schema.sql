@@ -1690,7 +1690,7 @@ begin;
 create table if not exists public.lakeside_notes (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null default auth.uid() references auth.users(id) on delete cascade,
-  note_type text not null check (note_type in ('internship', 'technology', 'project', 'learning')),
+  note_type text not null check (note_type in ('internship', 'technology', 'project', 'learning', 'other')),
   title text not null check (char_length(title) between 1 and 120),
   summary text not null check (char_length(summary) between 1 and 240),
   body text not null check (char_length(body) between 1 and 10000),

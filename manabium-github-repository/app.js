@@ -76,6 +76,7 @@ const NOTE_TYPES = {
   technology: { label: "技術・研究", icon: "ph-code", className: "note-type-technology" },
   project: { label: "制作物・活動", icon: "ph-sparkle", className: "note-type-project" },
   learning: { label: "学び・進路", icon: "ph-compass", className: "note-type-learning" },
+  other: { label: "その他", icon: "ph-dots-three", className: "note-type-other" },
 };
 
 const NOTE_FEEDBACK_TYPES = {

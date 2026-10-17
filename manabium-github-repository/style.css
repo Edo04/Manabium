@@ -10769,6 +10769,7 @@ textarea {
 .note-type-technology { --note-accent: #518c92; --note-accent-soft: #e1eff0; --note-cover: #f4fbf9; }
 .note-type-project { --note-accent: #8e7aa0; --note-accent-soft: #eee8f3; --note-cover: #fcf8ff; }
 .note-type-learning { --note-accent: #ad8b4e; --note-accent-soft: #f6edda; --note-cover: #fffbef; }
+.note-type-other { --note-accent: #718b83; --note-accent-soft: #e9f0eb; --note-cover: #f6faf5; }
 @keyframes note-arrive { from { opacity: 0; transform: translateY(9px); } to { opacity: 1; transform: none; } }
 .note-open-button { position: relative; display: flex; width: 100%; min-height: 300px; padding: 25px 22px 18px 29px; overflow: visible; flex-direction: column; cursor: pointer; color: #345759; background: var(--note-cover); border: 1px solid color-mix(in srgb, var(--note-accent) 24%, transparent); border-radius: 5px 15px 15px 5px; box-shadow: 6px 9px 20px rgba(48, 67, 63, .11), inset 8px 0 0 var(--note-accent); text-align: left; transition: transform 200ms ease, box-shadow 200ms ease; }
 .note-open-button::before { position: absolute; inset: 9px 9px 9px 17px; content: ""; pointer-events: none; opacity: .35; background: repeating-linear-gradient(180deg, transparent 0 25px, color-mix(in srgb, var(--note-accent) 28%, transparent) 26px 27px); border-radius: 8px; }
@@ -10828,6 +10829,7 @@ textarea {
 .note-detail-modal.note-type-technology { --note-accent: #518c92; --note-accent-soft: #e1eff0; }
 .note-detail-modal.note-type-project { --note-accent: #8e7aa0; --note-accent-soft: #eee8f3; }
 .note-detail-modal.note-type-learning { --note-accent: #ad8b4e; --note-accent-soft: #f6edda; }
+.note-detail-modal.note-type-other { --note-accent: #718b83; --note-accent-soft: #e9f0eb; }
 .note-detail-modal > article { padding: clamp(25px, 5vw, 48px); background: linear-gradient(180deg, #fffef9, #fbfaf6); }
 .note-detail-badges { display: flex; flex-wrap: wrap; gap: 6px; }
 .note-detail-badges > span { display: inline-flex; padding: 6px 9px; align-items: center; gap: 5px; color: #687d7b; background: #eef3ef; border-radius: 99px; font-size: .55rem; font-weight: 900; }
